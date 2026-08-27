@@ -1,8 +1,9 @@
 import os
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from google import genai
+from google.genai import types
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -11,11 +12,11 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 class MyTeam(BaseModel):
-  pos1: str = ""  # Керри
-  pos2: str = ""  # Мид
-  pos3: str = ""  # Оффлейн
-  pos4: str = ""  # 4-ка
-  pos5: str = ""  # 5-ка
+  pos1: str = ""
+  pos2: str = ""
+  pos3: str = ""
+  pos4: str = ""
+  pos5: str = ""
 
 
 class DraftRequest(BaseModel):
@@ -35,9 +36,7 @@ app.mount(
 
 @app.post("/api/analyze")
 async def analyze_draft(data: DraftRequest):
-  try:
-    # Собираем текстовое описание своей команды
-    my_team_str = f"""
+  my_team_str = f"""
 - Поз 1 (Керри): {data.my_team.pos1 or "НЕ ВЫБРАН"}
 - Поз 2 (Мид): {data.my_team.pos2 or "НЕ ВЫБРАН"}
 - Поз 3 (Тройка/Оффлейн): {data.my_team.pos3 or "НЕ ВЫБРАН"}
@@ -45,11 +44,10 @@ async def analyze_draft(data: DraftRequest):
 - Поз 5 (Пятерка/Полная поддержка): {data.my_team.pos5 or "НЕ ВЫБРАН"}
 """.strip()
 
-    # Вражеская команда
-    enemies = [e for e in data.enemy_team if e.strip()]
-    enemy_team_str = ", ".join(enemies) if enemies else "Герои не раскрыты"
+  enemies = [e for e in data.enemy_team if e.strip()]
+  enemy_team_str = ", ".join(enemies) if enemies else "Герои не раскрыты"
 
-    prompt = f"""
+  prompt = f"""
 Ты — профессиональный аналитик драфта Dota 2. Дай МАКСИМАЛЬНО КРАТКИЙ И ЧЕТКИЙ ответ во время пиков.
 
 МОЯ КОМАНДА ПО РОЛЯМ:
@@ -73,9 +71,17 @@ async def analyze_draft(data: DraftRequest):
 • [Позиция/Линия]: [список начальных предметов]
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash", contents=prompt
-    )
-    return {"analysis": response.text}
-  except Exception as e:
-    return {"analysis": f"Ошибка сервиса: {str(e)}"}
+  def generate():
+    response = client.models.generate_content_stream(
+        model="gemini-3.6-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            max_output_tokens=450,  # Запас токенов без обрезки текста
+            temperature=0.2,  # Низкое значение ускоряет генерацию
+        ),
+  )
+    for chunk in response:
+      if chunk.text:
+        yield chunk.text
+
+  return StreamingResponse(generate(), media_type="text/plain")
