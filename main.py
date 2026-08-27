@@ -1,8 +1,6 @@
 import json
-import os
 import ssl
 import time
-import urllib.error
 import urllib.request
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
@@ -74,7 +72,13 @@ def get_opendota_heroes():
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=10, context=SSL_CONTEXT) as resp:
       heroes = json.loads(resp.read().decode("utf-8"))
-      HERO_CACHE = {h["id"]: h["localized_name"] for h in heroes}
+      HERO_CACHE = {
+          h["id"]: {
+              "name": h["localized_name"],
+              "slug": h["name"].replace("npc_dota_hero_", ""),
+          }
+          for h in heroes
+      }
   except Exception as e:
     print(f"Error fetching heroes: {e}")
   return HERO_CACHE
@@ -92,11 +96,11 @@ def find_hero_id_by_name(name: str, heroes_map: dict) -> int | None:
   cleaned = clean_hero_name(name).lower()
   if not cleaned:
     return None
-  for h_id, h_name in heroes_map.items():
-    if h_name.lower() == cleaned:
+  for h_id, data in heroes_map.items():
+    if data["name"].lower() == cleaned:
       return h_id
-  for h_id, h_name in heroes_map.items():
-    if cleaned in h_name.lower() or h_name.lower() in cleaned:
+  for h_id, data in heroes_map.items():
+    if cleaned in data["name"].lower() or data["name"].lower() in cleaned:
       return h_id
   return None
 
@@ -118,58 +122,60 @@ def fetch_matchup_for_hero(enemy_id: int):
         return data
   except Exception as e:
     print(f"Error fetching matchup for {enemy_id}: {e}")
-
   return None
 
 
-def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_map: dict) -> list[str]:
-  valid_heroes_for_role = ROLES_DB.get(role_key, set())
-
-  all_candidates = []
+def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
+  valid_heroes = ROLES_DB.get(role_key, set())
   role_candidates = []
+  all_candidates = []
 
-  # Первичный фильтр: минимум 30 матчей
   for cid, data in candidate_stats.items():
-    hero_name = heroes_map.get(cid, "")
-    if not hero_name or data["games"] < 30:
+    hero_info = heroes_map.get(cid)
+    if not hero_info or data["games"] < 30:
       continue
 
     wr = (data["wins"] / data["games"]) * 100
-    item = (hero_name, wr, data["games"])
+    img_url = f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{hero_info['slug']}.png"
+    item = {
+        "name": hero_info["name"],
+        "winrate": round(wr, 1),
+        "games": data["games"],
+        "img": img_url,
+    }
 
     all_candidates.append(item)
-    if hero_name.lower() in valid_heroes_for_role:
+    if hero_info["name"].lower() in valid_heroes:
       role_candidates.append(item)
 
-  # Фолбэк-фильтр: если от 30 матчей никого не нашлось, берем от 10
+  # Фолбэк на выборку от 10 игр
   if not role_candidates and not all_candidates:
     for cid, data in candidate_stats.items():
-      hero_name = heroes_map.get(cid, "")
-      if hero_name and data["games"] >= 10:
+      hero_info = heroes_map.get(cid)
+      if hero_info and data["games"] >= 10:
         wr = (data["wins"] / data["games"]) * 100
-        item = (hero_name, wr, data["games"])
+        img_url = f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{hero_info['slug']}.png"
+        item = {
+            "name": hero_info["name"],
+            "winrate": round(wr, 1),
+            "games": data["games"],
+            "img": img_url,
+        }
         all_candidates.append(item)
-        if hero_name.lower() in valid_heroes_for_role:
+        if hero_info["name"].lower() in valid_heroes:
           role_candidates.append(item)
 
-  role_candidates.sort(key=lambda x: x[1], reverse=True)
-  all_candidates.sort(key=lambda x: x[1], reverse=True)
+  role_candidates.sort(key=lambda x: x["winrate"], reverse=True)
+  all_candidates.sort(key=lambda x: x["winrate"], reverse=True)
 
   final_list = role_candidates if role_candidates else all_candidates
+  if not final_list:
+    return None
 
-  formatted = []
-  if final_list:
-    best_hero, best_wr, best_games = final_list[0]
-    formatted.append(f"  ★ САМЫЙ ЛУЧШИЙ ПИК: {best_hero} — {best_wr:.1f}% винрейт (матчей: {best_games})")
-
-    if len(final_list) > 1:
-      formatted.append("  Другие сильные варианты:")
-      for h_name, wr, games in final_list[1:4]:
-        formatted.append(f"    • {h_name}: {wr:.1f}% винрейт (матчей: {games})")
-  else:
-    formatted.append("  • Не удалось подобрать героя под эту роль")
-
-  return formatted
+  return {
+      "best": final_list[0],
+      "alternatives": final_list[1:4] if len(final_list) > 1 else [],
+  }
 
 
 @app.get("/")
@@ -177,9 +183,7 @@ async def root():
   return RedirectResponse(url="/site")
 
 
-app.mount(
-    "/site", StaticFiles(directory="static", html=True), name="static"
-)
+app.mount("/site", StaticFiles(directory="static", html=True), name="static")
 
 
 @app.post("/api/analyze")
@@ -193,50 +197,41 @@ async def analyze_draft(data: DraftRequest):
       enemy_ids.append(hid)
 
   if not enemy_ids:
-    return {"analysis": "Выберите хотя бы одного вражеского героя для анализа."}
+    return {
+        "status": "error",
+        "message": "Выберите хотя бы одного вражеского героя.",
+    }
 
   candidate_stats = {}
-
   for enemy_id in enemy_ids:
     matchups = fetch_matchup_for_hero(enemy_id)
-    if not matchups:
-      time.sleep(0.2)
-      matchups = fetch_matchup_for_hero(enemy_id)
-
     if matchups:
       for m in matchups:
         cid = m["hero_id"]
         games = m["games_played"]
-        enemy_wins = m["wins"]
-        candidate_wins = games - enemy_wins
+        candidate_wins = games - m["wins"]
 
         if cid not in candidate_stats:
           candidate_stats[cid] = {"wins": 0, "games": 0}
         candidate_stats[cid]["wins"] += candidate_wins
         candidate_stats[cid]["games"] += games
-
     time.sleep(0.05)
 
   empty_positions = {
-      "pos1": ("Поз 1 (Керри)", data.my_team.pos1),
-      "pos2": ("Поз 2 (Мид)", data.my_team.pos2),
-      "pos3": ("Поз 3 (Тройка)", data.my_team.pos3),
-      "pos4": ("Поз 4 (Четверка)", data.my_team.pos4),
-      "pos5": ("Поз 5 (Пятерка)", data.my_team.pos5),
+      "pos1": "Поз 1 (Керри)",
+      "pos2": "Поз 2 (Мид)",
+      "pos3": "Поз 3 (Тройка)",
+      "pos4": "Поз 4 (Четверка)",
+      "pos5": "Поз 5 (Пятерка)",
   }
 
-  output_lines = ["Результат анализа драфта по базе OpenDota:\n"]
-  found_any = False
+  results = []
+  for role_key, role_title in empty_positions.items():
+    user_pick = getattr(data.my_team, role_key)
+    if not user_pick or user_pick.strip() == "":
+      role_data = get_role_data(role_key, candidate_stats, heroes_map)
+      results.append(
+          {"role": role_title, "data": role_data}
+      )
 
-  for role_key, (role_title, selected_hero) in empty_positions.items():
-    if not selected_hero or selected_hero.strip() == "":
-      found_any = True
-      recs = get_recommendations_for_role(role_key, candidate_stats, heroes_map)
-      output_lines.append(f"{role_title}:")
-      output_lines.extend(recs)
-      output_lines.append("")
-
-  if not found_any:
-    output_lines.append("Все роли в вашей команде уже заполнены!")
-
-  return {"analysis": "\n".join(output_lines)}
+  return {"status": "ok", "results": results}
