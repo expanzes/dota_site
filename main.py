@@ -10,9 +10,17 @@ app = FastAPI()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
-class DraftData(BaseModel):
-  radiant: list[str]
-  dire: list[str]
+class MyTeam(BaseModel):
+  pos1: str = ""  # Керри
+  pos2: str = ""  # Мид
+  pos3: str = ""  # Оффлейн
+  pos4: str = ""  # 4-ка
+  pos5: str = ""  # 5-ка
+
+
+class DraftRequest(BaseModel):
+  my_team: MyTeam
+  enemy_team: list[str]
 
 
 @app.get("/")
@@ -26,23 +34,47 @@ app.mount(
 
 
 @app.post("/api/analyze")
-async def analyze_draft(data: DraftData):
+async def analyze_draft(data: DraftRequest):
   try:
-    radiant_team = ", ".join(data.radiant)
-    dire_team = ", ".join(data.dire)
+    # Собираем текстовое описание своей команды
+    my_team_str = f"""
+- Поз 1 (Керри): {data.my_team.pos1 or "НЕ ВЫБРАН"}
+- Поз 2 (Мид): {data.my_team.pos2 or "НЕ ВЫБРАН"}
+- Поз 3 (Тройка/Оффлейн): {data.my_team.pos3 or "НЕ ВЫБРАН"}
+- Поз 4 (Четверка/Частичная поддержка): {data.my_team.pos4 or "НЕ ВЫБРАН"}
+- Поз 5 (Пятерка/Полная поддержка): {data.my_team.pos5 or "НЕ ВЫБРАН"}
+""".strip()
+
+    # Вражеская команда
+    enemies = [e for e in data.enemy_team if e.strip()]
+    enemy_team_str = ", ".join(enemies) if enemies else "Герои не раскрыты"
 
     prompt = f"""
-Ты — помощник по драфту Dota 2. Пиши сразу к делу, без приветствий и длинных вводных фраз.
+Ты — профессиональный аналитик драфта Dota 2. Дай МАКСИМАЛЬНО КРАТКИЙ И ЧЕТКИЙ ответ во время пиков.
 
-Состав Radiant: {radiant_team}
-Состав Dire: {dire_team}
+МОЯ КОМАНДА ПО РОЛЯМ:
+{my_team_str}
 
-Предложи лучших героев для допика (с кратким пояснением) и начальный закуп.
+КОМАНДА ПРОТИВНИКА:
+{enemy_team_str}
+
+ИНСТРУКЦИЯ:
+1. Посмотри, какие роли в "Моей команде" отмечены как "НЕ ВЫБРАН". Порекомендуй лучших героев ИМЕННО на эти свободные роли против драфта врага.
+2. Если все роли закрыты, предложи общие контрпики и синергии.
+3. НИКАКИХ приветствий и вступлений! Начинай сразу с рекомендаций.
+
+ФОРМАТ ОТВЕТА:
+
+🎯 **Кого взять на свободные роли:**
+• [Роль/Герой 1] — [1 короткое предложение почему]
+• [Роль/Герой 2] — [1 короткое предложение почему]
+
+🎒 **Стартовый закуп:**
+• [Позиция/Линия]: [список начальных предметов]
 """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt,
+        model="gemini-3.6-flash", contents=prompt
     )
     return {"analysis": response.text}
   except Exception as e:
