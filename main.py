@@ -28,15 +28,15 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
     by_winrate = sorted(final_list, key=lambda x: x["winrate"], reverse=True)
     by_games = sorted(final_list, key=lambda x: x["games"], reverse=True)
 
-    top_winrate = by_winrate[0]
-    top_games = by_games[0]
+    top_wr = by_winrate[0]
+    top_gm = by_games[0]
 
-    # Исключаем главных героев из нижнего списка альтернатив
-    used_names = {top_winrate["name"], top_games["name"]}
-    other_options = [h for h in by_winrate if h["name"] not in used_names][:3]
+    # Исключаем из дополнительного списка героев, находящихся в главных карточках
+    excluded_names = {top_wr["name"], top_gm["name"]}
+    others = [h for h in by_winrate if h["name"] not in excluded_names][:3]
 
     return {
-        "top_winrate": top_winrate,
-        "top_games": top_games,
-        "other_options": other_options
+        "top_winrate": top_wr,
+        "top_games": top_gm,
+        "others": others,
     }
