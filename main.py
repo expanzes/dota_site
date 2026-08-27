@@ -1,9 +1,8 @@
 import os
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from google import genai
-from google.genai import types
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -12,11 +11,11 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 class MyTeam(BaseModel):
-  pos1: str = ""
-  pos2: str = ""
-  pos3: str = ""
-  pos4: str = ""
-  pos5: str = ""
+  pos1: str = ""  # Керри
+  pos2: str = ""  # Мид
+  pos3: str = ""  # Оффлейн
+  pos4: str = ""  # 4-ка
+  pos5: str = ""  # 5-ка
 
 
 class DraftRequest(BaseModel):
@@ -36,51 +35,45 @@ app.mount(
 
 @app.post("/api/analyze")
 async def analyze_draft(data: DraftRequest):
-  my_team_str = f"""
-- Поз 1: {data.my_team.pos1 or "НЕ ВЫБРАН"}
-- Поз 2: {data.my_team.pos2 or "НЕ ВЫБРАН"}
-- Поз 3: {data.my_team.pos3 or "НЕ ВЫБРАН"}
-- Поз 4: {data.my_team.pos4 or "НЕ ВЫБРАН"}
-- Поз 5: {data.my_team.pos5 or "НЕ ВЫБРАН"}
+  try:
+    my_team_str = f"""
+- Поз 1 (Керри): {data.my_team.pos1 or "НЕ ВЫБРАН"}
+- Поз 2 (Мид): {data.my_team.pos2 or "НЕ ВЫБРАН"}
+- Поз 3 (Тройка/Оффлейн): {data.my_team.pos3 or "НЕ ВЫБРАН"}
+- Поз 4 (Четверка/Частичная поддержка): {data.my_team.pos4 or "НЕ ВЫБРАН"}
+- Поз 5 (Пятерка/Полная поддержка): {data.my_team.pos5 or "НЕ ВЫБРАН"}
 """.strip()
 
-  enemies = [e for e in data.enemy_team if e.strip()]
-  enemy_team_str = ", ".join(enemies) if enemies else "Герои не раскрыты"
+    enemies = [e for e in data.enemy_team if e.strip()]
+    enemy_team_str = ", ".join(enemies) if enemies else "Герои не раскрыты"
 
-  prompt = f"""
-Ты — помощник по драфту Dota 2. Дай быстрый и четкий ответ.
+    prompt = f"""
+Ты — профессиональный аналитик драфта Dota 2. Дай МАКСИМАЛЬНО КРАТКИЙ И ЧЕТКИЙ ответ во время пиков.
 
-МОЯ КОМАНДА:
+МОЯ КОМАНДА ПО РОЛЯМ:
 {my_team_str}
 
-ВРАГИ:
+КОМАНДА ПРОТИВНИКА:
 {enemy_team_str}
 
-ПРАВИЛА:
-1. КАТЕГОРИЧЕСКИ НЕ ИСПОЛЬЗУЙ эмодзи и спецсимволы разметки: звездочки (*), решетки (#), двоеточия перед тире. Пиши простым текстом.
-2. Пиши кратко: по 1 предложению на героя.
-3. Порекомендуй героев только на свободные позиции ("НЕ ВЫБРАН").
+СТРОГИЕ ПРАВИЛА ОФОРМЛЕНИЯ:
+1. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать эмодзи (смайлики) и символы разметки: звездочки (**), решетки (#), подчеркивания (_). Пиши только чистым текстом!
+2. НИКАКИХ приветствий и вступлений. Начинай сразу с рекомендаций.
+3. Посмотри, какие роли в "Моей команде" отмечены как "НЕ ВЫБРАН". Порекомендуй лучших героев ИМЕННО на эти свободные роли против драфта врага.
 
-СТРУКТУРА ОТВЕТА:
+ФОРМАТ ОТВЕТА:
 
-Рекомендуемые пики:
-- [Позиция] [Герой] - [причина в 1 предложение]
+Кого взять на свободные роли:
+• [Роль/Герой 1] — [1 короткое предложение почему]
+• [Роль/Герой 2] — [1 короткое предложение почему]
 
 Стартовый закуп:
-- [Позиция]: [список предметов]
+• [Позиция/Линия]: [список начальных предметов]
 """
 
-  def generate():
-    response = client.models.generate_content_stream(
-        model="gemini-3.6-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            max_output_tokens=1000,  # Запас токенов, чтобы ответ не обрывался
-            temperature=0.2,
-        ),
+    response = client.models.generate_content(
+        model="gemini-3.6-flash", contents=prompt
     )
-    for chunk in response:
-      if chunk.text:
-        yield chunk.text
-
-  return StreamingResponse(generate(), media_type="text/plain")
+    return {"analysis": response.text}
+  except Exception as e:
+    return {"analysis": f"Ошибка сервиса: {str(e)}"}
