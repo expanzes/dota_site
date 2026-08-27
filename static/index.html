@@ -58,8 +58,12 @@
       padding: 8px 10px;
       border-radius: 4px;
     }
+    .action-row {
+      display: flex;
+      gap: 10px;
+    }
     button.btn-analyze {
-      width: 100%;
+      flex: 3;
       background: #ff4655;
       color: white;
       border: none;
@@ -73,8 +77,23 @@
     button.btn-analyze:hover {
       background: #e03e4c;
     }
+    button.btn-clear {
+      flex: 1;
+      background: #2a353d;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button.btn-clear:hover {
+      background: #3b4854;
+    }
     
-    /* Стили результатов */
+    /* Результаты */
     .results-container {
       margin-top: 25px;
     }
@@ -91,8 +110,6 @@
       color: #fff;
       margin-bottom: 15px;
     }
-    
-    /* Карточка Главного пика */
     .best-card {
       display: flex;
       align-items: center;
@@ -141,8 +158,6 @@
       font-weight: bold;
       font-size: 18px;
     }
-    
-    /* Сетка альтернатив */
     .alt-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -181,34 +196,60 @@
 <div class="container">
   <h1>Dota 2 AI Draft Helper</h1>
 
+  <datalist id="heroes-list"></datalist>
+
   <div class="flex-grid">
     <!-- Моя команда -->
     <div class="panel team-my">
       <h2>Моя команда</h2>
-      <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" value="Ancient Apparition / Аппарат"></div>
-      <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" value="Bane / Бейн"></div>
+      <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" list="heroes-list" placeholder="Выберите героя..."></div>
+      <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" list="heroes-list" placeholder="Выберите героя..."></div>
+      <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" list="heroes-list" placeholder="Выберите героя..."></div>
+      <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" list="heroes-list" value="Ancient Apparition / Аппарат"></div>
+      <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" list="heroes-list" value="Bane / Бейн"></div>
     </div>
 
     <!-- Враги -->
     <div class="panel team-enemy">
       <h2>Команда противника</h2>
-      <div class="input-group"><label>Враг 1</label><input class="enemy" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Враг 2</label><input class="enemy" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Враг 3</label><input class="enemy" value="Timbersaw / Тимбер"></div>
-      <div class="input-group"><label>Враг 4</label><input class="enemy" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Враг 5</label><input class="enemy" value="Jakiro / Джакиро"></div>
+      <div class="input-group"><label>Враг 1</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+      <div class="input-group"><label>Враг 2</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+      <div class="input-group"><label>Враг 3</label><input class="enemy" list="heroes-list" value="Timbersaw / Тимбер"></div>
+      <div class="input-group"><label>Враг 4</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+      <div class="input-group"><label>Враг 5</label><input class="enemy" list="heroes-list" value="Jakiro / Джакиро"></div>
     </div>
   </div>
 
-  <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
+  <div class="action-row">
+    <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
+    <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+  </div>
 
   <div id="results" class="results-container"></div>
 </div>
 
 <script>
+// Автозагрузка списка героев для выпадающего меню
+async function loadHeroesList() {
+  try {
+    const res = await fetch('/api/heroes');
+    const heroes = await res.json();
+    const list = document.getElementById('heroes-list');
+    heroes.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      list.appendChild(opt);
+    });
+  } catch(e) {
+    console.error("Не удалось загрузить список героев", e);
+  }
+}
+
+function clearInputs() {
+  document.querySelectorAll('input').forEach(i => i.value = '');
+  document.getElementById('results').innerHTML = '';
+}
+
 async function analyze() {
   const container = document.getElementById('results');
   container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка статистики OpenDota...</div>';
@@ -291,6 +332,8 @@ async function analyze() {
     container.innerHTML = `<div style="color:#f04747; background:#1a2228; padding:15px; border-radius:8px;">Ошибка сервера или сети. Попробуйте снова.</div>`;
   }
 }
+
+window.addEventListener('DOMContentLoaded', loadHeroesList);
 </script>
 
 </body>
