@@ -11,13 +11,42 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-# Кэш в памяти для героев и истории матчей
 HERO_CACHE = {}
 MATCHUPS_CACHE = {}
 
 SSL_CONTEXT = ssl.create_default_context()
 SSL_CONTEXT.check_hostname = False
 SSL_CONTEXT.verify_mode = ssl.CERT_NONE
+
+# Списки героев по ролям для фильтрации
+ROLES_DB = {
+    "pos1": {
+        "Phantom Lancer", "Anti-Mage", "Juggernaut", "Sven", "Spectre", "Faceless Void",
+        "Morphling", "Ursa", "Terrorblade", "Slark", "Luna", "Medusa", "Gyrocopter",
+        "Chaos Knight", "Lifestealer", "Drow Ranger", "Troll Warlord", "Monkey King", "Weaver", "Muerta"
+    },
+    "pos2": {
+        "Storm Spirit", "Ember Spirit", "Void Spirit", "Earth Spirit", "Puck", "Lina",
+        "Leshrak", "Invoker", "Tinker", "Queen of Pain", "Shadow Fiend", "Templar Assassin",
+        "Dragon Knight", "Sniper", "Zeus", "Death Prophet", "Pangolier", "Batrider",
+        "Meepo", "Kunkka", "Huskar", "Viper", "Necrophos", "Outworld Destroyer", "Tiny",
+        "Primal Beast", "Windranger", "Pudge", "Razor", "Void Spirit", "Nature's Prophet"
+    },
+    "pos3": {
+        "Axe", "Centaur Warrunner", "Mars", "Tidehunter", "Bristleback", "Slardar",
+        "Underlord", "Doom", "Timbersaw", "Magnus", "Night Stalker", "Dawnbreaker",
+        "Beastmaster", "Enigma", "Dark Seer", "Legion Commander", "Viper", "Primal Beast", "Abaddon"
+    },
+    "pos4": {
+        "Tusk", "Hoodwink", "Clockwerk", "Mirana", "Bounty Hunter", "Nyx Assassin",
+        "Earthshaker", "Rubick", "Tiny", "Pugna", "Techies", "Dark Willow", "Snapfire"
+    },
+    "pos5": {
+        "Jakiro", "Bane", "Ancient Apparition", "Lion", "Shadow Shaman", "Crystal Maiden",
+        "Witch Doctor", "Ogre Magi", "Disruptor", "Oracle", "Grimstroke", "Dazzle",
+        "Treant Protector", "Chen", "Enchantress", "Keeper of the Light", "Undying"
+    }
+}
 
 
 class MyTeam(BaseModel):
@@ -79,7 +108,6 @@ def find_hero_id_by_name(name: str, heroes_map: dict) -> int | None:
 
 
 def fetch_single_matchup(enemy_id: int):
-  """Параллельное получение матчей для одного вражеского героя."""
   global MATCHUPS_CACHE
   if enemy_id in MATCHUPS_CACHE:
     return enemy_id, MATCHUPS_CACHE[enemy_id], None
@@ -105,56 +133,35 @@ def fetch_single_matchup(enemy_id: int):
     return enemy_id, None, str(e)
 
 
-def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str:
-  if not enemy_hero_ids:
-    return "Вражеские герои не выбраны или не найдены в базе."
+def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_map: dict) -> list[str]:
+  """Фильтрует контрпики по роли и винрейту >= 50%."""
+  valid_heroes_for_role = ROLES_DB.get(role_key, set())
+  results = []
 
-  candidate_stats = {}
-  errors = []
-
-  # Запрашиваем матчи для всех врагов параллельно
-  with ThreadPoolExecutor(max_workers=5) as executor:
-    results = list(executor.map(fetch_single_matchup, enemy_hero_ids))
-
-  for enemy_id, matchups, error in results:
-    if error or not matchups:
-      hero_name = heroes_map.get(enemy_id, f"ID {enemy_id}")
-      errors.append(f"{hero_name}")
+  for cid, data in candidate_stats.items():
+    hero_name = heroes_map.get(cid, "")
+    if data["games"] < 30:
       continue
 
-    for m in matchups:
-      cid = m["hero_id"]
-      games = m["games_played"]
-      enemy_wins = m["wins"]
-      candidate_wins = games - enemy_wins
+    wr = (data["wins"] / data["games"]) * 100
+    
+    # ФИЛЬТР 1: Только винрейт 50% и выше
+    if wr < 50.0:
+      continue
 
-      if cid not in candidate_stats:
-        candidate_stats[cid] = {"wins": 0, "games": 0}
-      candidate_stats[cid]["wins"] += candidate_wins
-      candidate_stats[cid]["games"] += games
+    # ФИЛЬТР 2: Проверка соответствия роли (если база ролей не пустая)
+    if valid_heroes_for_role and hero_name not in valid_heroes_for_role:
+      continue
 
-  if not candidate_stats:
-    err_details = ", ".join(errors) if errors else "Ошибка сети"
-    return (
-        f"Не удалось загрузить данные из OpenDota по героям: {err_details}."
-    )
+    results.append((hero_name, wr, data["games"]))
 
-  results_list = []
-  for cid, data in candidate_stats.items():
-    if data["games"] >= 50:
-      wr = (data["wins"] / data["games"]) * 100
-      results_list.append((cid, wr, data["games"]))
-
-  results_list.sort(key=lambda x: x[1], reverse=True)
-
-  top_counters = []
-  for cid, wr, games in results_list[:10]:
-    hero_name = heroes_map.get(cid, f"Hero {cid}")
-    top_counters.append(
-        f"• {hero_name}: {wr:.1f}% винрейт (сыграно матчей в базе: {games})"
-    )
-
-  return "\n".join(top_counters)
+  results.sort(key=lambda x: x[1], reverse=True)
+  
+  formatted = []
+  for h_name, wr, games in results[:5]:
+    formatted.append(f"  • {h_name}: {wr:.1f}% винрейт (матчей: {games})")
+  
+  return formatted
 
 
 @app.get("/")
@@ -177,14 +184,51 @@ async def analyze_draft(data: DraftRequest):
     if hid:
       enemy_ids.append(hid)
 
-  opendota_stats = get_enemy_counters_stats(enemy_ids, heroes_map)
+  if not enemy_ids:
+    return {"analysis": "Выберите хотя бы одного вражеского героя для анализа."}
 
-  enemies = [e for e in data.enemy_team if e.strip()]
-  enemy_team_str = ", ".join(enemies) if enemies else "Герои не выбраны"
+  candidate_stats = {}
+  with ThreadPoolExecutor(max_workers=5) as executor:
+    results = list(executor.map(fetch_single_matchup, enemy_ids))
 
-  analysis_text = f"""Статистика OpenDota по лучшим контрпикам:
+  for enemy_id, matchups, error in results:
+    if error or not matchups:
+      continue
+    for m in matchups:
+      cid = m["hero_id"]
+      games = m["games_played"]
+      enemy_wins = m["wins"]
+      candidate_wins = games - enemy_wins
 
-Топ-10 героев по винрейту против состава ({enemy_team_str}):
-{opendota_stats}"""
+      if cid not in candidate_stats:
+        candidate_stats[cid] = {"wins": 0, "games": 0}
+      candidate_stats[cid]["wins"] += candidate_wins
+      candidate_stats[cid]["games"] += games
 
-  return {"analysis": analysis_text}
+  # Проверяем незанятые позиции
+  empty_positions = {
+      "pos1": ("Поз 1 (Керри)", data.my_team.pos1),
+      "pos2": ("Поз 2 (Мид)", data.my_team.pos2),
+      "pos3": ("Поз 3 (Тройка)", data.my_team.pos3),
+      "pos4": ("Поз 4 (Четверка)", data.my_team.pos4),
+      "pos5": ("Поз 5 (Пятерка)", data.my_team.pos5),
+  }
+
+  output_lines = ["Рекомендуемые пики на свободные роли (винрейт > 50%):\n"]
+  found_any = False
+
+  for role_key, (role_title, selected_hero) in empty_positions.items():
+    if not selected_hero or selected_hero.strip() == "":
+      found_any = True
+      recs = get_recommendations_for_role(role_key, candidate_stats, heroes_map)
+      output_lines.append(f"{role_title}:")
+      if recs:
+        output_lines.extend(recs)
+      else:
+        output_lines.append("  • Нет подпадающих героев с винрейтом > 50%")
+      output_lines.append("")
+
+  if not found_any:
+    output_lines.append("Все роли в вашей команде уже заполнены!")
+
+  return {"analysis": "\n".join(output_lines)}
