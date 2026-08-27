@@ -1,369 +1,813 @@
-import datetime
-import json
-import re
-import ssl
-import time
-import urllib.request
-from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dota 2 Helper</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-app = FastAPI()
+    body {
+      background-color: #0b0e11;
+      color: #e1e6eb;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-HERO_CACHE = {}
-MATCHUPS_CACHE = {}
-NEWS_CACHE = {"data": [], "timestamp": 0}
+    /* Приветственный экран */
+    #welcome-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #161c24 0%, #080a0d 100%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.7s;
+    }
 
-SSL_CONTEXT = ssl.create_default_context()
-SSL_CONTEXT.check_hostname = False
-SSL_CONTEXT.verify_mode = ssl.CERT_NONE
+    #welcome-splash.splash-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
 
-ROLES_DB = {
-    "pos1": {
-        "phantom lancer",
-        "anti-mage",
-        "juggernaut",
-        "sven",
-        "spectre",
-        "faceless void",
-        "morphling",
-        "ursa",
-        "terrorblade",
-        "slark",
-        "luna",
-        "medusa",
-        "gyrocopter",
-        "chaos knight",
-        "lifestealer",
-        "drow ranger",
-        "troll warlord",
-        "monkey king",
-        "weaver",
-        "muerta",
-        "phantom assassin",
-        "bloodseeker",
-        "clinkz",
-        "arc warden",
-    },
-    "pos2": {
-        "storm spirit",
-        "ember spirit",
-        "void spirit",
-        "earth spirit",
-        "puck",
-        "lina",
-        "leshrac",
-        "invoker",
-        "tinker",
-        "queen of pain",
-        "shadow fiend",
-        "templar assassin",
-        "dragon knight",
-        "sniper",
-        "zeus",
-        "death prophet",
-        "pangolier",
-        "batrider",
-        "meepo",
-        "kunkka",
-        "huskar",
-        "viper",
-        "necrophos",
-        "outworld devourer",
-        "tiny",
-        "primal beast",
-        "windranger",
-        "pudge",
-        "razor",
-        "nature's prophet",
-        "arc warden",
-        "alchemist",
-        "broodmother",
-        "visage",
-        "silencer",
-    },
-    "pos3": {
-        "axe",
-        "centaur warrunner",
-        "mars",
-        "tidehunter",
-        "bristleback",
-        "slardar",
-        "underlord",
-        "doom",
-        "timbersaw",
-        "magnus",
-        "night stalker",
-        "dawnbreaker",
-        "beastmaster",
-        "enigma",
-        "dark seer",
-        "legion commander",
-        "viper",
-        "primal beast",
-        "abaddon",
-        "brewmaster",
-        "sand king",
-        "lycan",
-    },
-    "pos4": {
-        "tusk",
-        "hoodwink",
-        "clockwerk",
-        "mirana",
-        "bounty hunter",
-        "nyx assassin",
-        "earthshaker",
-        "rubick",
-        "tiny",
-        "pugna",
-        "techies",
-        "dark willow",
-        "snapfire",
-        "skywrath mage",
-        "marci",
-    },
-    "pos5": {
-        "jakiro",
-        "bane",
-        "ancient apparition",
-        "lion",
-        "shadow shaman",
-        "crystal maiden",
-        "witch doctor",
-        "ogre magi",
-        "disruptor",
-        "oracle",
-        "grimstroke",
-        "dazzle",
-        "treant protector",
-        "chen",
-        "enchantress",
-        "keeper of the light",
-        "undying",
-        "lich",
-    },
+    .splash-content {
+      text-align: center;
+      max-width: 620px;
+      padding: 30px;
+      animation: splashAppear 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .splash-logo {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #ff4655 0%, #bd1b2b 100%);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 34px;
+      color: white;
+      margin: 0 auto 24px auto;
+      box-shadow: 0 10px 30px rgba(255, 70, 85, 0.4);
+    }
+
+    .splash-title {
+      font-size: 44px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .splash-title span {
+      color: #ff4655;
+    }
+
+    .splash-desc {
+      font-size: 16px;
+      color: #8e9297;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    .splash-prompt {
+      font-size: 13px;
+      color: #ff4655;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+      animation: pulse 2s infinite;
+    }
+
+    /* Главный интерфейс */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      opacity: 0;
+      transform: scale(0.98);
+      transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .app-container.app-visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Боковое меню */
+    .sidebar {
+      width: 260px;
+      background: #12171d;
+      border-right: 1px solid #1e2630;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #1e2630;
+      margin-bottom: 24px;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .brand:hover {
+      opacity: 0.85;
+      transform: translateX(2px);
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #ff4655, #bd1b2b);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 20px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(255, 70, 85, 0.3);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: #8e9297;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-item:hover:not(.disabled) {
+      background: #1a222a;
+      color: #ffffff;
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: rgba(255, 70, 85, 0.15);
+      color: #ff4655;
+      border-left: 3px solid #ff4655;
+      font-weight: 600;
+    }
+
+    .nav-item.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .badge-soon {
+      font-size: 10px;
+      background: #2a353d;
+      color: #a3a6aa;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Основной контент */
+    .main-content {
+      flex: 1;
+      padding: 36px 48px;
+      max-width: 1150px;
+    }
+
+    .header-section {
+      margin-bottom: 32px;
+    }
+
+    .app-title {
+      font-size: 30px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .app-title span {
+      color: #ff4655;
+    }
+
+    .app-subtitle {
+      font-size: 15px;
+      color: #8e9297;
+      line-height: 1.5;
+      max-width: 700px;
+    }
+
+    /* Новости */
+    .news-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .news-card {
+      background: #151a21;
+      border: 1px solid #222b35;
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.25s ease;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .news-card:hover {
+      border-color: #ff4655;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .news-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #ff4655;
+      background: rgba(255, 70, 85, 0.1);
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .news-card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .news-card-text {
+      font-size: 14px;
+      color: #8e9297;
+      line-height: 1.6;
+    }
+
+    .news-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      font-size: 12px;
+      color: #5c626a;
+    }
+
+    .news-read-more {
+      color: #ff4655;
+      font-weight: 600;
+    }
+
+    /* Драфт формы */
+    .flex-grid {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .panel {
+      flex: 1;
+      background: #151a21;
+      border: 1px solid #222b35;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .panel h2 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 0;
+      border-bottom: 2px solid #222b35;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+
+    .team-my h2 { color: #43b581; border-color: rgba(67, 181, 129, 0.3); }
+    .team-enemy h2 { color: #ff4655; border-color: rgba(255, 70, 85, 0.3); }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      color: #8e9297;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      background: #0d1014;
+      border: 1px solid #222b35;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #ff4655;
+      box-shadow: 0 0 0 3px rgba(255, 70, 85, 0.15);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    button.btn-analyze {
+      flex: 3;
+      background: linear-gradient(135deg, #ff4655 0%, #d62d3c 100%);
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 15px rgba(255, 70, 85, 0.25);
+    }
+
+    button.btn-analyze:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 70, 85, 0.4);
+    }
+
+    button.btn-clear {
+      flex: 1;
+      background: #1a222a;
+      color: #a3a6aa;
+      border: 1px solid #222b35;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    button.btn-clear:hover {
+      background: #252f3b;
+      color: #ffffff;
+    }
+
+    /* Результаты */
+    .results-container {
+      margin-top: 32px;
+    }
+
+    .role-section {
+      background: #151a21;
+      border: 1px solid #222b35;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      animation: fadeInUp 0.4s ease-out forwards;
+    }
+
+    .role-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .best-card {
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, #1c242e 0%, #12171d 100%);
+      border: 2px solid #ffd700;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .badge-top {
+      position: absolute;
+      top: -12px;
+      right: 20px;
+      background: #ffd700;
+      color: #000;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 12px;
+    }
+
+    .best-card img {
+      width: 120px;
+      height: 67px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    .best-info {
+      margin-left: 20px;
+      flex-grow: 1;
+    }
+
+    .best-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .best-stats {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #a3a6aa;
+    }
+
+    .winrate-val {
+      color: #43b581;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .alt-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .alt-card {
+      display: flex;
+      align-items: center;
+      background: #0d1014;
+      border: 1px solid #222b35;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .alt-card img {
+      width: 60px;
+      height: 34px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+
+    .alt-info {
+      margin-left: 12px;
+    }
+
+    .alt-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e1e6eb;
+    }
+
+    .alt-wr {
+      font-size: 12px;
+      color: #43b581;
+      font-weight: 600;
+    }
+
+    /* Keyframes */
+    @keyframes splashAppear {
+      from { opacity: 0; transform: scale(0.92) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 850px) {
+      .app-container { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #1e2630; }
+      .flex-grid { flex-direction: column; }
+      .main-content { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Экран приветствия -->
+  <div id="welcome-splash" onclick="enterApp()">
+    <div class="splash-content">
+      <div class="splash-logo">D2</div>
+      <h1 class="splash-title">Dota 2 <span>Helper</span></h1>
+      <p class="splash-desc">
+        Многофункциональный аналитический веб-сервис для игроков Dota 2. Подбор идеальных контрпиков, актуальные новости Valve и аналитика драфтов.
+      </p>
+      <div class="splash-prompt">Нажмите в любом месте, чтобы войти</div>
+    </div>
+  </div>
+
+  <!-- Главное приложение -->
+  <div id="app-container" class="app-container">
+    <aside class="sidebar">
+      <div class="brand" onclick="showSplash()" title="Нажмите, чтобы вернуться на главный экран">
+        <div class="brand-logo">D2</div>
+        <div class="brand-title">Dota 2 Helper</div>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item active" id="nav-draft" onclick="switchTab('draft')">
+          <span>Draft Helper</span>
+        </li>
+        <li class="nav-item" id="nav-news" onclick="switchTab('news')">
+          <span>Новости Dota 2</span>
+        </li>
+        <li class="nav-item disabled">
+          <span>Fantasy Helper</span>
+          <span class="badge-soon">Скоро</span>
+        </li>
+        <li class="nav-item disabled">
+          <span>Match Analyzer</span>
+          <span class="badge-soon">Скоро</span>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="main-content">
+      
+      <!-- РАЗДЕЛ: DRAFT HELPER -->
+      <div id="view-draft">
+        <div class="header-section">
+          <h1 class="app-title">Draft <span>Helper</span></h1>
+          <p class="app-subtitle">
+            Введите известных героев вашей команды и команды соперника для расчета наилучших контрпиков на основе статистики OpenDota.
+          </p>
+        </div>
+
+        <datalist id="heroes-list"></datalist>
+
+        <div class="flex-grid">
+          <div class="panel team-my">
+            <h2>Моя команда</h2>
+            <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" list="heroes-list" value="Ancient Apparition / Аппарат"></div>
+            <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" list="heroes-list" value="Bane / Бейн"></div>
+          </div>
+
+          <div class="panel team-enemy">
+            <h2>Команда противника</h2>
+            <div class="input-group"><label>Враг 1</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Враг 2</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Враг 3</label><input class="enemy" list="heroes-list" value="Timbersaw / Тимбер"></div>
+            <div class="input-group"><label>Враг 4</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Враг 5</label><input class="enemy" list="heroes-list" value="Jakiro / Джакиро"></div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
+          <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+        </div>
+
+        <div id="results" class="results-container"></div>
+      </div>
+
+      <!-- РАЗДЕЛ: НОВОСТИ DOTA 2 -->
+      <div id="view-news" style="display: none;">
+        <div class="header-section">
+          <h1 class="app-title">Официальные новости <span>Dota 2</span></h1>
+          <p class="app-subtitle">
+            Свежие анонсы, патчи и патчноуты напрямую из официальных источников Steam / Valve.
+          </p>
+        </div>
+
+        <div id="news-container" class="news-grid">
+          <div style="color:#8e9297; text-align:center; padding:30px;">Загрузка актуальных новостей...</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+<script>
+function enterApp() {
+  const splash = document.getElementById('welcome-splash');
+  const app = document.getElementById('app-container');
+  
+  splash.classList.add('splash-hidden');
+  app.classList.add('app-visible');
 }
 
+function showSplash() {
+  const splash = document.getElementById('welcome-splash');
+  const app = document.getElementById('app-container');
+  
+  app.classList.remove('app-visible');
+  splash.classList.remove('splash-hidden');
+}
 
-class MyTeam(BaseModel):
-  pos1: str = ""
-  pos2: str = ""
-  pos3: str = ""
-  pos4: str = ""
-  pos5: str = ""
+function switchTab(tab) {
+  const navDraft = document.getElementById('nav-draft');
+  const navNews = document.getElementById('nav-news');
+  const viewDraft = document.getElementById('view-draft');
+  const viewNews = document.getElementById('view-news');
 
+  if (tab === 'draft') {
+    navDraft.classList.add('active');
+    navNews.classList.remove('active');
+    viewDraft.style.display = 'block';
+    viewNews.style.display = 'none';
+  } else if (tab === 'news') {
+    navNews.classList.add('active');
+    navDraft.classList.remove('active');
+    viewDraft.style.display = 'none';
+    viewNews.style.display = 'block';
+    loadDotaNews();
+  }
+}
 
-class DraftRequest(BaseModel):
-  my_team: MyTeam
-  enemy_team: list[str]
+async function loadDotaNews() {
+  const container = document.getElementById('news-container');
+  try {
+    const res = await fetch('/api/news');
+    const news = await res.json();
+    
+    if (!news || news.length === 0) {
+      container.innerHTML = '<div style="color:#8e9297;">Не удалось загрузить новости.</div>';
+      return;
+    }
 
+    container.innerHTML = '';
+    news.forEach(item => {
+      const card = document.createElement('a');
+      card.className = 'news-card';
+      card.href = item.url;
+      card.target = '_blank';
+      
+      card.innerHTML = `
+        <span class="news-tag">Steam / Valve</span>
+        <div class="news-card-title">${item.title}</div>
+        <div class="news-card-text">${item.contents}</div>
+        <div class="news-card-footer">
+          <span>${item.date} • ${item.author}</span>
+          <span class="news-read-more">Читать полностью →</span>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  } catch(e) {
+    container.innerHTML = '<div style="color:#f04747;">Ошибка при загрузке новостей из Steam API.</div>';
+  }
+}
 
-def get_opendota_heroes():
-  global HERO_CACHE
-  if HERO_CACHE:
-    return HERO_CACHE
-  try:
-    url = "https://api.opendota.com/api/heroes"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=10, context=SSL_CONTEXT) as resp:
-      heroes = json.loads(resp.read().decode("utf-8"))
-      HERO_CACHE = {
-          h["id"]: {
-              "name": h["localized_name"],
-              "slug": h["name"].replace("npc_dota_hero_", ""),
-          }
-          for h in heroes
+async function loadHeroesList() {
+  try {
+    const res = await fetch('/api/heroes');
+    const heroes = await res.json();
+    const list = document.getElementById('heroes-list');
+    heroes.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      list.appendChild(opt);
+    });
+  } catch(e) {
+    console.error("Не удалось загрузить список героев", e);
+  }
+}
+
+function clearInputs() {
+  document.querySelectorAll('input').forEach(i => i.value = '');
+  document.getElementById('results').innerHTML = '';
+}
+
+async function analyze() {
+  const container = document.getElementById('results');
+  container.innerHTML = '<div style="text-align:center; padding:30px; color:#8e9297;">Загрузка статистики OpenDota...</div>';
+
+  const enemies = Array.from(document.querySelectorAll('.enemy')).map(i => i.value).filter(v => v.trim() !== '');
+  
+  const payload = {
+    my_team: {
+      pos1: document.getElementById('pos1').value,
+      pos2: document.getElementById('pos2').value,
+      pos3: document.getElementById('pos3').value,
+      pos4: document.getElementById('pos4').value,
+      pos5: document.getElementById('pos5').value
+    },
+    enemy_team: enemies
+  };
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    const response = await res.json();
+    container.innerHTML = '';
+
+    if (response.status === 'error') {
+      container.innerHTML = `<div style="color:#f04747; background:#151a21; border:1px solid #222b35; padding:18px; border-radius:10px;">${response.message}</div>`;
+      return;
+    }
+
+    response.results.forEach(item => {
+      const section = document.createElement('div');
+      section.className = 'role-section';
+
+      let html = `<div class="role-title">${item.role}</div>`;
+
+      if (!item.data) {
+        html += `<div style="color:#8e9297;">Не удалось подобрать подходящего героя.</div>`;
+      } else {
+        const best = item.data.best;
+        html += `
+          <div class="best-card">
+            <span class="badge-top">★ ЛУЧШИЙ ПИК</span>
+            <img src="${best.img}" alt="${best.name}">
+            <div class="best-info">
+              <div class="best-name">${best.name}</div>
+              <div class="best-stats">
+                Винрейт: <span class="winrate-val">${best.winrate}%</span> 
+                <span style="font-size:12px; margin-left: 8px;">(матчей: ${best.games})</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        if (item.data.alternatives && item.data.alternatives.length > 0) {
+          html += `<div style="font-size:12px; color:#8e9297; margin-bottom:10px;">Другие сильные варианты:</div>`;
+          html += `<div class="alt-grid">`;
+          item.data.alternatives.forEach(alt => {
+            html += `
+              <div class="alt-card">
+                <img src="${alt.img}" alt="${alt.name}">
+                <div class="alt-info">
+                  <div class="alt-name">${alt.name}</div>
+                  <div class="alt-wr">${alt.winrate}% <span style="color:#8e9297; font-size:10px;">(${alt.games})</span></div>
+                </div>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        }
       }
-  except Exception as e:
-    print(f"Error fetching heroes: {e}")
-  return HERO_CACHE
 
+      section.innerHTML = html;
+      container.appendChild(section);
+    });
 
-def clean_hero_name(raw_name: str) -> str:
-  if not raw_name:
-    return ""
-  if "/" in raw_name:
-    return raw_name.split("/")[0].strip()
-  return raw_name.strip()
-
-
-def find_hero_id_by_name(name: str, heroes_map: dict) -> int | None:
-  cleaned = clean_hero_name(name).lower()
-  if not cleaned:
-    return None
-  for h_id, data in heroes_map.items():
-    if data["name"].lower() == cleaned:
-      return h_id
-  for h_id, data in heroes_map.items():
-    if cleaned in data["name"].lower() or data["name"].lower() in cleaned:
-      return h_id
-  return None
-
-
-def fetch_matchup_for_hero(enemy_id: int):
-  global MATCHUPS_CACHE
-  if enemy_id in MATCHUPS_CACHE:
-    return MATCHUPS_CACHE[enemy_id]
-
-  url = f"https://api.opendota.com/api/heroes/{enemy_id}/matchups"
-  headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
-
-  try:
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=10, context=SSL_CONTEXT) as resp:
-      data = json.loads(resp.read().decode("utf-8"))
-      if isinstance(data, list) and len(data) > 0:
-        MATCHUPS_CACHE[enemy_id] = data
-        return data
-  except Exception as e:
-    print(f"Error fetching matchup for {enemy_id}: {e}")
-  return None
-
-
-def fetch_dota_news():
-  global NEWS_CACHE
-  # Кэшируем на 10 минут
-  if time.time() - NEWS_CACHE["timestamp"] < 600 and NEWS_CACHE["data"]:
-    return NEWS_CACHE["data"]
-
-  url = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=570&count=6&maxlength=300&format=json"
-  try:
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=10, context=SSL_CONTEXT) as resp:
-      raw = json.loads(resp.read().decode("utf-8"))
-      items = raw.get("appnews", {}).get("newsitems", [])
-      parsed = []
-      for item in items:
-        dt = datetime.datetime.fromtimestamp(
-            item.get("date", 0), tz=datetime.timezone.utc
-        )
-        content = item.get("contents", "")
-
-        # Очистка HTML и BBCode тегов из текста Steam
-        content = re.sub(r"\[.*?\]", "", content)
-        content = re.sub(r"<[^<]+?>", "", content)
-        content = content.replace("\n", " ").strip()
-        if len(content) > 220:
-          content = content[:220].strip() + "..."
-
-        parsed.append({
-            "id": item.get("gid"),
-            "title": item.get("title"),
-            "contents": content,
-            "date": dt.strftime("%d.%m.%Y"),
-            "author": item.get("author", "Valve"),
-            "url": item.get("url"),
-        })
-
-      NEWS_CACHE["data"] = parsed
-      NEWS_CACHE["timestamp"] = time.time()
-      return parsed
-  except Exception as e:
-    print(f"Error fetching news from Steam: {e}")
-    return NEWS_CACHE.get("data", [])
-
-
-def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
-  valid_heroes = ROLES_DB.get(role_key, set())
-  role_candidates = []
-  all_candidates = []
-
-  for cid, data in candidate_stats.items():
-    hero_info = heroes_map.get(cid)
-    if not hero_info or data["games"] < 30:
-      continue
-
-    wr = (data["wins"] / data["games"]) * 100
-    img_url = f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{hero_info['slug']}.png"
-    item = {
-        "name": hero_info["name"],
-        "winrate": round(wr, 1),
-        "games": data["games"],
-        "img": img_url,
-    }
-
-    all_candidates.append(item)
-    if hero_info["name"].lower() in valid_heroes:
-      role_candidates.append(item)
-
-  role_candidates.sort(key=lambda x: x["winrate"], reverse=True)
-  all_candidates.sort(key=lambda x: x["winrate"], reverse=True)
-
-  final_list = role_candidates if role_candidates else all_candidates
-  if not final_list:
-    return None
-
-  return {
-      "best": final_list[0],
-      "alternatives": final_list[1:4] if len(final_list) > 1 else [],
+  } catch (err) {
+    container.innerHTML = `<div style="color:#f04747; background:#151a21; border:1px solid #222b35; padding:18px; border-radius:10px;">Ошибка сервера или сети. Попробуйте снова.</div>`;
   }
+}
 
+window.addEventListener('DOMContentLoaded', loadHeroesList);
+</script>
 
-@app.get("/")
-async def root():
-  return RedirectResponse(url="/site")
-
-
-@app.get("/api/heroes")
-async def get_heroes_list():
-  heroes_map = get_opendota_heroes()
-  return sorted([data["name"] for data in heroes_map.values()])
-
-
-@app.get("/api/news")
-async def get_news():
-  return fetch_dota_news()
-
-
-app.mount("/site", StaticFiles(directory="static", html=True), name="static")
-
-
-@app.post("/api/analyze")
-async def analyze_draft(data: DraftRequest):
-  heroes_map = get_opendota_heroes()
-
-  enemy_ids = []
-  for e in data.enemy_team:
-    hid = find_hero_id_by_name(e, heroes_map)
-    if hid:
-      enemy_ids.append(hid)
-
-  if not enemy_ids:
-    return {
-        "status": "error",
-        "message": "Выберите хотя бы одного вражеского героя.",
-    }
-
-  candidate_stats = {}
-  for enemy_id in enemy_ids:
-    matchups = fetch_matchup_for_hero(enemy_id)
-    if matchups:
-      for m in matchups:
-        cid = m["hero_id"]
-        games = m["games_played"]
-        candidate_wins = games - m["wins"]
-
-        if cid not in candidate_stats:
-          candidate_stats[cid] = {"wins": 0, "games": 0}
-        candidate_stats[cid]["wins"] += candidate_wins
-        candidate_stats[cid]["games"] += games
-    time.sleep(0.05)
-
-  empty_positions = {
-      "pos1": "Поз 1 (Керри)",
-      "pos2": "Поз 2 (Мид)",
-      "pos3": "Поз 3 (Тройка)",
-      "pos4": "Поз 4 (Четверка)",
-      "pos5": "Поз 5 (Пятерка)",
-  }
-
-  results = []
-  for role_key, role_title in empty_positions.items():
-    user_pick = getattr(data.my_team, role_key)
-    if not user_pick or user_pick.strip() == "":
-      role_data = get_role_data(role_key, candidate_stats, heroes_map)
-      results.append({"role": role_title, "data": role_data})
-
-  return {"status": "ok", "results": results}
+</body>
+</html>
