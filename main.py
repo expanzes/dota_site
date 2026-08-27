@@ -3,11 +3,11 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from google import genai
+from google.genai import types  # 1. Импортируем типы для конфига
 from pydantic import BaseModel
 
 app = FastAPI()
 
-# Инициализация клиента Gemini
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
@@ -57,6 +57,10 @@ async def analyze_draft(data: DraftData):
     response = client.models.generate_content(
         model="gemini-3.6-flash",
         contents=prompt,
+        config=types.GenerateContentConfig(  # 2. Конфиг передается сюда
+            max_output_tokens=250,  # Лимит длины для ускорения
+            temperature=0.2,  # Низкая температура для быстрого ответа
+        ),
     )
     return {"analysis": response.text}
   except Exception as e:
