@@ -148,7 +148,6 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
     if hero_info["name"].lower() in valid_heroes:
       role_candidates.append(item)
 
-  # Фолбэк на выборку от 10 игр
   if not role_candidates and not all_candidates:
     for cid, data in candidate_stats.items():
       hero_info = heroes_map.get(cid)
@@ -181,6 +180,12 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
 @app.get("/")
 async def root():
   return RedirectResponse(url="/site")
+
+
+@app.get("/api/heroes")
+async def get_heroes_list():
+  heroes_map = get_opendota_heroes()
+  return sorted([data["name"] for data in heroes_map.values()])
 
 
 app.mount("/site", StaticFiles(directory="static", html=True), name="static")
