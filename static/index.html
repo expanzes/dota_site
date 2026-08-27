@@ -419,6 +419,13 @@
       margin-bottom: 16px;
     }
 
+    /* Сетка на 2 колонки */
+    .top-picks-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
     .best-card {
       display: flex;
       align-items: center;
@@ -427,88 +434,65 @@
       box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
       border-radius: 10px;
       padding: 16px;
-      margin-bottom: 16px;
       position: relative;
+    }
+
+    .best-card.card-games {
+      border-color: #3b82f6;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
     }
 
     .badge-top {
       position: absolute;
       top: -12px;
-      right: 20px;
+      right: 16px;
       background: #ffd700;
       color: #000;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
-      padding: 3px 10px;
+      padding: 3px 8px;
       border-radius: 12px;
     }
 
+    .badge-top.badge-games {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+
     .best-card img {
-      width: 120px;
-      height: 67px;
-      border-radius: 8px;
+      width: 90px;
+      height: 50px;
+      border-radius: 6px;
       object-fit: cover;
     }
 
     .best-info {
-      margin-left: 20px;
+      margin-left: 14px;
       flex-grow: 1;
     }
 
     .best-name {
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
       color: #fff;
     }
 
     .best-stats {
-      margin-top: 6px;
-      font-size: 14px;
+      margin-top: 4px;
+      font-size: 13px;
       color: #a3a6aa;
     }
 
     .winrate-val {
       color: #43b581;
       font-weight: 700;
-      font-size: 18px;
+      font-size: 16px;
     }
 
-    .alt-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-    }
-
-    .alt-card {
-      display: flex;
-      align-items: center;
-      background: #0d1014;
-      border: 1px solid #222b35;
-      border-radius: 8px;
-      padding: 10px 12px;
-    }
-
-    .alt-card img {
-      width: 60px;
-      height: 34px;
-      border-radius: 4px;
-      object-fit: cover;
-    }
-
-    .alt-info {
-      margin-left: 12px;
-    }
-
-    .alt-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: #e1e6eb;
-    }
-
-    .alt-wr {
-      font-size: 12px;
-      color: #43b581;
-      font-weight: 600;
+    .games-val {
+      color: #3b82f6;
+      font-weight: 700;
+      font-size: 16px;
     }
 
     /* Keyframes */
@@ -531,6 +515,7 @@
       .app-container { flex-direction: column; }
       .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #1e2630; }
       .flex-grid { flex-direction: column; }
+      .top-picks-grid { grid-template-columns: 1fr; }
       .main-content { padding: 20px; }
     }
   </style>
@@ -764,37 +749,38 @@ async function analyze() {
       if (!item.data) {
         html += `<div style="color:#8e9297;">Не удалось подобрать подходящего героя.</div>`;
       } else {
-        const best = item.data.best;
+        const topWr = item.data.top_winrate;
+        const topGames = item.data.top_games;
+
         html += `
-          <div class="best-card">
-            <span class="badge-top">★ ЛУЧШИЙ ПИК</span>
-            <img src="${best.img}" alt="${best.name}">
-            <div class="best-info">
-              <div class="best-name">${best.name}</div>
-              <div class="best-stats">
-                Винрейт: <span class="winrate-val">${best.winrate}%</span> 
-                <span style="font-size:12px; margin-left: 8px;">(матчей: ${best.games})</span>
+          <div class="top-picks-grid">
+            <!-- Слева: Максимальный винрейт -->
+            <div class="best-card">
+              <span class="badge-top">★ МАКС. ВИНРЕЙТ</span>
+              <img src="${topWr.img}" alt="${topWr.name}">
+              <div class="best-info">
+                <div class="best-name">${topWr.name}</div>
+                <div class="best-stats">
+                  Винрейт: <span class="winrate-val">${topWr.winrate}%</span> 
+                  <span style="font-size:11px; margin-left: 4px; color:#8e9297;">(${topWr.games} матчей)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Справа: Максимальное кол-во игр -->
+            <div class="best-card card-games">
+              <span class="badge-top badge-games">📊 МАКС. МАТЧЕЙ</span>
+              <img src="${topGames.img}" alt="${topGames.name}">
+              <div class="best-info">
+                <div class="best-name">${topGames.name}</div>
+                <div class="best-stats">
+                  Матчей: <span class="games-val">${topGames.games}</span> 
+                  <span style="font-size:11px; margin-left: 4px; color:#8e9297;">(${topGames.winrate}% WR)</span>
+                </div>
               </div>
             </div>
           </div>
         `;
-
-        if (item.data.alternatives && item.data.alternatives.length > 0) {
-          html += `<div style="font-size:12px; color:#8e9297; margin-bottom:10px;">Другие сильные варианты:</div>`;
-          html += `<div class="alt-grid">`;
-          item.data.alternatives.forEach(alt => {
-            html += `
-              <div class="alt-card">
-                <img src="${alt.img}" alt="${alt.name}">
-                <div class="alt-info">
-                  <div class="alt-name">${alt.name}</div>
-                  <div class="alt-wr">${alt.winrate}% <span style="color:#8e9297; font-size:10px;">(${alt.games})</span></div>
-                </div>
-              </div>
-            `;
-          });
-          html += `</div>`;
-        }
       }
 
       section.innerHTML = html;
