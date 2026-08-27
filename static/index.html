@@ -224,7 +224,7 @@
     async function analyzeDraft() {
         const resultBox = document.getElementById('result-box');
         resultBox.style.display = 'block';
-        resultBox.innerText = 'Анализирую драфт...';
+        resultBox.innerText = 'Анализирую драфт... Пожалуйста, подождите.';
 
         const payload = {
             my_team: {
@@ -249,16 +249,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            resultBox.innerText = ""; 
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                resultBox.innerText += decoder.decode(value, { stream: true });
-            }
+            const data = await response.json();
+            resultBox.innerText = data.analysis || data.error;
         } catch (e) {
             resultBox.innerText = 'Ошибка при соединении с сервером.';
         }
