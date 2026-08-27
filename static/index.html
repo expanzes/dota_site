@@ -95,7 +95,7 @@
       animation: pulse 2s infinite;
     }
 
-    /* Главный интерфейс приложения */
+    /* Главный интерфейс */
     .app-container {
       display: flex;
       min-height: 100vh;
@@ -127,6 +127,13 @@
       padding-bottom: 24px;
       border-bottom: 1px solid #1e2630;
       margin-bottom: 24px;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .brand:hover {
+      opacity: 0.85;
+      transform: translateX(2px);
     }
 
     .brand-logo {
@@ -228,7 +235,58 @@
       max-width: 700px;
     }
 
-    /* Формы и кнопки */
+    /* Сетка новостей */
+    .news-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .news-card {
+      background: #151a21;
+      border: 1px solid #222b35;
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.25s ease;
+    }
+
+    .news-card:hover {
+      border-color: #3b4854;
+      transform: translateY(-2px);
+    }
+
+    .news-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #ff4655;
+      background: rgba(255, 70, 85, 0.1);
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .news-card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .news-card-text {
+      font-size: 14px;
+      color: #8e9297;
+      line-height: 1.6;
+    }
+
+    .news-card-date {
+      font-size: 12px;
+      color: #5c626a;
+      margin-top: 12px;
+    }
+
+    /* Формы драфта */
     .flex-grid {
       display: flex;
       gap: 24px;
@@ -497,13 +555,13 @@
 </head>
 <body>
 
-  <!-- Экран приветствия -->
+  <!-- Приветственный экран -->
   <div id="welcome-splash" onclick="enterApp()">
     <div class="splash-content">
       <div class="splash-logo">D2</div>
       <h1 class="splash-title">Dota 2 <span>Helper</span></h1>
       <p class="splash-desc">
-        Многофункциональный аналитический веб-сервис для игроков Dota 2. Подбор идеальных контрпиков, аналитика матчей и рекомендации для фэнтези.
+        Многофункциональный аналитический веб-сервис для игроков Dota 2. Подбор идеальных контрпиков, актуальные новости и аналитика драфтов.
       </p>
       <div class="splash-prompt">Нажмите в любом месте, чтобы войти</div>
     </div>
@@ -512,13 +570,17 @@
   <!-- Главное приложение -->
   <div id="app-container" class="app-container">
     <aside class="sidebar">
-      <div class="brand">
+      <!-- Возврат на стартовый экран по клику на бренд -->
+      <div class="brand" onclick="showSplash()" title="Нажмите, чтобы вернуться на главный экран">
         <div class="brand-logo">D2</div>
         <div class="brand-title">Dota 2 Helper</div>
       </div>
       <ul class="nav-list">
-        <li class="nav-item active">
+        <li class="nav-item active" id="nav-draft" onclick="switchTab('draft')">
           <span>Draft Helper</span>
+        </li>
+        <li class="nav-item" id="nav-news" onclick="switchTab('news')">
+          <span>Новости Dota 2</span>
         </li>
         <li class="nav-item disabled">
           <span>Fantasy Helper</span>
@@ -532,43 +594,87 @@
     </aside>
 
     <main class="main-content">
-      <div class="header-section">
-        <h1 class="app-title">Draft <span>Helper</span></h1>
-        <p class="app-subtitle">
-          Введите известных героев вашей команды и команды соперника для расчета наилучших контрпиков на основе статистики OpenDota.
-        </p>
-      </div>
-
-      <datalist id="heroes-list"></datalist>
-
-      <div class="flex-grid">
-        <!-- Моя команда -->
-        <div class="panel team-my">
-          <h2>Моя команда</h2>
-          <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" list="heroes-list" placeholder="Выберите героя..."></div>
-          <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" list="heroes-list" placeholder="Выберите героя..."></div>
-          <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" list="heroes-list" placeholder="Выберите героя..."></div>
-          <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" list="heroes-list" value="Ancient Apparition / Аппарат"></div>
-          <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" list="heroes-list" value="Bane / Бейн"></div>
+      
+      <!-- РАЗДЕЛ: DRAFT HELPER -->
+      <div id="view-draft">
+        <div class="header-section">
+          <h1 class="app-title">Draft <span>Helper</span></h1>
+          <p class="app-subtitle">
+            Введите известных героев вашей команды и команды соперника для расчета наилучших контрпиков на основе статистики OpenDota.
+          </p>
         </div>
 
-        <!-- Враги -->
-        <div class="panel team-enemy">
-          <h2>Команда противника</h2>
-          <div class="input-group"><label>Враг 1</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-          <div class="input-group"><label>Враг 2</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-          <div class="input-group"><label>Враг 3</label><input class="enemy" list="heroes-list" value="Timbersaw / Тимбер"></div>
-          <div class="input-group"><label>Враг 4</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-          <div class="input-group"><label>Враг 5</label><input class="enemy" list="heroes-list" value="Jakiro / Джакиро"></div>
+        <datalist id="heroes-list"></datalist>
+
+        <div class="flex-grid">
+          <!-- Моя команда -->
+          <div class="panel team-my">
+            <h2>Моя команда</h2>
+            <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" list="heroes-list" value="Ancient Apparition / Аппарат"></div>
+            <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" list="heroes-list" value="Bane / Бейн"></div>
+          </div>
+
+          <!-- Враги -->
+          <div class="panel team-enemy">
+            <h2>Команда противника</h2>
+            <div class="input-group"><label>Враг 1</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Враг 2</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Враг 3</label><input class="enemy" list="heroes-list" value="Timbersaw / Тимбер"></div>
+            <div class="input-group"><label>Враг 4</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+            <div class="input-group"><label>Враг 5</label><input class="enemy" list="heroes-list" value="Jakiro / Джакиро"></div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
+          <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+        </div>
+
+        <div id="results" class="results-container"></div>
+      </div>
+
+      <!-- РАЗДЕЛ: НОВОСТИ DOTA 2 -->
+      <div id="view-news" style="display: none;">
+        <div class="header-section">
+          <h1 class="app-title">Новости <span>Dota 2</span></h1>
+          <p class="app-subtitle">
+            Главные обновления, балансные патчи и киберспортивные события из мира Dota 2.
+          </p>
+        </div>
+
+        <div class="news-grid">
+          <div class="news-card">
+            <span class="news-tag">Обновление</span>
+            <div class="news-card-title">Патч баланса 7.37d</div>
+            <div class="news-card-text">
+              Valve выпустила свежее обновление для корректировки текущей мета-статистики. Были ослаблены некоторые популярные предметные билды и перебалансированы способности ключевых персонажей.
+            </div>
+            <div class="news-card-date">27 августа 2026</div>
+          </div>
+
+          <div class="news-card">
+            <span class="news-tag">Турниры</span>
+            <div class="news-card-title">Подготовка к The International 2026</div>
+            <div class="news-card-text">
+              Завершились квалификационные этапы. Ознакомьтесь с финальным списком команд и распределением по группам. Скоро в сервисе станет доступен наш модуль Fantasy Helper.
+            </div>
+            <div class="news-card-date">24 августа 2026</div>
+          </div>
+
+          <div class="news-card">
+            <span class="news-tag">Сообщество</span>
+            <div class="news-card-title">Обновление алгоритмов Dota 2 Helper</div>
+            <div class="news-card-text">
+              Мы обновили наш модуль анализа драфтов! Теперь алгоритм еще точнее распределяет роли героям на основе свежей патч-статистики и винрейта OpenDota.
+            </div>
+            <div class="news-card-date">20 августа 2026</div>
+          </div>
         </div>
       </div>
 
-      <div class="action-row">
-        <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
-        <button class="btn-clear" onclick="clearInputs()">Очистить</button>
-      </div>
-
-      <div id="results" class="results-container"></div>
     </main>
   </div>
 
@@ -579,6 +685,33 @@ function enterApp() {
   
   splash.classList.add('splash-hidden');
   app.classList.add('app-visible');
+}
+
+function showSplash() {
+  const splash = document.getElementById('welcome-splash');
+  const app = document.getElementById('app-container');
+  
+  app.classList.remove('app-visible');
+  splash.classList.remove('splash-hidden');
+}
+
+function switchTab(tab) {
+  const navDraft = document.getElementById('nav-draft');
+  const navNews = document.getElementById('nav-news');
+  const viewDraft = document.getElementById('view-draft');
+  const viewNews = document.getElementById('view-news');
+
+  if (tab === 'draft') {
+    navDraft.classList.add('active');
+    navNews.classList.remove('active');
+    viewDraft.style.display = 'block';
+    viewNews.style.display = 'none';
+  } else if (tab === 'news') {
+    navNews.classList.add('active');
+    navDraft.classList.remove('active');
+    viewDraft.style.display = 'none';
+    viewNews.style.display = 'block';
+  }
 }
 
 async function loadHeroesList() {
