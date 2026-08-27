@@ -33,7 +33,6 @@
 <div class="container">
     <h1>Dota 2 AI Draft Helper</h1>
 
-    <!-- Общий список всех героев для автокомплита -->
     <datalist id="dota-heroes">
         <option value="Abaddon / Абаддон"></option>
         <option value="Alchemist / Алхимик"></option>
@@ -48,7 +47,6 @@
         <option value="Bounty Hunter / БХ"></option>
         <option value="Brewmaster / Панда"></option>
         <option value="Bristleback / Бристлбек"></option>
-
         <option value="Broodmother / Бруда"></option>
         <option value="Centaur Warrunner / Кентавр"></option>
         <option value="Chaos Knight / ЦК"></option>
@@ -118,7 +116,6 @@
         <option value="Pudge / Пудж"></option>
         <option value="Pugna / Пугна"></option>
         <option value="Queen of Pain / Квопа"></option>
-        <option value="Clockwerk / Клок"></option>
         <option value="Razor / Разор"></option>
         <option value="Riki / Рики"></option>
         <option value="Rubick / Рубик"></option>
@@ -164,9 +161,8 @@
     </datalist>
 
     <div class="teams-grid">
-        <!-- МОЯ КОМАНДА -->
         <div class="team-card my-team">
-            <div class="team-title">🛡️ Моя команда</div>
+            <div class="team-title">Моя команда</div>
             
             <div class="slot-group">
                 <label>Поз 1 — Керри</label>
@@ -190,9 +186,8 @@
             </div>
         </div>
 
-        <!-- КОМАНДА ПРОТИВНИКА -->
         <div class="team-card enemy-team">
-            <div class="team-title">⚔️ Команда противника</div>
+            <div class="team-title">Команда противника</div>
             
             <div class="slot-group">
                 <label>Враг 1</label>
@@ -229,7 +224,7 @@
     async function analyzeDraft() {
         const resultBox = document.getElementById('result-box');
         resultBox.style.display = 'block';
-        resultBox.innerText = 'Анализирую драфт... Пожалуйста, подождите.';
+        resultBox.innerText = 'Анализирую драфт...';
 
         const payload = {
             my_team: {
@@ -254,8 +249,16 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            const data = await response.json();
-            resultBox.innerText = data.analysis || data.error;
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            resultBox.innerText = ""; 
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                resultBox.innerText += decoder.decode(value, { stream: true });
+            }
         } catch (e) {
             resultBox.innerText = 'Ошибка при соединении с сервером.';
         }
