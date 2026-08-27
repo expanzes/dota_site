@@ -18,7 +18,6 @@ SSL_CONTEXT = ssl.create_default_context()
 SSL_CONTEXT.check_hostname = False
 SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
-# Списки героев по ролям для фильтрации
 ROLES_DB = {
     "pos1": {
         "Phantom Lancer", "Anti-Mage", "Juggernaut", "Sven", "Spectre", "Faceless Void",
@@ -30,7 +29,7 @@ ROLES_DB = {
         "Leshrak", "Invoker", "Tinker", "Queen of Pain", "Shadow Fiend", "Templar Assassin",
         "Dragon Knight", "Sniper", "Zeus", "Death Prophet", "Pangolier", "Batrider",
         "Meepo", "Kunkka", "Huskar", "Viper", "Necrophos", "Outworld Destroyer", "Tiny",
-        "Primal Beast", "Windranger", "Pudge", "Razor", "Void Spirit", "Nature's Prophet"
+        "Primal Beast", "Windranger", "Pudge", "Razor", "Nature's Prophet"
     },
     "pos3": {
         "Axe", "Centaur Warrunner", "Mars", "Tidehunter", "Bristleback", "Slardar",
@@ -134,7 +133,7 @@ def fetch_single_matchup(enemy_id: int):
 
 
 def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_map: dict) -> list[str]:
-  """Фильтрует контрпики по роли и винрейту >= 50%."""
+  """Находит самого лучшего героя на роль и топ альтернатив без ограничения в 50%."""
   valid_heroes_for_role = ROLES_DB.get(role_key, set())
   results = []
 
@@ -144,23 +143,30 @@ def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_ma
       continue
 
     wr = (data["wins"] / data["games"]) * 100
-    
-    # ФИЛЬТР 1: Только винрейт 50% и выше
-    if wr < 50.0:
-      continue
 
-    # ФИЛЬТР 2: Проверка соответствия роли (если база ролей не пустая)
+    # Проверяем привязку к роли
     if valid_heroes_for_role and hero_name not in valid_heroes_for_role:
       continue
 
     results.append((hero_name, wr, data["games"]))
 
+  # Сортируем от высшего винрейта к низшему
   results.sort(key=lambda x: x[1], reverse=True)
-  
+
   formatted = []
-  for h_name, wr, games in results[:5]:
-    formatted.append(f"  • {h_name}: {wr:.1f}% винрейт (матчей: {games})")
-  
+  if results:
+    # Самый лучший герой по математике
+    best_hero, best_wr, best_games = results[0]
+    formatted.append(f"  ★ САМЫЙ ЛУЧШИЙ ПИК: {best_hero} — {best_wr:.1f}% винрейт (матчей: {best_games})")
+    
+    # Другие сильные варианты
+    if len(results) > 1:
+      formatted.append("  Другие варианты в эту позицию:")
+      for h_name, wr, games in results[1:4]:
+        formatted.append(f"    • {h_name}: {wr:.1f}% винрейт (матчей: {games})")
+  else:
+    formatted.append("  • Не удалось подобрать героя под эту роль")
+
   return formatted
 
 
@@ -205,7 +211,6 @@ async def analyze_draft(data: DraftRequest):
       candidate_stats[cid]["wins"] += candidate_wins
       candidate_stats[cid]["games"] += games
 
-  # Проверяем незанятые позиции
   empty_positions = {
       "pos1": ("Поз 1 (Керри)", data.my_team.pos1),
       "pos2": ("Поз 2 (Мид)", data.my_team.pos2),
@@ -214,7 +219,7 @@ async def analyze_draft(data: DraftRequest):
       "pos5": ("Поз 5 (Пятерка)", data.my_team.pos5),
   }
 
-  output_lines = ["Рекомендуемые пики на свободные роли (винрейт > 50%):\n"]
+  output_lines = ["Результат анализа драфта по базе OpenDota:\n"]
   found_any = False
 
   for role_key, (role_title, selected_hero) in empty_positions.items():
@@ -222,10 +227,7 @@ async def analyze_draft(data: DraftRequest):
       found_any = True
       recs = get_recommendations_for_role(role_key, candidate_stats, heroes_map)
       output_lines.append(f"{role_title}:")
-      if recs:
-        output_lines.extend(recs)
-      else:
-        output_lines.append("  • Нет подпадающих героев с винрейтом > 50%")
+      output_lines.extend(recs)
       output_lines.append("")
 
   if not found_any:
