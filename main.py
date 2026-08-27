@@ -1,3 +1,53 @@
+import os
+import requests
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from typing import List, Dict
+
+# Создаем экземпляр FastAPI на верхнем уровне
+app = FastAPI(title="Dota 2 Helper")
+
+# Подключение статических файлов, если папка static существует
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    if os.path.exists("static/index.html"):
+        with open("static/index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>Dota 2 Helper API Running</h1>"
+
+@app.get("/site", response_class=HTMLResponse)
+async def read_site():
+    return await read_root()
+
+# База данных ролей
+ROLES_DB = {
+    "pos1": {"antimage", "spectre", "phantom_assassin", "juggernaut", "faceless_void", "slark", "sven", "bloodseeker", "gyrocopter", "lifestealer", "luna", "medusa", "monkey_king", "morphling", "naga_siren", "sniper", "terrorblade", "troll_warlord", "ursa", "wraith_king", "weaver", "clinkz", "drow_ranger"},
+    "pos2": {"storm_spirit", "ember_spirit", "void_spirit", "invoker", "shadow_fiend", "puck", "queen_of_pain", "tinker", "lina", "sniper", "templar_assassin", "dragon_knight", "death_prophet", "leshrac", "kunkka", "meepo", "necrophos", "pudge", "tiny", "windranger", "zeus"},
+    "pos3": {"mars", "tidehunter", "axe", "centaur", "bristleback", "slardar", "underlord", "beastmaster", "brewmaster", "doom", "dark_seer", "enigma", "legion_commander", "magnus", "night_stalker", "sand_king", "timbersaw", "viper", "visage"},
+    "pos4": {"rubick", "mirana", "lion", "shadow_shaman", "earth_spirit", "tusk", "clockwerk", "bounty_hunter", "hoodwink", "nyx_assassin", "phoenix", "pudge", "skywrath_mage", "snapfire", "spirit_breaker", "techies", "tiny", "ancient_apparition"},
+    "pos5": {"crystal_maiden", "jakiro", "witch_doctor", "ogre_magi", "dazzle", "disruptor", "lich", "oracle", "shadow_demon", "silencer", "treant", "warlock", "bane", "chen", "grimstroke", "io", "keeper_of_the_light", "omniknight", "undying"}
+}
+
+def get_opendota_heroes():
+    try:
+        r = requests.get("https://api.opendota.com/api/heroes", timeout=10)
+        if r.status_code == 200:
+            return {h["id"]: {"name": h["localized_name"], "slug": h["name"].replace("npc_dota_hero_", "")} for h in r.json()}
+    except Exception:
+        pass
+    return {}
+
+@app.get("/api/heroes")
+def api_heroes():
+    heroes = get_opendota_heroes()
+    names = [h["name"] for h in heroes.values()]
+    return sorted(names)
+
 def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
     valid_heroes = ROLES_DB.get(role_key, set())
     role_candidates = []
@@ -5,10 +55,10 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
 
     for cid, data in candidate_stats.items():
         hero_info = heroes_map.get(cid)
-        if not hero_info or data["games"] < 30:
+        if not hero_info or data.get("games", 0) < 1:
             continue
 
-        wr = (data["wins"] / data["games"]) * 100
+        wr = (data["wins"] / data["games"]) * 100 if data["games"] > 0 else 0
         img_url = f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{hero_info['slug']}.png"
         item = {
             "name": hero_info["name"],
@@ -18,7 +68,7 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
         }
 
         all_candidates.append(item)
-        if hero_info["name"].lower() in valid_heroes:
+        if hero_info["slug"] in valid_heroes or hero_info["name"].lower().replace(" ", "_") in valid_heroes:
             role_candidates.append(item)
 
     final_list = role_candidates if role_candidates else all_candidates
@@ -31,7 +81,7 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
     top_wr = by_winrate[0]
     top_gm = by_games[0]
 
-    # Исключаем из дополнительного списка героев, находящихся в главных карточках
+    # Исключаем главных героев из списка "Другие варианты"
     excluded_names = {top_wr["name"], top_gm["name"]}
     others = [h for h in by_winrate if h["name"] not in excluded_names][:3]
 
@@ -40,3 +90,75 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
         "top_games": top_gm,
         "others": others,
     }
+
+class DraftRequest(BaseModel):
+    my_team: Dict[str, str]
+    enemy_team: List[str]
+
+@app.post("/api/analyze")
+def analyze_draft(req: DraftRequest):
+    heroes_map = get_opendota_heroes()
+    name_to_id = {info["name"].lower(): hid for hid, info in heroes_map.items()}
+
+    enemy_ids = []
+    for e in req.enemy_team:
+        clean_name = e.split('/')[0].strip().lower()
+        if clean_name in name_to_id:
+            enemy_ids.append(name_to_id[clean_name])
+
+    candidate_stats = {}
+    if enemy_ids:
+        for eid in enemy_ids:
+            try:
+                r = requests.get(f"https://api.opendota.com/api/heroes/{eid}/matchups", timeout=5)
+                if r.status_code == 200:
+                    for item in r.json():
+                        cid = item["hero_id"]
+                        if cid not in candidate_stats:
+                            candidate_stats[cid] = {"wins": 0, "games": 0}
+                        candidate_stats[cid]["games"] += item["games_played"]
+                        candidate_stats[cid]["wins"] += item["wins"]
+            except Exception:
+                pass
+
+    roles_display = [
+        ("Поз 1 (Керри)", "pos1"),
+        ("Поз 2 (Мид)", "pos2"),
+        ("Поз 3 (Тройка)", "pos3"),
+        ("Поз 4 (Четверка)", "pos4"),
+        ("Поз 5 (Пятерка)", "pos5"),
+    ]
+
+    results = []
+    for role_name, role_key in roles_display:
+        if not req.my_team.get(role_key):
+            rdata = get_role_data(role_key, candidate_stats, heroes_map)
+            results.append({"role": role_name, "data": rdata})
+
+    return {"status": "ok", "results": results}
+
+@app.get("/api/news")
+def get_news():
+    try:
+        r = requests.get("https://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=570&count=5&maxlength=300&format=json", timeout=5)
+        if r.status_code == 200:
+            items = r.json().get("appnews", {}).get("newsitems", [])
+            news_list = []
+            import datetime
+            for item in items:
+                date_str = datetime.datetime.fromtimestamp(item.get("date", 0)).strftime("%d.%m.%Y")
+                news_list.append({
+                    "title": item.get("title", ""),
+                    "contents": item.get("contents", ""),
+                    "url": item.get("url", "#"),
+                    "author": item.get("author", "Valve"),
+                    "date": date_str
+                })
+            return news_list
+    except Exception:
+        pass
+    return []
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
