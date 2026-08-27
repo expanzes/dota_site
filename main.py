@@ -10,7 +10,9 @@ from pydantic import BaseModel
 app = FastAPI()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+# Кэш для списков героев и результатов матчей
 HERO_CACHE = {}
+MATCHUPS_CACHE = {}
 
 
 class MyTeam(BaseModel):
@@ -33,13 +35,18 @@ def get_opendota_heroes():
   try:
     url = "https://api.opendota.com/api/heroes"
     req = urllib.request.Request(
-        url, headers={"User-Agent": "Mozilla/5.0 (Dota2DraftHelper)"}
+        url,
+        headers={
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            )
+        },
     )
     with urllib.request.urlopen(req, timeout=5) as resp:
       heroes = json.loads(resp.read().decode("utf-8"))
       HERO_CACHE = {h["id"]: h["localized_name"] for h in heroes}
   except Exception as e:
-    print(f"Ошибка загрузки списка героев OpenDota: {e}")
+    print(f"Ошибка загрузки героев OpenDota: {e}")
   return HERO_CACHE
 
 
@@ -64,34 +71,51 @@ def find_hero_id_by_name(name: str, heroes_map: dict) -> int | None:
   return None
 
 
+def get_hero_matchups(enemy_id: int) -> list:
+  """Получает матчи конкретного героя с использованием кэша."""
+  global MATCHUPS_CACHE
+  if enemy_id in MATCHUPS_CACHE:
+    return MATCHUPS_CACHE[enemy_id]
+
+  try:
+    url = f"https://api.opendota.com/api/heroes/{enemy_id}/matchups"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            )
+        },
+    )
+    with urllib.request.urlopen(req, timeout=4) as resp:
+      data = json.loads(resp.read().decode("utf-8"))
+      MATCHUPS_CACHE[enemy_id] = data
+      return data
+  except Exception as e:
+    print(f"Ошибка загрузки матчей для врага ID {enemy_id}: {e}")
+    return []
+
+
 def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str:
   if not enemy_hero_ids:
     return "Вражеские герои не указаны или не найдены в базе."
 
   candidate_stats = {}
   for enemy_id in enemy_hero_ids:
-    try:
-      url = f"https://api.opendota.com/api/heroes/{enemy_id}/matchups"
-      req = urllib.request.Request(
-          url, headers={"User-Agent": "Mozilla/5.0 (Dota2DraftHelper)"}
-      )
-      with urllib.request.urlopen(req, timeout=3) as resp:
-        matchups = json.loads(resp.read().decode("utf-8"))
-        for m in matchups:
-          cid = m["hero_id"]
-          games = m["games_played"]
-          enemy_wins = m["wins"]
-          candidate_wins = games - enemy_wins
+    matchups = get_hero_matchups(enemy_id)
+    for m in matchups:
+      cid = m["hero_id"]
+      games = m["games_played"]
+      enemy_wins = m["wins"]
+      candidate_wins = games - enemy_wins
 
-          if cid not in candidate_stats:
-            candidate_stats[cid] = {"wins": 0, "games": 0}
-          candidate_stats[cid]["wins"] += candidate_wins
-          candidate_stats[cid]["games"] += games
-    except Exception as e:
-      print(f"Ошибка при получении матчей для врага ID {enemy_id}: {e}")
+      if cid not in candidate_stats:
+        candidate_stats[cid] = {"wins": 0, "games": 0}
+      candidate_stats[cid]["wins"] += candidate_wins
+      candidate_stats[cid]["games"] += games
 
   if not candidate_stats:
-    return "Не удалось загрузить данные из OpenDota."
+    return "Не удалось получить статистику (OpenDota временно не отвечает)."
 
   results = []
   for cid, data in candidate_stats.items():
@@ -105,7 +129,7 @@ def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str
   for cid, wr, games in results[:10]:
     hero_name = heroes_map.get(cid, f"Hero {cid}")
     top_counters.append(
-        f"• {hero_name}: {wr:.1f}% винрейт (сыграно матчей: {games})"
+        f"• {hero_name}: {wr:.1f}% винрейт (матчей в базе: {games})"
     )
 
   return "\n".join(top_counters)
@@ -176,7 +200,6 @@ async def analyze_draft(data: DraftRequest):
     )
     return {"analysis": response.text}
   except Exception as e:
-    # Защитный фолбэк при превышении суточного лимита 429
     fallback_text = f"""Суточный лимит запросов к AI исчерпан, но вот прямая статистика OpenDota по лучшим контрпикам:
 
 Топ-герои по винрейту против состава ({enemy_team_str}):
