@@ -2,234 +2,495 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Dota 2 AI Draft Helper</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dota 2 Helper</title>
   <style>
-    body {
-      background-color: #12161a;
-      color: #e1e6eb;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    * {
+      box-sizing: border-box;
       margin: 0;
-      padding: 20px;
+      padding: 0;
     }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
+
+    body {
+      background-color: #0b0e11;
+      color: #e1e6eb;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    h1 {
-      text-align: center;
+
+    /* Боковое меню */
+    .sidebar {
+      width: 260px;
+      background: #12171d;
+      border-right: 1px solid #1e2630;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #1e2630;
+      margin-bottom: 24px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #ff4655, #bd1b2b);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 20px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(255, 70, 85, 0.3);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: #8e9297;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-item:hover:not(.disabled) {
+      background: #1a222a;
+      color: #ffffff;
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: rgba(255, 70, 85, 0.15);
       color: #ff4655;
-      margin-bottom: 25px;
+      border-left: 3px solid #ff4655;
+      font-weight: 600;
     }
+
+    .nav-item.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .badge-soon {
+      font-size: 10px;
+      background: #2a353d;
+      color: #a3a6aa;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Основной контент */
+    .main-content {
+      flex: 1;
+      padding: 36px 48px;
+      max-width: 1150px;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .header-section {
+      margin-bottom: 32px;
+      animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .app-title {
+      font-size: 30px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-title span {
+      color: #ff4655;
+    }
+
+    .app-subtitle {
+      font-size: 15px;
+      color: #8e9297;
+      line-height: 1.5;
+      max-width: 700px;
+    }
+
+    /* Форма ввода драфта */
     .flex-grid {
       display: flex;
-      gap: 20px;
-      margin-bottom: 20px;
+      gap: 24px;
+      margin-bottom: 24px;
     }
+
     .panel {
       flex: 1;
-      background: #1a2228;
-      border: 1px solid #2a353d;
-      border-radius: 8px;
-      padding: 15px;
+      background: #151a21;
+      border: 1px solid #222b35;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      transition: border-color 0.3s ease;
     }
+
+    .panel:hover {
+      border-color: #2e3a48;
+    }
+
     .panel h2 {
       font-size: 16px;
+      font-weight: 700;
       margin-top: 0;
-      border-bottom: 2px solid #2a353d;
-      padding-bottom: 8px;
+      border-bottom: 2px solid #222b35;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
     }
-    .team-my h2 { color: #43b581; border-color: #43b581; }
-    .team-enemy h2 { color: #f04747; border-color: #f04747; }
+
+    .team-my h2 { color: #43b581; border-color: rgba(67, 181, 129, 0.3); }
+    .team-enemy h2 { color: #ff4655; border-color: rgba(255, 70, 85, 0.3); }
+
     .input-group {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
+
     .input-group label {
       display: block;
       font-size: 12px;
       color: #8e9297;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      font-weight: 500;
     }
+
     input {
       width: 100%;
       box-sizing: border-box;
-      background: #0f1316;
-      border: 1px solid #2a353d;
+      background: #0d1014;
+      border: 1px solid #222b35;
       color: #fff;
-      padding: 8px 10px;
-      border-radius: 4px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.2s ease;
     }
+
+    input:focus {
+      outline: none;
+      border-color: #ff4655;
+      box-shadow: 0 0 0 3px rgba(255, 70, 85, 0.15);
+    }
+
     .action-row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
     }
+
     button.btn-analyze {
       flex: 3;
-      background: #ff4655;
+      background: linear-gradient(135deg, #ff4655 0%, #d62d3c 100%);
       color: white;
       border: none;
-      padding: 12px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 6px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 15px rgba(255, 70, 85, 0.25);
     }
+
     button.btn-analyze:hover {
-      background: #e03e4c;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 70, 85, 0.4);
     }
+
+    button.btn-analyze:active {
+      transform: translateY(0);
+    }
+
     button.btn-clear {
       flex: 1;
-      background: #2a353d;
-      color: white;
-      border: none;
-      padding: 12px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 6px;
+      background: #1a222a;
+      color: #a3a6aa;
+      border: 1px solid #222b35;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.25s ease;
     }
+
     button.btn-clear:hover {
-      background: #3b4854;
+      background: #252f3b;
+      color: #ffffff;
     }
-    
+
     /* Результаты */
     .results-container {
-      margin-top: 25px;
+      margin-top: 32px;
     }
+
     .role-section {
-      background: #1a2228;
-      border: 1px solid #2a353d;
-      border-radius: 8px;
-      padding: 15px;
+      background: #151a21;
+      border: 1px solid #222b35;
+      border-radius: 12px;
+      padding: 20px;
       margin-bottom: 20px;
+      animation: fadeInUp 0.4s ease-out forwards;
     }
+
     .role-title {
       font-size: 18px;
-      font-weight: bold;
+      font-weight: 700;
       color: #fff;
-      margin-bottom: 15px;
+      margin-bottom: 16px;
     }
+
     .best-card {
       display: flex;
       align-items: center;
-      background: linear-gradient(135deg, #242c33 0%, #171d22 100%);
+      background: linear-gradient(135deg, #1c242e 0%, #12171d 100%);
       border: 2px solid #ffd700;
-      box-shadow: 0 0 12px rgba(255, 215, 0, 0.2);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 15px;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
       position: relative;
+      transition: transform 0.2s ease;
     }
+
+    .best-card:hover {
+      transform: scale(1.01);
+    }
+
     .badge-top {
       position: absolute;
-      top: -10px;
-      right: 15px;
+      top: -12px;
+      right: 20px;
       background: #ffd700;
       color: #000;
       font-size: 11px;
-      font-weight: bold;
-      padding: 2px 8px;
-      border-radius: 10px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
     }
+
     .best-card img {
-      width: 110px;
-      height: 62px;
-      border-radius: 6px;
+      width: 120px;
+      height: 67px;
+      border-radius: 8px;
       object-fit: cover;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
     }
+
     .best-info {
-      margin-left: 15px;
+      margin-left: 20px;
       flex-grow: 1;
     }
+
     .best-name {
-      font-size: 20px;
-      font-weight: bold;
+      font-size: 22px;
+      font-weight: 700;
       color: #fff;
     }
+
     .best-stats {
-      margin-top: 5px;
+      margin-top: 6px;
       font-size: 14px;
       color: #a3a6aa;
     }
+
     .winrate-val {
       color: #43b581;
-      font-weight: bold;
+      font-weight: 700;
       font-size: 18px;
     }
+
     .alt-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
     }
+
     .alt-card {
       display: flex;
       align-items: center;
-      background: #12161a;
-      border: 1px solid #2a353d;
-      border-radius: 6px;
-      padding: 8px;
+      background: #0d1014;
+      border: 1px solid #222b35;
+      border-radius: 8px;
+      padding: 10px 12px;
+      transition: all 0.2s ease;
     }
+
+    .alt-card:hover {
+      border-color: #3b4854;
+      transform: translateY(-2px);
+    }
+
     .alt-card img {
-      width: 55px;
-      height: 31px;
+      width: 60px;
+      height: 34px;
       border-radius: 4px;
       object-fit: cover;
     }
+
     .alt-info {
-      margin-left: 10px;
+      margin-left: 12px;
     }
+
     .alt-name {
-      font-size: 13px;
-      font-weight: bold;
+      font-size: 14px;
+      font-weight: 600;
       color: #e1e6eb;
     }
+
     .alt-wr {
       font-size: 12px;
       color: #43b581;
+      font-weight: 600;
+    }
+
+    /* Анимации */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Адаптивность для мобильных */
+    @media (max-width: 850px) {
+      body {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #1e2630;
+      }
+      .flex-grid {
+        flex-direction: column;
+      }
+      .main-content {
+        padding: 20px;
+      }
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>Dota 2 AI Draft Helper</h1>
+  <!-- Боковое меню -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">D2</div>
+      <div class="brand-title">Dota 2 Helper</div>
+    </div>
+    <ul class="nav-list">
+      <li class="nav-item active">
+        <span>Draft Helper</span>
+      </li>
+      <li class="nav-item disabled">
+        <span>Fantasy Helper</span>
+        <span class="badge-soon">Скоро</span>
+      </li>
+      <li class="nav-item disabled">
+        <span>Match Analyzer</span>
+        <span class="badge-soon">Скоро</span>
+      </li>
+    </ul>
+  </aside>
 
-  <datalist id="heroes-list"></datalist>
-
-  <div class="flex-grid">
-    <!-- Моя команда -->
-    <div class="panel team-my">
-      <h2>Моя команда</h2>
-      <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" list="heroes-list" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" list="heroes-list" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" list="heroes-list" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" list="heroes-list" value="Ancient Apparition / Аппарат"></div>
-      <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" list="heroes-list" value="Bane / Бейн"></div>
+  <!-- Основная область -->
+  <main class="main-content">
+    <div class="header-section">
+      <h1 class="app-title">Dota 2 <span>Helper</span></h1>
+      <p class="app-subtitle">
+        Интеллектуальный веб-сервис для анализа драфтов и расчета оптимальных контрпиков на основе актуальной матчап-статистики OpenDota.
+      </p>
     </div>
 
-    <!-- Враги -->
-    <div class="panel team-enemy">
-      <h2>Команда противника</h2>
-      <div class="input-group"><label>Враг 1</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Враг 2</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Враг 3</label><input class="enemy" list="heroes-list" value="Timbersaw / Тимбер"></div>
-      <div class="input-group"><label>Враг 4</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-      <div class="input-group"><label>Враг 5</label><input class="enemy" list="heroes-list" value="Jakiro / Джакиро"></div>
+    <datalist id="heroes-list"></datalist>
+
+    <div class="flex-grid">
+      <!-- Моя команда -->
+      <div class="panel team-my">
+        <h2>Моя команда</h2>
+        <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" list="heroes-list" placeholder="Выберите героя..."></div>
+        <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" list="heroes-list" placeholder="Выберите героя..."></div>
+        <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" list="heroes-list" placeholder="Выберите героя..."></div>
+        <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" list="heroes-list" value="Ancient Apparition / Аппарат"></div>
+        <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" list="heroes-list" value="Bane / Бейн"></div>
+      </div>
+
+      <!-- Враги -->
+      <div class="panel team-enemy">
+        <h2>Команда противника</h2>
+        <div class="input-group"><label>Враг 1</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+        <div class="input-group"><label>Враг 2</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+        <div class="input-group"><label>Враг 3</label><input class="enemy" list="heroes-list" value="Timbersaw / Тимбер"></div>
+        <div class="input-group"><label>Враг 4</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+        <div class="input-group"><label>Враг 5</label><input class="enemy" list="heroes-list" value="Jakiro / Джакиро"></div>
+      </div>
     </div>
-  </div>
 
-  <div class="action-row">
-    <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
-    <button class="btn-clear" onclick="clearInputs()">Очистить</button>
-  </div>
+    <div class="action-row">
+      <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
+      <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+    </div>
 
-  <div id="results" class="results-container"></div>
-</div>
+    <div id="results" class="results-container"></div>
+  </main>
 
 <script>
-// Автозагрузка списка героев для выпадающего меню
 async function loadHeroesList() {
   try {
     const res = await fetch('/api/heroes');
@@ -252,7 +513,7 @@ function clearInputs() {
 
 async function analyze() {
   const container = document.getElementById('results');
-  container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка статистики OpenDota...</div>';
+  container.innerHTML = '<div style="text-align:center; padding:30px; color:#8e9297;">Загрузка статистики OpenDota...</div>';
 
   const enemies = Array.from(document.querySelectorAll('.enemy')).map(i => i.value).filter(v => v.trim() !== '');
   
@@ -278,7 +539,7 @@ async function analyze() {
     container.innerHTML = '';
 
     if (response.status === 'error') {
-      container.innerHTML = `<div style="color:#f04747; background:#1a2228; padding:15px; border-radius:8px;">${response.message}</div>`;
+      container.innerHTML = `<div style="color:#f04747; background:#151a21; border:1px solid #222b35; padding:18px; border-radius:10px;">${response.message}</div>`;
       return;
     }
 
@@ -307,7 +568,7 @@ async function analyze() {
         `;
 
         if (item.data.alternatives && item.data.alternatives.length > 0) {
-          html += `<div style="font-size:12px; color:#8e9297; margin-bottom:8px;">Другие сильные варианты:</div>`;
+          html += `<div style="font-size:12px; color:#8e9297; margin-bottom:10px;">Другие сильные варианты:</div>`;
           html += `<div class="alt-grid">`;
           item.data.alternatives.forEach(alt => {
             html += `
@@ -329,7 +590,7 @@ async function analyze() {
     });
 
   } catch (err) {
-    container.innerHTML = `<div style="color:#f04747; background:#1a2228; padding:15px; border-radius:8px;">Ошибка сервера или сети. Попробуйте снова.</div>`;
+    container.innerHTML = `<div style="color:#f04747; background:#151a21; border:1px solid #222b35; padding:18px; border-radius:10px;">Ошибка сервера или сети. Попробуйте снова.</div>`;
   }
 }
 
