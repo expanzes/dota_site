@@ -11,7 +11,6 @@ app = FastAPI()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Глобальный кэш героев OpenDota, чтобы не запрашивать список каждый раз
 HERO_CACHE = {}
 
 
@@ -29,7 +28,6 @@ class DraftRequest(BaseModel):
 
 
 def get_opendota_heroes():
-  """Загружает список героев из OpenDota API."""
   global HERO_CACHE
   if HERO_CACHE:
     return HERO_CACHE
@@ -38,16 +36,15 @@ def get_opendota_heroes():
     req = urllib.request.Request(
         url, headers={"User-Agent": "Mozilla/5.0 (Dota2DraftHelper)"}
     )
-    with urllib.request.urlopen(req, timeout=4) as resp:
+    with urllib.request.urlopen(req, timeout=5) as resp:
       heroes = json.loads(resp.read().decode("utf-8"))
       HERO_CACHE = {h["id"]: h["localized_name"] for h in heroes}
   except Exception as e:
-    print(f"Ошибка при загрузке списка героев OpenDota: {e}")
+    print(f"Ошибка загрузки списка героев OpenDota: {e}")
   return HERO_CACHE
 
 
 def clean_hero_name(raw_name: str) -> str:
-  """Очищает строку вида 'Jakiro / Джакиро' до 'Jakiro'."""
   if not raw_name:
     return ""
   if "/" in raw_name:
@@ -56,7 +53,6 @@ def clean_hero_name(raw_name: str) -> str:
 
 
 def find_hero_id_by_name(name: str, heroes_map: dict) -> int | None:
-  """Находит OpenDota hero_id по названию."""
   cleaned = clean_hero_name(name).lower()
   if not cleaned:
     return None
@@ -72,9 +68,8 @@ def find_hero_id_by_name(name: str, heroes_map: dict) -> int | None:
 
 
 def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str:
-  """Рассчитывает статистику контрпиков из базы данных OpenDota."""
   if not enemy_hero_ids:
-    return ""
+    return "Вражеские герои не указаны или не найдены в базе."
 
   candidate_stats = {}
 
@@ -90,19 +85,23 @@ def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str
           cid = m["hero_id"]
           games = m["games_played"]
           enemy_wins = m["wins"]
-          candidate_wins = games - enemy_wins  # Победы контрпика
+          candidate_wins = games - enemy_wins
 
           if cid not in candidate_stats:
             candidate_stats[cid] = {"wins": 0, "games": 0}
           candidate_stats[cid]["wins"] += candidate_wins
           candidate_stats[cid]["games"] += games
     except Exception as e:
-      print(f"Ошибка при запросе матчей для врага {enemy_id}: {e}")
+      print(f"Ошибка при получении матчей для врага ID {enemy_id}: {e}")
 
-  # Считаем винрейт каждого героя против выбранного пика врагов
+  if not candidate_stats:
+    return (
+        "Не удалось загрузить данные из OpenDota (таймаут или ошибка API)."
+    )
+
   results = []
   for cid, data in candidate_stats.items():
-    if data["games"] >= 100:  # берем репрезентативную выборку
+    if data["games"] >= 50:
       wr = (data["wins"] / data["games"]) * 100
       results.append((cid, wr, data["games"]))
 
@@ -112,8 +111,8 @@ def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str
   for cid, wr, games in results[:10]:
     hero_name = heroes_map.get(cid, f"Hero {cid}")
     top_counters.append(
-        f"- {hero_name}: {wr:.1f}% винрейт против выбранных врагов ({games}"
-        " сыгранных матчей)"
+        f"- {hero_name}: {wr:.1f}% винрейт против этого состава врагов ({games}"
+        " сыгранных матчей в базе)"
     )
 
   return "\n".join(top_counters)
@@ -134,17 +133,13 @@ async def analyze_draft(data: DraftRequest):
   try:
     heroes_map = get_opendota_heroes()
 
-    # Поиск ID выбранных врагов
     enemy_ids = []
     for e in data.enemy_team:
       hid = find_hero_id_by_name(e, heroes_map)
       if hid:
         enemy_ids.append(hid)
 
-    # Запрос реальной статистики из OpenDota
     opendota_stats = get_enemy_counters_stats(enemy_ids, heroes_map)
-    if not opendota_stats:
-      opendota_stats = "Данные о винрейтах из OpenDota недоступны или вражеские герои не выбраны."
 
     my_team_str = f"""
 - Поз 1 (Керри): {data.my_team.pos1 or "НЕ ВЫБРАН"}
@@ -158,7 +153,7 @@ async def analyze_draft(data: DraftRequest):
     enemy_team_str = ", ".join(enemies) if enemies else "Герои не раскрыты"
 
     prompt = f"""
-Ты — профессиональный аналитик драфта Dota 2. Дай МАКСИМАЛЬНО КРАТКИЙ И ЧЕТКИЙ ответ во время пиков.
+Ты — профессиональный аналитик драфта Dota 2.
 
 МОЯ КОМАНДА ПО РОЛЯМ:
 {my_team_str}
@@ -166,22 +161,22 @@ async def analyze_draft(data: DraftRequest):
 КОМАНДА ПРОТИВНИКА:
 {enemy_team_str}
 
-РЕАЛЬНАЯ СТАТИСТИКА ИЗ ИСТОРИИ МАТЧЕЙ OPENDOTA (Топ контрпики против драфта врага):
+СТАТИСТИКА ИЗ ИСТОРИИ МАТЧЕЙ OPENDOTA (Топ контрпики против выбранных врагов):
 {opendota_stats}
 
-СТРОГИЕ ПРАВИЛА ОФОРМЛЕНИЯ:
-1. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать эмодзи (смайлики) и символы разметки: звездочки (**), решетки (#), подчеркивания (_). Пиши только чистым текстом!
-2. Опирайся на приведенную статистику OpenDota, подбирая героев с высоким винрейтом под свободные роли ("НЕ ВЫБРАН").
-3. НИКАКИХ приветствий и вступлений. Начинай сразу с рекомендаций.
+СТРОГИЕ ПРАВИЛА:
+1. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать эмодзи и спецсимволы разметки: звездочки (**), решетки (#), подчеркивания (_). Пиши только чистым текстом!
+2. Для каждой свободной позиции ("НЕ ВЫБРАН") порекомендуй героя, ОБЯЗАТЕЛЬНО УКАЗЫВАЯ ЕГО ВИНРЕЙТ ИЗ ДАННЫХ OPENDOTA в скобках.
+3. Никаких приветствий. Начинай сразу с рекомендаций.
 
 ФОРМАТ ОТВЕТА:
 
 Кого взять на свободные роли:
-• [Роль/Герой 1] — [1 короткое предложение с упором на статистику/причину]
-• [Роль/Герой 2] — [1 короткое предложение с упором на статистику/причину]
+• [Поз X / Герой] (Винрейт по OpenDota: X%) — [1 короткое предложение с причиной]
+• [Поз X / Герой] (Винрейт по OpenDota: X%) — [1 короткое предложение с причиной]
 
 Стартовый закуп:
-• [Позиция/Линия]: [список начальных предметов]
+• [Позиция/Линия]: [список предметов]
 """
 
     response = client.models.generate_content(
