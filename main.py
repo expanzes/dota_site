@@ -197,16 +197,17 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
         if hero_info["name"].lower() in valid_heroes:
             role_candidates.append(item)
 
-    role_candidates.sort(key=lambda x: x["winrate"], reverse=True)
-    all_candidates.sort(key=lambda x: x["winrate"], reverse=True)
-
     final_list = role_candidates if role_candidates else all_candidates
     if not final_list:
         return None
 
+    # Сортируем отдельно по винрейту и отдельно по кол-ву игр
+    by_winrate = sorted(final_list, key=lambda x: x["winrate"], reverse=True)
+    by_games = sorted(final_list, key=lambda x: x["games"], reverse=True)
+
     return {
-        "best": final_list[0],
-        "alternatives": final_list[1:4] if len(final_list) > 1 else [],
+        "top_winrate": by_winrate[0],
+        "top_games": by_games[0]
     }
 
 
