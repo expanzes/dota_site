@@ -8,7 +8,6 @@ from google import genai
 from pydantic import BaseModel
 
 app = FastAPI()
-
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 HERO_CACHE = {}
@@ -56,11 +55,9 @@ def find_hero_id_by_name(name: str, heroes_map: dict) -> int | None:
   cleaned = clean_hero_name(name).lower()
   if not cleaned:
     return None
-
   for h_id, h_name in heroes_map.items():
     if h_name.lower() == cleaned:
       return h_id
-
   for h_id, h_name in heroes_map.items():
     if cleaned in h_name.lower() or h_name.lower() in cleaned:
       return h_id
@@ -72,7 +69,6 @@ def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str
     return "Вражеские герои не указаны или не найдены в базе."
 
   candidate_stats = {}
-
   for enemy_id in enemy_hero_ids:
     try:
       url = f"https://api.opendota.com/api/heroes/{enemy_id}/matchups"
@@ -95,9 +91,7 @@ def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str
       print(f"Ошибка при получении матчей для врага ID {enemy_id}: {e}")
 
   if not candidate_stats:
-    return (
-        "Не удалось загрузить данные из OpenDota (таймаут или ошибка API)."
-    )
+    return "Не удалось загрузить данные из OpenDota."
 
   results = []
   for cid, data in candidate_stats.items():
@@ -111,8 +105,7 @@ def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str
   for cid, wr, games in results[:10]:
     hero_name = heroes_map.get(cid, f"Hero {cid}")
     top_counters.append(
-        f"- {hero_name}: {wr:.1f}% винрейт против этого состава врагов ({games}"
-        " сыгранных матчей в базе)"
+        f"• {hero_name}: {wr:.1f}% винрейт (сыграно матчей: {games})"
     )
 
   return "\n".join(top_counters)
@@ -130,18 +123,17 @@ app.mount(
 
 @app.post("/api/analyze")
 async def analyze_draft(data: DraftRequest):
-  try:
-    heroes_map = get_opendota_heroes()
+  heroes_map = get_opendota_heroes()
 
-    enemy_ids = []
-    for e in data.enemy_team:
-      hid = find_hero_id_by_name(e, heroes_map)
-      if hid:
-        enemy_ids.append(hid)
+  enemy_ids = []
+  for e in data.enemy_team:
+    hid = find_hero_id_by_name(e, heroes_map)
+    if hid:
+      enemy_ids.append(hid)
 
-    opendota_stats = get_enemy_counters_stats(enemy_ids, heroes_map)
+  opendota_stats = get_enemy_counters_stats(enemy_ids, heroes_map)
 
-    my_team_str = f"""
+  my_team_str = f"""
 - Поз 1 (Керри): {data.my_team.pos1 or "НЕ ВЫБРАН"}
 - Поз 2 (Мид): {data.my_team.pos2 or "НЕ ВЫБРАН"}
 - Поз 3 (Тройка/Оффлейн): {data.my_team.pos3 or "НЕ ВЫБРАН"}
@@ -149,10 +141,10 @@ async def analyze_draft(data: DraftRequest):
 - Поз 5 (Пятерка/Полная поддержка): {data.my_team.pos5 or "НЕ ВЫБРАН"}
 """.strip()
 
-    enemies = [e for e in data.enemy_team if e.strip()]
-    enemy_team_str = ", ".join(enemies) if enemies else "Герои не раскрыты"
+  enemies = [e for e in data.enemy_team if e.strip()]
+  enemy_team_str = ", ".join(enemies) if enemies else "Герои не раскрыты"
 
-    prompt = f"""
+  prompt = f"""
 Ты — профессиональный аналитик драфта Dota 2.
 
 МОЯ КОМАНДА ПО РОЛЯМ:
@@ -173,15 +165,20 @@ async def analyze_draft(data: DraftRequest):
 
 Кого взять на свободные роли:
 • [Поз X / Герой] (Винрейт по OpenDota: X%) — [1 короткое предложение с причиной]
-• [Поз X / Герой] (Винрейт по OpenDota: X%) — [1 короткое предложение с причиной]
 
 Стартовый закуп:
 • [Позиция/Линия]: [список предметов]
 """
 
+  try:
     response = client.models.generate_content(
         model="gemini-3.6-flash", contents=prompt
     )
     return {"analysis": response.text}
   except Exception as e:
-    return {"analysis": f"Ошибка сервиса: {str(e)}"}
+    # Защитный фолбэк при превышении суточного лимита 429
+    fallback_text = f"""Суточный лимит запросов к AI исчерпан, но вот прямая статистика OpenDota по лучшим контрпикам:
+
+Топ-герои по винрейту против состава ({enemy_team_str}):
+{opendota_stats}"""
+    return {"analysis": fallback_text}
