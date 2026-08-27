@@ -185,9 +185,9 @@
     <!-- Моя команда -->
     <div class="panel team-my">
       <h2>Моя команда</h2>
-      <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" value="Phantom Lancer / ПЛ"></div>
-      <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" placeholder="Оставьте пустым для подбора..."></div>
-      <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" value="Axe / Акс"></div>
+      <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" placeholder="Выберите героя..."></div>
+      <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" placeholder="Выберите героя..."></div>
+      <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" placeholder="Выберите героя..."></div>
       <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" value="Ancient Apparition / Аппарат"></div>
       <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" value="Bane / Бейн"></div>
     </div>
@@ -195,10 +195,10 @@
     <!-- Враги -->
     <div class="panel team-enemy">
       <h2>Команда противника</h2>
-      <div class="input-group"><label>Враг 1</label><input class="enemy" value="Luna / Луна"></div>
-      <div class="input-group"><label>Враг 2</label><input class="enemy" value="Ember Spirit / Эмбер"></div>
+      <div class="input-group"><label>Враг 1</label><input class="enemy" placeholder="Выберите героя..."></div>
+      <div class="input-group"><label>Враг 2</label><input class="enemy" placeholder="Выберите героя..."></div>
       <div class="input-group"><label>Враг 3</label><input class="enemy" value="Timbersaw / Тимбер"></div>
-      <div class="input-group"><label>Враг 4</label><input class="enemy" value="Io / Висп"></div>
+      <div class="input-group"><label>Враг 4</label><input class="enemy" placeholder="Выберите героя..."></div>
       <div class="input-group"><label>Враг 5</label><input class="enemy" value="Jakiro / Джакиро"></div>
     </div>
   </div>
@@ -237,7 +237,7 @@ async function analyze() {
     container.innerHTML = '';
 
     if (response.status === 'error') {
-      container.innerHTML = `<div style="color:#f04747;">${response.message}</div>`;
+      container.innerHTML = `<div style="color:#f04747; background:#1a2228; padding:15px; border-radius:8px;">${response.message}</div>`;
       return;
     }
 
@@ -251,7 +251,6 @@ async function analyze() {
         html += `<div style="color:#8e9297;">Не удалось подобрать подходящего героя.</div>`;
       } else {
         const best = item.data.best;
-        // Главный герой
         html += `
           <div class="best-card">
             <span class="badge-top">★ ЛУЧШИЙ ПИК</span>
@@ -266,8 +265,7 @@ async function analyze() {
           </div>
         `;
 
-        // Альтернативы
-        if (item.data.alternatives.length > 0) {
+        if (item.data.alternatives && item.data.alternatives.length > 0) {
           html += `<div style="font-size:12px; color:#8e9297; margin-bottom:8px;">Другие сильные варианты:</div>`;
           html += `<div class="alt-grid">`;
           item.data.alternatives.forEach(alt => {
@@ -290,7 +288,7 @@ async function analyze() {
     });
 
   } catch (err) {
-    container.innerHTML = `<div style="color:#f04747;">Ошибка сервера или сети. Попробуйте снова.</div>`;
+    container.innerHTML = `<div style="color:#f04747; background:#1a2228; padding:15px; border-radius:8px;">Ошибка сервера или сети. Попробуйте снова.</div>`;
   }
 }
 </script>
