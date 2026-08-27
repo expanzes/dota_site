@@ -70,25 +70,14 @@ def get_opendota_heroes():
   global HERO_CACHE
   if HERO_CACHE:
     return HERO_CACHE
-  for attempt in range(3):
-    try:
-      url = "https://api.opendota.com/api/heroes"
-      req = urllib.request.Request(
-          url,
-          headers={
-              "User-Agent": (
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-              )
-          },
-      )
-      with urllib.request.urlopen(
-          req, timeout=8, context=SSL_CONTEXT
-      ) as resp:
-        heroes = json.loads(resp.read().decode("utf-8"))
-        HERO_CACHE = {h["id"]: h["localized_name"] for h in heroes}
-        return HERO_CACHE
-    except Exception:
-      time.sleep(0.5)
+  try:
+    url = "https://api.opendota.com/api/heroes"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=10, context=SSL_CONTEXT) as resp:
+      heroes = json.loads(resp.read().decode("utf-8"))
+      HERO_CACHE = {h["id"]: h["localized_name"] for h in heroes}
+  except Exception as e:
+    print(f"Error fetching heroes: {e}")
   return HERO_CACHE
 
 
@@ -113,39 +102,25 @@ def find_hero_id_by_name(name: str, heroes_map: dict) -> int | None:
   return None
 
 
-def fetch_single_matchup(enemy_id: int):
+def fetch_matchup_for_hero(enemy_id: int):
   global MATCHUPS_CACHE
   if enemy_id in MATCHUPS_CACHE:
-    return enemy_id, MATCHUPS_CACHE[enemy_id], None
+    return MATCHUPS_CACHE[enemy_id]
 
   url = f"https://api.opendota.com/api/heroes/{enemy_id}/matchups"
-  headers = {
-      "User-Agent": (
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-      ),
-      "Accept": "application/json",
-  }
+  headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
 
-  # До 3 попыток запроса в случае блокировки или таймаута
-  for attempt in range(3):
-    try:
-      req = urllib.request.Request(url, headers=headers)
-      with urllib.request.urlopen(
-          req, timeout=8, context=SSL_CONTEXT
-      ) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
-        if isinstance(data, list) and len(data) > 0:
-          MATCHUPS_CACHE[enemy_id] = data
-          return enemy_id, data, None
-    except urllib.error.HTTPError as e:
-      if e.code == 429:
-        time.sleep(0.6 * (attempt + 1))
-      else:
-        break
-    except Exception:
-      time.sleep(0.4)
+  try:
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=10, context=SSL_CONTEXT) as resp:
+      data = json.loads(resp.read().decode("utf-8"))
+      if isinstance(data, list) and len(data) > 0:
+        MATCHUPS_CACHE[enemy_id] = data
+        return data
+  except Exception as e:
+    print(f"Error fetching matchup for {enemy_id}: {e}")
 
-  return enemy_id, None, "API Timeout/Limit"
+  return None
 
 
 def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_map: dict) -> list[str]:
@@ -181,7 +156,7 @@ def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_ma
       for h_name, wr, games in final_list[1:4]:
         formatted.append(f"    • {h_name}: {wr:.1f}% винрейт (матчей: {games})")
   else:
-    formatted.append("  • Не удалось загрузить данные OpenDota. Попробуйте еще раз.")
+    formatted.append("  • Не удалось подобрать героя")
 
   return formatted
 
@@ -211,23 +186,26 @@ async def analyze_draft(data: DraftRequest):
 
   candidate_stats = {}
   
-  # Плавный опрос OpenDota
-  with ThreadPoolExecutor(max_workers=3) as executor:
-    results = list(executor.map(fetch_single_matchup, enemy_ids))
+  # Последовательный опрос с паузой предотвращает 429
+  for enemy_id in enemy_ids:
+    matchups = fetch_matchup_for_hero(enemy_id)
+    if not matchups:
+      time.sleep(0.2)
+      matchups = fetch_matchup_for_hero(enemy_id)
 
-  for enemy_id, matchups, error in results:
-    if error or not matchups:
-      continue
-    for m in matchups:
-      cid = m["hero_id"]
-      games = m["games_played"]
-      enemy_wins = m["wins"]
-      candidate_wins = games - enemy_wins
+    if matchups:
+      for m in matchups:
+        cid = m["hero_id"]
+        games = m["games_played"]
+        enemy_wins = m["wins"]
+        candidate_wins = games - enemy_wins
 
-      if cid not in candidate_stats:
-        candidate_stats[cid] = {"wins": 0, "games": 0}
-      candidate_stats[cid]["wins"] += candidate_wins
-      candidate_stats[cid]["games"] += games
+        if cid not in candidate_stats:
+          candidate_stats[cid] = {"wins": 0, "games": 0}
+        candidate_stats[cid]["wins"] += candidate_wins
+        candidate_stats[cid]["games"] += games
+    
+    time.sleep(0.05)
 
   empty_positions = {
       "pos1": ("Поз 1 (Керри)", data.my_team.pos1),
