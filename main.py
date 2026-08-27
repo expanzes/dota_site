@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 import ssl
+import time
 import urllib.error
 import urllib.request
 from fastapi import FastAPI
@@ -18,7 +19,6 @@ SSL_CONTEXT = ssl.create_default_context()
 SSL_CONTEXT.check_hostname = False
 SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
-# Приведенные к нижнему регистру точные имена из OpenDota API
 ROLES_DB = {
     "pos1": {
         "phantom lancer", "anti-mage", "juggernaut", "sven", "spectre", "faceless void",
@@ -32,7 +32,7 @@ ROLES_DB = {
         "dragon knight", "sniper", "zeus", "death prophet", "pangolier", "batrider",
         "meepo", "kunkka", "huskar", "viper", "necrophos", "outworld devourer", "tiny",
         "primal beast", "windranger", "pudge", "razor", "nature's prophet", "arc warden",
-        "alchemist", "broodmother", "visage", "silencer", "monkey king"
+        "alchemist", "broodmother", "visage", "silencer"
     },
     "pos3": {
         "axe", "centaur warrunner", "mars", "tidehunter", "bristleback", "slardar",
@@ -70,23 +70,25 @@ def get_opendota_heroes():
   global HERO_CACHE
   if HERO_CACHE:
     return HERO_CACHE
-  try:
-    url = "https://api.opendota.com/api/heroes"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            )
-        },
-    )
-    with urllib.request.urlopen(
-        req, timeout=5, context=SSL_CONTEXT
-    ) as resp:
-      heroes = json.loads(resp.read().decode("utf-8"))
-      HERO_CACHE = {h["id"]: h["localized_name"] for h in heroes}
-  except Exception as e:
-    print(f"Ошибка загрузки героев: {e}")
+  for attempt in range(3):
+    try:
+      url = "https://api.opendota.com/api/heroes"
+      req = urllib.request.Request(
+          url,
+          headers={
+              "User-Agent": (
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+              )
+          },
+      )
+      with urllib.request.urlopen(
+          req, timeout=8, context=SSL_CONTEXT
+      ) as resp:
+        heroes = json.loads(resp.read().decode("utf-8"))
+        HERO_CACHE = {h["id"]: h["localized_name"] for h in heroes}
+        return HERO_CACHE
+    except Exception:
+      time.sleep(0.5)
   return HERO_CACHE
 
 
@@ -116,25 +118,34 @@ def fetch_single_matchup(enemy_id: int):
   if enemy_id in MATCHUPS_CACHE:
     return enemy_id, MATCHUPS_CACHE[enemy_id], None
 
-  try:
-    url = f"https://api.opendota.com/api/heroes/{enemy_id}/matchups"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            ),
-            "Accept": "application/json",
-        },
-    )
-    with urllib.request.urlopen(
-        req, timeout=6, context=SSL_CONTEXT
-    ) as resp:
-      data = json.loads(resp.read().decode("utf-8"))
-      MATCHUPS_CACHE[enemy_id] = data
-      return enemy_id, data, None
-  except Exception as e:
-    return enemy_id, None, str(e)
+  url = f"https://api.opendota.com/api/heroes/{enemy_id}/matchups"
+  headers = {
+      "User-Agent": (
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      ),
+      "Accept": "application/json",
+  }
+
+  # До 3 попыток запроса в случае блокировки или таймаута
+  for attempt in range(3):
+    try:
+      req = urllib.request.Request(url, headers=headers)
+      with urllib.request.urlopen(
+          req, timeout=8, context=SSL_CONTEXT
+      ) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        if isinstance(data, list) and len(data) > 0:
+          MATCHUPS_CACHE[enemy_id] = data
+          return enemy_id, data, None
+    except urllib.error.HTTPError as e:
+      if e.code == 429:
+        time.sleep(0.6 * (attempt + 1))
+      else:
+        break
+    except Exception:
+      time.sleep(0.4)
+
+  return enemy_id, None, "API Timeout/Limit"
 
 
 def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_map: dict) -> list[str]:
@@ -145,7 +156,7 @@ def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_ma
 
   for cid, data in candidate_stats.items():
     hero_name = heroes_map.get(cid, "")
-    if not hero_name or data["games"] < 10:
+    if not hero_name or data["games"] == 0:
       continue
 
     wr = (data["wins"] / data["games"]) * 100
@@ -155,11 +166,9 @@ def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_ma
     if hero_name.lower() in valid_heroes_for_role:
       role_candidates.append(item)
 
-  # Сортировка по винрейту
   role_candidates.sort(key=lambda x: x[1], reverse=True)
   all_candidates.sort(key=lambda x: x[1], reverse=True)
 
-  # Если по ролевому фильтру никто не найден, берем общих лучших
   final_list = role_candidates if role_candidates else all_candidates
 
   formatted = []
@@ -172,7 +181,7 @@ def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_ma
       for h_name, wr, games in final_list[1:4]:
         formatted.append(f"    • {h_name}: {wr:.1f}% винрейт (матчей: {games})")
   else:
-    formatted.append("  • Не удалось загрузить статистику по этой роли")
+    formatted.append("  • Не удалось загрузить данные OpenDota. Попробуйте еще раз.")
 
   return formatted
 
@@ -201,7 +210,9 @@ async def analyze_draft(data: DraftRequest):
     return {"analysis": "Выберите хотя бы одного вражеского героя для анализа."}
 
   candidate_stats = {}
-  with ThreadPoolExecutor(max_workers=5) as executor:
+  
+  # Плавный опрос OpenDota
+  with ThreadPoolExecutor(max_workers=3) as executor:
     results = list(executor.map(fetch_single_matchup, enemy_ids))
 
   for enemy_id, matchups, error in results:
