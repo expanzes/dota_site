@@ -5,73 +5,268 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dota 2 AI Draft Helper</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121318; color: #ffffff; padding: 40px; margin: 0; }
-        .container { max-width: 800px; margin: 0 auto; background: #1b1d24; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        h1 { color: #e54736; margin-top: 0; }
-        .team-input { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #aaa; }
-        input { width: 100%; padding: 12px; background: #0f1014; border: 1px solid #333; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 15px; }
-        input:focus { border-color: #e54736; outline: none; }
-        button { background: #e54736; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: 0.2s; }
-        button:hover { background: #ff5542; }
-        #result { margin-top: 25px; background: #0f1014; padding: 20px; border-radius: 6px; white-space: pre-wrap; line-height: 1.6; border-left: 4px solid #e54736; font-size: 15px; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #121418; color: #e1e1e1; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #1b1e24; padding: 25px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        h1 { text-align: center; color: #e54e38; margin-top: 0; margin-bottom: 20px; }
+        .teams-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 650px) { .teams-grid { grid-template-columns: 1fr; } }
+        .team-card { background: #232730; padding: 15px; border-radius: 8px; border: 1px solid #323846; }
+        .team-title { font-weight: bold; font-size: 1.1em; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 2px solid; }
+        .my-team .team-title { color: #4CAF50; border-color: #4CAF50; }
+        .enemy-team .team-title { color: #F44336; border-color: #F44336; }
+        .slot-group { margin-bottom: 10px; }
+        .slot-group label { display: block; font-size: 0.85em; color: #aaa; margin-bottom: 4px; }
+        input[type="text"] { width: 100%; padding: 8px 12px; background: #121418; border: 1px solid #3a4150; border-radius: 6px; color: #fff; font-size: 0.95em; outline: none; }
+        input[type="text"]:focus { border-color: #e54e38; }
+        .actions { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 12px; font-size: 1em; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .btn-submit { background: #e54e38; color: white; }
+        .btn-submit:hover { background: #ff5c45; }
+        .btn-clear { background: #3a4150; color: #ccc; flex: 0.3; }
+        .btn-clear:hover { background: #4a5366; color: white; }
+        #result-box { margin-top: 20px; padding: 15px; background: #121418; border-left: 4px solid #e54e38; border-radius: 4px; white-space: pre-wrap; display: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Dota 2 AI Draft Helper</h1>
-        <p>Введите имена героев через запятую для каждой команды:</p>
-        
-        <div class="team-input">
-            <label>Герои Radiant (Силы Света):</label>
-            <input type="text" id="radiantInput" value="Pudge, Crystal Maiden" placeholder="Например: Pudge, CM">
+
+<div class="container">
+    <h1>Dota 2 AI Draft Helper</h1>
+
+    <!-- Общий список всех героев для автокомплита -->
+    <datalist id="dota-heroes">
+        <option value="Abaddon / Абаддон"></option>
+        <option value="Alchemist / Алхимик"></option>
+        <option value="Ancient Apparition / Аппарат"></option>
+        <option value="Anti-Mage / Антимаг"></option>
+        <option value="Arc Warden / Арк Варден"></option>
+        <option value="Axe / Акс"></option>
+        <option value="Bane / Бейн"></option>
+        <option value="Batrider / Бэтрайдер"></option>
+        <option value="Beastmaster / Бистмастер"></option>
+        <option value="Bloodseeker / Сикер"></option>
+        <option value="Bounty Hunter / БХ"></option>
+        <option value="Brewmaster / Панда"></option>
+        <option value="Bristleback / Бристлбек"></option>
+
+        <option value="Broodmother / Бруда"></option>
+        <option value="Centaur Warrunner / Кентавр"></option>
+        <option value="Chaos Knight / ЦК"></option>
+        <option value="Chen / Чен"></option>
+        <option value="Clinkz / Клинкз"></option>
+        <option value="Clockwerk / Клокверк"></option>
+        <option value="Crystal Maiden / ЦМ"></option>
+        <option value="Dark Seer / ДС"></option>
+        <option value="Dark Willow / Виллоу"></option>
+        <option value="Dawnbreaker / Валькирия"></option>
+        <option value="Dazzle / Даззл"></option>
+        <option value="Death Prophet / Банша"></option>
+        <option value="Disruptor / Дизраптор"></option>
+        <option value="Doom / Дум"></option>
+        <option value="Dragon Knight / ДК"></option>
+        <option value="Drow Ranger / Дровка"></option>
+        <option value="Earth Spirit / Земля"></option>
+        <option value="Earthshaker / Шейкер"></option>
+        <option value="Elder Titan / Титан"></option>
+        <option value="Ember Spirit / Эмбер"></option>
+        <option value="Enchantress / Коза"></option>
+        <option value="Enigma / Энигма"></option>
+        <option value="Faceless Void / Войд"></option>
+        <option value="Grimstroke / Грим"></option>
+        <option value="Gyrocopter / Гиро"></option>
+        <option value="Hoodwink / Белка"></option>
+        <option value="Huskar / Хускар"></option>
+        <option value="Invoker / Инвокер"></option>
+        <option value="Io / Висп"></option>
+        <option value="Jakiro / Джакиро"></option>
+        <option value="Juggernaut / Джаггернаут"></option>
+        <option value="Keeper of the Light / Котл"></option>
+        <option value="Kunkka / Кунка"></option>
+        <option value="Legion Commander / Легионка"></option>
+        <option value="Leshrac / Лешрак"></option>
+        <option value="Lich / Лич"></option>
+        <option value="Lifestealer / Гуля"></option>
+        <option value="Lina / Лина"></option>
+        <option value="Lion / Лион"></option>
+        <option value="Lone Druid / Друид"></option>
+        <option value="Luna / Луна"></option>
+        <option value="Lycan / Ликан"></option>
+        <option value="Magnus / Магнус"></option>
+        <option value="Marci / Марси"></option>
+        <option value="Mars / Марс"></option>
+        <option value="Medusa / Медуза"></option>
+        <option value="Meepo / Мипо"></option>
+        <option value="Mirana / Мирана"></option>
+        <option value="Monkey King / МК"></option>
+        <option value="Morphling / Морф"></option>
+        <option value="Muerta / Муэрта"></option>
+        <option value="Naga Siren / Нага"></option>
+        <option value="Nature's Prophet / Фурион"></option>
+        <option value="Necrophos / Некр"></option>
+        <option value="Night Stalker / Баланар"></option>
+        <option value="Nyx Assassin / Никс"></option>
+        <option value="Ogre Magi / Огр"></option>
+        <option value="Omniknight / Омник"></option>
+        <option value="Oracle / Оракул"></option>
+        <option value="Outworld Destroyer / ОД"></option>
+        <option value="Pangolier / Панго"></option>
+        <option value="Phantom Assassin / Фантомка"></option>
+        <option value="Phantom Lancer / ПЛ"></option>
+        <option value="Phoenix / Феникс"></option>
+        <option value="Primal Beast / Зверь"></option>
+        <option value="Puck / Пак"></option>
+        <option value="Pudge / Пудж"></option>
+        <option value="Pugna / Пугна"></option>
+        <option value="Queen of Pain / Квопа"></option>
+        <option value="Clockwerk / Клок"></option>
+        <option value="Razor / Разор"></option>
+        <option value="Riki / Рики"></option>
+        <option value="Rubick / Рубик"></option>
+        <option value="Sand King / СК"></option>
+        <option value="Shadow Demon / ШД"></option>
+        <option value="Shadow Fiend / СФ"></option>
+        <option value="Shadow Shaman / Раста"></option>
+        <option value="Silencer / Саиленсер"></option>
+        <option value="Skywrath Mage / Скаймаг"></option>
+        <option value="Slardar / Слардар"></option>
+        <option value="Slark / Сларк"></option>
+        <option value="Snapfire / Бабка"></option>
+        <option value="Sniper / Снайпер"></option>
+        <option value="Spectre / Спектра"></option>
+        <option value="Spirit Breaker / Бара"></option>
+        <option value="Storm Spirit / Шторм"></option>
+        <option value="Sven / Свен"></option>
+        <option value="Techies / Течис"></option>
+        <option value="Templar Assassin / Темплярка"></option>
+        <option value="Terrorblade / ТБ"></option>
+        <option value="Tidehunter / Тайд"></option>
+        <option value="Timbersaw / Тимбер"></option>
+        <option value="Tinker / Тинкер"></option>
+        <option value="Tiny / Тини"></option>
+        <option value="Treant Protector / Дерево"></option>
+        <option value="Troll Warlord / Тролль"></option>
+        <option value="Tusk / Таск"></option>
+        <option value="Underlord / Питлорд"></option>
+        <option value="Undying / Зомби"></option>
+        <option value="Ursa / Урса"></option>
+        <option value="Vengeful Spirit / Венга"></option>
+        <option value="Venomancer / Веномансер"></option>
+        <option value="Viper / Вайпер"></option>
+        <option value="Visage / Визаж"></option>
+        <option value="Void Spirit / Войд Спирит"></option>
+        <option value="Warlock / Варлок"></option>
+        <option value="Weaver / Вивер"></option>
+        <option value="Windranger / ВРка"></option>
+        <option value="Winter Wyvern / Виверна"></option>
+        <option value="Witch Doctor / ВД"></option>
+        <option value="Wraith King / ВК"></option>
+        <option value="Zeus / Зевс"></option>
+    </datalist>
+
+    <div class="teams-grid">
+        <!-- МОЯ КОМАНДА -->
+        <div class="team-card my-team">
+            <div class="team-title">🛡️ Моя команда</div>
+            
+            <div class="slot-group">
+                <label>Поз 1 — Керри</label>
+                <input type="text" id="my_pos1" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
+            <div class="slot-group">
+                <label>Поз 2 — Мид</label>
+                <input type="text" id="my_pos2" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
+            <div class="slot-group">
+                <label>Поз 3 — Тройка (Оффлейн)</label>
+                <input type="text" id="my_pos3" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
+            <div class="slot-group">
+                <label>Поз 4 — Четверка (Софт-саппорт)</label>
+                <input type="text" id="my_pos4" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
+            <div class="slot-group">
+                <label>Поз 5 — Пятерка (Хард-саппорт)</label>
+                <input type="text" id="my_pos5" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
         </div>
 
-        <div class="team-input">
-            <label>Герои Dire (Силы Тьмы):</label>
-            <input type="text" id="direInput" value="Axe, Invoker" placeholder="Например: Axe, Invoker">
+        <!-- КОМАНДА ПРОТИВНИКА -->
+        <div class="team-card enemy-team">
+            <div class="team-title">⚔️ Команда противника</div>
+            
+            <div class="slot-group">
+                <label>Враг 1</label>
+                <input type="text" id="enemy_1" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
+            <div class="slot-group">
+                <label>Враг 2</label>
+                <input type="text" id="enemy_2" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
+            <div class="slot-group">
+                <label>Враг 3</label>
+                <input type="text" id="enemy_3" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
+            <div class="slot-group">
+                <label>Враг 4</label>
+                <input type="text" id="enemy_4" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
+            <div class="slot-group">
+                <label>Враг 5</label>
+                <input type="text" id="enemy_5" list="dota-heroes" placeholder="Выберите героя...">
+            </div>
         </div>
-
-        <button onclick="sendDraft()">Проанализировать драфт</button>
-
-        <div id="result">Результат анализа появится здесь...</div>
     </div>
 
-    <script>
-        async function sendDraft() {
-            const resultBox = document.getElementById('result');
-            resultBox.innerText = "⏳ Анализируем драфт... Пожалуйста, подождите.";
+    <div class="actions">
+        <button class="btn-submit" onclick="analyzeDraft()">Проанализировать драфт</button>
+        <button class="btn-clear" onclick="clearFields()">Очистить</button>
+    </div>
 
-            // 1. Считываем текст из полей ввода и превращаем его в массивы имен
-            const radiantText = document.getElementById('radiantInput').value;
-            const direText = document.getElementById('direInput').value;
+    <div id="result-box"></div>
+</div>
 
-            const radiantHeroes = radiantText.split(',').map(h => h.trim()).filter(h => h);
-            const direHeroes = direText.split(',').map(h => h.trim()).filter(h => h);
+<script>
+    async function analyzeDraft() {
+        const resultBox = document.getElementById('result-box');
+        resultBox.style.display = 'block';
+        resultBox.innerText = 'Анализирую драфт... Пожалуйста, подождите.';
 
-            // 2. Отправляем данные на наш Python-сервер
-            try {
-                const response = await fetch('/api/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        radiant: radiantHeroes,
-                        dire: direHeroes
-                    })
-                });
+        const payload = {
+            my_team: {
+                pos1: document.getElementById('my_pos1').value,
+                pos2: document.getElementById('my_pos2').value,
+                pos3: document.getElementById('my_pos3').value,
+                pos4: document.getElementById('my_pos4').value,
+                pos5: document.getElementById('my_pos5').value
+            },
+            enemy_team: [
+                document.getElementById('enemy_1').value,
+                document.getElementById('enemy_2').value,
+                document.getElementById('enemy_3').value,
+                document.getElementById('enemy_4').value,
+                document.getElementById('enemy_5').value
+            ]
+        };
 
-                const data = await response.json();
-                
-                // 3. Выводим результат анализа на страницу
-                if (data.analysis) {
-                    resultBox.innerText = data.analysis;
-                } else {
-                    resultBox.innerText = "❌ Ошибка при получении ответа от сервера.";
-                }
-            } catch (error) {
-                resultBox.innerText = "❌ Ошибка соединения с сервером: " + error.message;
-            }
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            resultBox.innerText = data.analysis || data.error;
+        } catch (e) {
+            resultBox.innerText = 'Ошибка при соединении с сервером.';
         }
-    </script>
+    }
+
+    function clearFields() {
+        const inputs = document.querySelectorAll('input[type="text"]');
+        inputs.forEach(input => input.value = '');
+        document.getElementById('result-box').style.display = 'none';
+    }
+</script>
+
 </body>
 </html>
