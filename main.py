@@ -1,5 +1,7 @@
 import json
 import os
+import ssl
+import urllib.error
 import urllib.request
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
@@ -10,9 +12,13 @@ from pydantic import BaseModel
 app = FastAPI()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Кэш для списков героев и результатов матчей
 HERO_CACHE = {}
 MATCHUPS_CACHE = {}
+
+# Игнорируем проблемы с SSL-сертификатами на сервере
+SSL_CONTEXT = ssl.create_default_context()
+SSL_CONTEXT.check_hostname = False
+SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
 
 class MyTeam(BaseModel):
@@ -42,7 +48,9 @@ def get_opendota_heroes():
             )
         },
     )
-    with urllib.request.urlopen(req, timeout=5) as resp:
+    with urllib.request.urlopen(
+        req, timeout=5, context=SSL_CONTEXT
+    ) as resp:
       heroes = json.loads(resp.read().decode("utf-8"))
       HERO_CACHE = {h["id"]: h["localized_name"] for h in heroes}
   except Exception as e:
@@ -71,11 +79,11 @@ def find_hero_id_by_name(name: str, heroes_map: dict) -> int | None:
   return None
 
 
-def get_hero_matchups(enemy_id: int) -> list:
-  """Получает матчи конкретного героя с использованием кэша."""
+def get_hero_matchups(enemy_id: int):
+  """Получение контрпиков с детальным логом ошибок."""
   global MATCHUPS_CACHE
   if enemy_id in MATCHUPS_CACHE:
-    return MATCHUPS_CACHE[enemy_id]
+    return MATCHUPS_CACHE[enemy_id], None
 
   try:
     url = f"https://api.opendota.com/api/heroes/{enemy_id}/matchups"
@@ -84,25 +92,36 @@ def get_hero_matchups(enemy_id: int) -> list:
         headers={
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            )
+            ),
+            "Accept": "application/json",
         },
     )
-    with urllib.request.urlopen(req, timeout=4) as resp:
+    with urllib.request.urlopen(
+        req, timeout=4, context=SSL_CONTEXT
+    ) as resp:
       data = json.loads(resp.read().decode("utf-8"))
       MATCHUPS_CACHE[enemy_id] = data
-      return data
+      return data, None
+  except urllib.error.HTTPError as e:
+    return None, f"HTTP Error {e.code}"
   except Exception as e:
-    print(f"Ошибка загрузки матчей для врага ID {enemy_id}: {e}")
-    return []
+    return None, str(e)
 
 
 def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str:
   if not enemy_hero_ids:
-    return "Вражеские герои не указаны или не найдены в базе."
+    return "Вражеские герои не распознаны по именам."
 
   candidate_stats = {}
+  errors = []
+
   for enemy_id in enemy_hero_ids:
-    matchups = get_hero_matchups(enemy_id)
+    matchups, error = get_hero_matchups(enemy_id)
+    if error:
+      hero_name = heroes_map.get(enemy_id, f"ID {enemy_id}")
+      errors.append(f"{hero_name}: {error}")
+      continue
+
     for m in matchups:
       cid = m["hero_id"]
       games = m["games_played"]
@@ -115,7 +134,8 @@ def get_enemy_counters_stats(enemy_hero_ids: list[int], heroes_map: dict) -> str
       candidate_stats[cid]["games"] += games
 
   if not candidate_stats:
-    return "Не удалось получить статистику (OpenDota временно не отвечает)."
+    err_details = ", ".join(errors) if errors else "Неизвестная ошибка сети"
+    return f"Отказ OpenDota API ({err_details})."
 
   results = []
   for cid, data in candidate_stats.items():
