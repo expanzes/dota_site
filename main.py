@@ -3,8 +3,13 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from google import genai
+from fastapi.responses import RedirectResponse
 
 app = FastAPI()
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/site")
 
 app.mount("/site", StaticFiles(directory="static", html=True), name="static")
 
