@@ -5,511 +5,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dota 2 Helper</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: #0b0e11; color: #e1e6eb; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; min-height: 100vh; overflow-x: hidden; }
 
-    body {
-      background-color: #0b0e11;
-      color: #e1e6eb;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+    #welcome-splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at center, #161c24 0%, #080a0d 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; user-select: none; opacity: 1; visibility: visible; transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.7s; }
+    #welcome-splash.splash-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .splash-content { text-align: center; max-width: 620px; padding: 30px; animation: splashAppear 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .splash-logo { width: 72px; height: 72px; background: linear-gradient(135deg, #ff4655 0%, #bd1b2b 100%); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 34px; color: white; margin: 0 auto 24px auto; box-shadow: 0 10px 30px rgba(255, 70, 85, 0.4); }
+    .splash-title { font-size: 44px; font-weight: 800; color: #ffffff; margin-bottom: 12px; letter-spacing: 0.5px; }
+    .splash-title span { color: #ff4655; }
+    .splash-desc { font-size: 16px; color: #8e9297; line-height: 1.6; margin-bottom: 40px; }
+    .splash-prompt { font-size: 13px; color: #ff4655; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; animation: pulse 2s infinite; }
 
-    /* Приветственный экран */
-    #welcome-splash {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: radial-gradient(circle at center, #161c24 0%, #080a0d 100%);
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      user-select: none;
-      opacity: 1;
-      visibility: visible;
-      transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.7s;
-    }
+    .app-container { display: flex; min-height: 100vh; opacity: 0; transform: scale(0.98); transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+    .app-container.app-visible { opacity: 1; transform: scale(1); }
 
-    #welcome-splash.splash-hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
+    .sidebar { width: 260px; background: #12171d; border-right: 1px solid #1e2630; display: flex; flex-direction: column; padding: 24px 16px; flex-shrink: 0; }
+    .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 24px; border-bottom: 1px solid #1e2630; margin-bottom: 24px; cursor: pointer; transition: transform 0.2s ease, opacity 0.2s ease; }
+    .brand:hover { opacity: 0.85; transform: translateX(2px); }
+    .brand-logo { width: 36px; height: 36px; background: linear-gradient(135deg, #ff4655, #bd1b2b); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; color: white; box-shadow: 0 4px 12px rgba(255, 70, 85, 0.3); }
+    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; color: #ffffff; }
 
-    .splash-content {
-      text-align: center;
-      max-width: 620px;
-      padding: 30px;
-      animation: splashAppear 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .nav-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 8px; color: #8e9297; text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+    .nav-item:hover:not(.disabled) { background: #1a222a; color: #ffffff; transform: translateX(4px); }
+    .nav-item.active { background: rgba(255, 70, 85, 0.15); color: #ff4655; border-left: 3px solid #ff4655; font-weight: 600; }
+    .nav-item.disabled { opacity: 0.45; cursor: not-allowed; }
+    .badge-soon { font-size: 10px; background: #2a353d; color: #a3a6aa; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 600; }
 
-    .splash-logo {
-      width: 72px;
-      height: 72px;
-      background: linear-gradient(135deg, #ff4655 0%, #bd1b2b 100%);
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 34px;
-      color: white;
-      margin: 0 auto 24px auto;
-      box-shadow: 0 10px 30px rgba(255, 70, 85, 0.4);
-    }
+    .main-content { flex: 1; padding: 36px 48px; max-width: 1150px; }
+    .header-section { margin-bottom: 32px; }
+    .app-title { font-size: 30px; font-weight: 800; color: #ffffff; margin-bottom: 8px; }
+    .app-title span { color: #ff4655; }
+    .app-subtitle { font-size: 15px; color: #8e9297; line-height: 1.5; max-width: 700px; }
 
-    .splash-title {
-      font-size: 44px;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 12px;
-      letter-spacing: 0.5px;
-    }
+    .news-grid { display: flex; flex-direction: column; gap: 16px; }
+    .news-card { background: #151a21; border: 1px solid #222b35; border-radius: 12px; padding: 20px; transition: all 0.25s ease; text-decoration: none; color: inherit; display: block; }
+    .news-card:hover { border-color: #ff4655; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .news-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #ff4655; background: rgba(255, 70, 85, 0.1); padding: 3px 8px; border-radius: 4px; margin-bottom: 10px; }
+    .news-card-title { font-size: 18px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    .news-card-text { font-size: 14px; color: #8e9297; line-height: 1.6; }
+    .news-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12px; color: #5c626a; }
+    .news-read-more { color: #ff4655; font-weight: 600; }
 
-    .splash-title span {
-      color: #ff4655;
-    }
-
-    .splash-desc {
-      font-size: 16px;
-      color: #8e9297;
-      line-height: 1.6;
-      margin-bottom: 40px;
-    }
-
-    .splash-prompt {
-      font-size: 13px;
-      color: #ff4655;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 600;
-      animation: pulse 2s infinite;
-    }
-
-    /* Главный интерфейс */
-    .app-container {
-      display: flex;
-      min-height: 100vh;
-      opacity: 0;
-      transform: scale(0.98);
-      transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .app-container.app-visible {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    /* Боковое меню */
-    .sidebar {
-      width: 260px;
-      background: #12171d;
-      border-right: 1px solid #1e2630;
-      display: flex;
-      flex-direction: column;
-      padding: 24px 16px;
-      flex-shrink: 0;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding-bottom: 24px;
-      border-bottom: 1px solid #1e2630;
-      margin-bottom: 24px;
-      cursor: pointer;
-      transition: transform 0.2s ease, opacity 0.2s ease;
-    }
-
-    .brand:hover {
-      opacity: 0.85;
-      transform: translateX(2px);
-    }
-
-    .brand-logo {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #ff4655, #bd1b2b);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 20px;
-      color: white;
-      box-shadow: 0 4px 12px rgba(255, 70, 85, 0.3);
-    }
-
-    .brand-title {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      color: #ffffff;
-    }
-
-    .nav-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-radius: 8px;
-      color: #8e9297;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .nav-item:hover:not(.disabled) {
-      background: #1a222a;
-      color: #ffffff;
-      transform: translateX(4px);
-    }
-
-    .nav-item.active {
-      background: rgba(255, 70, 85, 0.15);
-      color: #ff4655;
-      border-left: 3px solid #ff4655;
-      font-weight: 600;
-    }
-
-    .nav-item.disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .badge-soon {
-      font-size: 10px;
-      background: #2a353d;
-      color: #a3a6aa;
-      padding: 2px 6px;
-      border-radius: 4px;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    /* Основной контент */
-    .main-content {
-      flex: 1;
-      padding: 36px 48px;
-      max-width: 1150px;
-    }
-
-    .header-section {
-      margin-bottom: 32px;
-    }
-
-    .app-title {
-      font-size: 30px;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 8px;
-    }
-
-    .app-title span {
-      color: #ff4655;
-    }
-
-    .app-subtitle {
-      font-size: 15px;
-      color: #8e9297;
-      line-height: 1.5;
-      max-width: 700px;
-    }
-
-    /* Новости */
-    .news-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .news-card {
-      background: #151a21;
-      border: 1px solid #222b35;
-      border-radius: 12px;
-      padding: 20px;
-      transition: all 0.25s ease;
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-
-    .news-card:hover {
-      border-color: #ff4655;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
-
-    .news-tag {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #ff4655;
-      background: rgba(255, 70, 85, 0.1);
-      padding: 3px 8px;
-      border-radius: 4px;
-      margin-bottom: 10px;
-    }
-
-    .news-card-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 8px;
-    }
-
-    .news-card-text {
-      font-size: 14px;
-      color: #8e9297;
-      line-height: 1.6;
-    }
-
-    .news-card-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 14px;
-      font-size: 12px;
-      color: #5c626a;
-    }
-
-    .news-read-more {
-      color: #ff4655;
-      font-weight: 600;
-    }
-
-    /* Драфт формы */
-    .flex-grid {
-      display: flex;
-      gap: 24px;
-      margin-bottom: 24px;
-    }
-
-    .panel {
-      flex: 1;
-      background: #151a21;
-      border: 1px solid #222b35;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .panel h2 {
-      font-size: 16px;
-      font-weight: 700;
-      margin-top: 0;
-      border-bottom: 2px solid #222b35;
-      padding-bottom: 12px;
-      margin-bottom: 16px;
-    }
-
+    .flex-grid { display: flex; gap: 24px; margin-bottom: 24px; }
+    .panel { flex: 1; background: #151a21; border: 1px solid #222b35; border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); }
+    .panel h2 { font-size: 16px; font-weight: 700; margin-top: 0; border-bottom: 2px solid #222b35; padding-bottom: 12px; margin-bottom: 16px; }
     .team-my h2 { color: #43b581; border-color: rgba(67, 181, 129, 0.3); }
     .team-enemy h2 { color: #ff4655; border-color: rgba(255, 70, 85, 0.3); }
 
-    .input-group {
-      margin-bottom: 12px;
-    }
+    .input-group { margin-bottom: 12px; }
+    .input-group label { display: block; font-size: 12px; color: #8e9297; margin-bottom: 6px; font-weight: 500; }
+    input { width: 100%; box-sizing: border-box; background: #0d1014; border: 1px solid #222b35; color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 14px; transition: all 0.2s ease; }
+    input:focus { outline: none; border-color: #ff4655; box-shadow: 0 0 0 3px rgba(255, 70, 85, 0.15); }
 
-    .input-group label {
-      display: block;
-      font-size: 12px;
-      color: #8e9297;
-      margin-bottom: 6px;
-      font-weight: 500;
-    }
+    .action-row { display: flex; gap: 12px; }
+    button.btn-analyze { flex: 3; background: linear-gradient(135deg, #ff4655 0%, #d62d3c 100%); color: white; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; box-shadow: 0 4px 15px rgba(255, 70, 85, 0.25); }
+    button.btn-analyze:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 70, 85, 0.4); }
+    button.btn-clear { flex: 1; background: #1a222a; color: #a3a6aa; border: 1px solid #222b35; padding: 14px; font-size: 15px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; }
+    button.btn-clear:hover { background: #252f3b; color: #ffffff; }
 
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      background: #0d1014;
-      border: 1px solid #222b35;
-      color: #fff;
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-size: 14px;
-      transition: all 0.2s ease;
-    }
+    .results-container { margin-top: 32px; }
+    .role-section { background: #151a21; border: 1px solid #222b35; border-radius: 12px; padding: 20px; margin-bottom: 20px; animation: fadeInUp 0.4s ease-out forwards; }
+    .role-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 16px; }
 
-    input:focus {
-      outline: none;
-      border-color: #ff4655;
-      box-shadow: 0 0 0 3px rgba(255, 70, 85, 0.15);
-    }
+    .top-picks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .best-card { display: flex; align-items: center; background: linear-gradient(135deg, #1c242e 0%, #12171d 100%); border: 2px solid #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.15); border-radius: 10px; padding: 16px; position: relative; }
+    .best-card.card-games { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.15); }
+    .badge-top { position: absolute; top: -12px; right: 16px; background: #ffd700; color: #000; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 12px; }
+    .badge-top.badge-games { background: #3b82f6; color: #ffffff; }
+    .best-card img { width: 90px; height: 50px; border-radius: 6px; object-fit: cover; }
+    .best-info { margin-left: 14px; flex-grow: 1; }
+    .best-name { font-size: 18px; font-weight: 700; color: #fff; }
+    .best-stats { margin-top: 4px; font-size: 13px; color: #a3a6aa; }
+    .winrate-val { color: #43b581; font-weight: 700; font-size: 16px; }
+    .games-val { color: #3b82f6; font-weight: 700; font-size: 16px; }
 
-    .action-row {
-      display: flex;
-      gap: 12px;
-    }
+    /* Блок других сильных вариантов */
+    .others-container { border-top: 1px solid #1e2630; padding-top: 16px; }
+    .others-title { font-size: 13px; font-weight: 600; color: #8e9297; margin-bottom: 12px; }
+    .others-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .other-card { display: flex; align-items: center; background: #0d1014; border: 1px solid #1e2630; border-radius: 8px; padding: 8px 12px; transition: border-color 0.2s ease; }
+    .other-card:hover { border-color: #3b82f6; }
+    .other-card img { width: 50px; height: 28px; border-radius: 4px; object-fit: cover; margin-right: 10px; }
+    .other-info { display: flex; flex-direction: column; }
+    .other-name { font-size: 13px; font-weight: 600; color: #ffffff; }
+    .other-stats { font-size: 12px; color: #8e9297; }
+    .other-wr { color: #43b581; font-weight: 700; }
 
-    button.btn-analyze {
-      flex: 3;
-      background: linear-gradient(135deg, #ff4655 0%, #d62d3c 100%);
-      color: white;
-      border: none;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 700;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      box-shadow: 0 4px 15px rgba(255, 70, 85, 0.25);
-    }
-
-    button.btn-analyze:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 70, 85, 0.4);
-    }
-
-    button.btn-clear {
-      flex: 1;
-      background: #1a222a;
-      color: #a3a6aa;
-      border: 1px solid #222b35;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.25s ease;
-    }
-
-    button.btn-clear:hover {
-      background: #252f3b;
-      color: #ffffff;
-    }
-
-    /* Результаты */
-    .results-container {
-      margin-top: 32px;
-    }
-
-    .role-section {
-      background: #151a21;
-      border: 1px solid #222b35;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-      animation: fadeInUp 0.4s ease-out forwards;
-    }
-
-    .role-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 16px;
-    }
-
-    /* Сетка на 2 колонки */
-    .top-picks-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .best-card {
-      display: flex;
-      align-items: center;
-      background: linear-gradient(135deg, #1c242e 0%, #12171d 100%);
-      border: 2px solid #ffd700;
-      box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
-      border-radius: 10px;
-      padding: 16px;
-      position: relative;
-    }
-
-    .best-card.card-games {
-      border-color: #3b82f6;
-      box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
-    }
-
-    .badge-top {
-      position: absolute;
-      top: -12px;
-      right: 16px;
-      background: #ffd700;
-      color: #000;
-      font-size: 10px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 12px;
-    }
-
-    .badge-top.badge-games {
-      background: #3b82f6;
-      color: #ffffff;
-    }
-
-    .best-card img {
-      width: 90px;
-      height: 50px;
-      border-radius: 6px;
-      object-fit: cover;
-    }
-
-    .best-info {
-      margin-left: 14px;
-      flex-grow: 1;
-    }
-
-    .best-name {
-      font-size: 18px;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .best-stats {
-      margin-top: 4px;
-      font-size: 13px;
-      color: #a3a6aa;
-    }
-
-    .winrate-val {
-      color: #43b581;
-      font-weight: 700;
-      font-size: 16px;
-    }
-
-    .games-val {
-      color: #3b82f6;
-      font-weight: 700;
-      font-size: 16px;
-    }
-
-    /* Keyframes */
-    @keyframes splashAppear {
-      from { opacity: 0; transform: scale(0.92) translateY(20px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 1; }
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(15px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes splashAppear { from { opacity: 0; transform: scale(0.92) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
     @media (max-width: 850px) {
       .app-container { flex-direction: column; }
@@ -522,19 +108,15 @@
 </head>
 <body>
 
-  <!-- Экран приветствия -->
   <div id="welcome-splash" onclick="enterApp()">
     <div class="splash-content">
       <div class="splash-logo">D2</div>
       <h1 class="splash-title">Dota 2 <span>Helper</span></h1>
-      <p class="splash-desc">
-        Многофункциональный аналитический веб-сервис для игроков Dota 2. Подбор идеальных контрпиков, актуальные новости Valve и аналитика драфтов.
-      </p>
+      <p class="splash-desc">Многофункциональный аналитический веб-сервис для игроков Dota 2.</p>
       <div class="splash-prompt">Нажмите в любом месте, чтобы войти</div>
     </div>
   </div>
 
-  <!-- Главное приложение -->
   <div id="app-container" class="app-container">
     <aside class="sidebar">
       <div class="brand" onclick="showSplash()" title="Нажмите, чтобы вернуться на главный экран">
@@ -542,32 +124,18 @@
         <div class="brand-title">Dota 2 Helper</div>
       </div>
       <ul class="nav-list">
-        <li class="nav-item active" id="nav-draft" onclick="switchTab('draft')">
-          <span>Draft Helper</span>
-        </li>
-        <li class="nav-item" id="nav-news" onclick="switchTab('news')">
-          <span>Новости Dota 2</span>
-        </li>
-        <li class="nav-item disabled">
-          <span>Fantasy Helper</span>
-          <span class="badge-soon">Скоро</span>
-        </li>
-        <li class="nav-item disabled">
-          <span>Match Analyzer</span>
-          <span class="badge-soon">Скоро</span>
-        </li>
+        <li class="nav-item active" id="nav-draft" onclick="switchTab('draft')"><span>Draft Helper</span></li>
+        <li class="nav-item" id="nav-news" onclick="switchTab('news')"><span>Новости Dota 2</span></li>
+        <li class="nav-item disabled"><span>Fantasy Helper</span><span class="badge-soon">Скоро</span></li>
+        <li class="nav-item disabled"><span>Match Analyzer</span><span class="badge-soon">Скоро</span></li>
       </ul>
     </aside>
 
     <main class="main-content">
-      
-      <!-- РАЗДЕЛ: DRAFT HELPER -->
       <div id="view-draft">
         <div class="header-section">
           <h1 class="app-title">Draft <span>Helper</span></h1>
-          <p class="app-subtitle">
-            Введите известных героев вашей команды и команды соперника для расчета наилучших контрпиков на основе статистики OpenDota.
-          </p>
+          <p class="app-subtitle">Введите известных героев вашей команды и команды соперника для расчета наилучших контрпиков.</p>
         </div>
 
         <datalist id="heroes-list"></datalist>
@@ -600,38 +168,27 @@
         <div id="results" class="results-container"></div>
       </div>
 
-      <!-- РАЗДЕЛ: НОВОСТИ DOTA 2 -->
       <div id="view-news" style="display: none;">
         <div class="header-section">
           <h1 class="app-title">Официальные новости <span>Dota 2</span></h1>
-          <p class="app-subtitle">
-            Свежие анонсы, патчи и патчноуты напрямую из официальных источников Steam / Valve.
-          </p>
+          <p class="app-subtitle">Свежие анонсы и патчноуты из Steam / Valve.</p>
         </div>
-
         <div id="news-container" class="news-grid">
           <div style="color:#8e9297; text-align:center; padding:30px;">Загрузка актуальных новостей...</div>
         </div>
       </div>
-
     </main>
   </div>
 
 <script>
 function enterApp() {
-  const splash = document.getElementById('welcome-splash');
-  const app = document.getElementById('app-container');
-  
-  splash.classList.add('splash-hidden');
-  app.classList.add('app-visible');
+  document.getElementById('welcome-splash').classList.add('splash-hidden');
+  document.getElementById('app-container').classList.add('app-visible');
 }
 
 function showSplash() {
-  const splash = document.getElementById('welcome-splash');
-  const app = document.getElementById('app-container');
-  
-  app.classList.remove('app-visible');
-  splash.classList.remove('splash-hidden');
+  document.getElementById('app-container').classList.remove('app-visible');
+  document.getElementById('welcome-splash').classList.remove('splash-hidden');
 }
 
 function switchTab(tab) {
@@ -659,19 +216,16 @@ async function loadDotaNews() {
   try {
     const res = await fetch('/api/news');
     const news = await res.json();
-    
     if (!news || news.length === 0) {
       container.innerHTML = '<div style="color:#8e9297;">Не удалось загрузить новости.</div>';
       return;
     }
-
     container.innerHTML = '';
     news.forEach(item => {
       const card = document.createElement('a');
       card.className = 'news-card';
       card.href = item.url;
       card.target = '_blank';
-      
       card.innerHTML = `
         <span class="news-tag">Steam / Valve</span>
         <div class="news-card-title">${item.title}</div>
@@ -684,7 +238,7 @@ async function loadDotaNews() {
       container.appendChild(card);
     });
   } catch(e) {
-    container.innerHTML = '<div style="color:#f04747;">Ошибка при загрузке новостей из Steam API.</div>';
+    container.innerHTML = '<div style="color:#f04747;">Ошибка загрузки новостей.</div>';
   }
 }
 
@@ -751,6 +305,7 @@ async function analyze() {
       } else {
         const topWr = item.data.top_winrate;
         const topGames = item.data.top_games;
+        const others = item.data.others || [];
 
         html += `
           <div class="top-picks-grid">
@@ -781,6 +336,27 @@ async function analyze() {
             </div>
           </div>
         `;
+
+        if (others.length > 0) {
+          html += `
+            <div class="others-container">
+              <div class="others-title">Другие сильные варианты:</div>
+              <div class="others-grid">
+                ${others.map(h => `
+                  <div class="other-card">
+                    <img src="${h.img}" alt="${h.name}">
+                    <div class="other-info">
+                      <span class="other-name">${h.name}</span>
+                      <span class="other-stats">
+                        <span class="other-wr">${h.winrate}%</span> (${h.games})
+                      </span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
       }
 
       section.innerHTML = html;
