@@ -18,32 +18,37 @@ SSL_CONTEXT = ssl.create_default_context()
 SSL_CONTEXT.check_hostname = False
 SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
+# Приведенные к нижнему регистру точные имена из OpenDota API
 ROLES_DB = {
     "pos1": {
-        "Phantom Lancer", "Anti-Mage", "Juggernaut", "Sven", "Spectre", "Faceless Void",
-        "Morphling", "Ursa", "Terrorblade", "Slark", "Luna", "Medusa", "Gyrocopter",
-        "Chaos Knight", "Lifestealer", "Drow Ranger", "Troll Warlord", "Monkey King", "Weaver", "Muerta"
+        "phantom lancer", "anti-mage", "juggernaut", "sven", "spectre", "faceless void",
+        "morphling", "ursa", "terrorblade", "slark", "luna", "medusa", "gyrocopter",
+        "chaos knight", "lifestealer", "drow ranger", "troll warlord", "monkey king",
+        "weaver", "muerta", "phantom assassin", "bloodseeker", "clinkz", "arc warden"
     },
     "pos2": {
-        "Storm Spirit", "Ember Spirit", "Void Spirit", "Earth Spirit", "Puck", "Lina",
-        "Leshrak", "Invoker", "Tinker", "Queen of Pain", "Shadow Fiend", "Templar Assassin",
-        "Dragon Knight", "Sniper", "Zeus", "Death Prophet", "Pangolier", "Batrider",
-        "Meepo", "Kunkka", "Huskar", "Viper", "Necrophos", "Outworld Destroyer", "Tiny",
-        "Primal Beast", "Windranger", "Pudge", "Razor", "Nature's Prophet"
+        "storm spirit", "ember spirit", "void spirit", "earth spirit", "puck", "lina",
+        "leshrac", "invoker", "tinker", "queen of pain", "shadow fiend", "templar assassin",
+        "dragon knight", "sniper", "zeus", "death prophet", "pangolier", "batrider",
+        "meepo", "kunkka", "huskar", "viper", "necrophos", "outworld devourer", "tiny",
+        "primal beast", "windranger", "pudge", "razor", "nature's prophet", "arc warden",
+        "alchemist", "broodmother", "visage", "silencer", "monkey king"
     },
     "pos3": {
-        "Axe", "Centaur Warrunner", "Mars", "Tidehunter", "Bristleback", "Slardar",
-        "Underlord", "Doom", "Timbersaw", "Magnus", "Night Stalker", "Dawnbreaker",
-        "Beastmaster", "Enigma", "Dark Seer", "Legion Commander", "Viper", "Primal Beast", "Abaddon"
+        "axe", "centaur warrunner", "mars", "tidehunter", "bristleback", "slardar",
+        "underlord", "doom", "timbersaw", "magnus", "night stalker", "dawnbreaker",
+        "beastmaster", "enigma", "dark seer", "legion commander", "viper", "primal beast",
+        "abaddon", "brewmaster", "sand king", "lycan"
     },
     "pos4": {
-        "Tusk", "Hoodwink", "Clockwerk", "Mirana", "Bounty Hunter", "Nyx Assassin",
-        "Earthshaker", "Rubick", "Tiny", "Pugna", "Techies", "Dark Willow", "Snapfire"
+        "tusk", "hoodwink", "clockwerk", "mirana", "bounty hunter", "nyx assassin",
+        "earthshaker", "rubick", "tiny", "pugna", "techies", "dark willow", "snapfire",
+        "skywrath mage", "marci"
     },
     "pos5": {
-        "Jakiro", "Bane", "Ancient Apparition", "Lion", "Shadow Shaman", "Crystal Maiden",
-        "Witch Doctor", "Ogre Magi", "Disruptor", "Oracle", "Grimstroke", "Dazzle",
-        "Treant Protector", "Chen", "Enchantress", "Keeper of the Light", "Undying"
+        "jakiro", "bane", "ancient apparition", "lion", "shadow shaman", "crystal maiden",
+        "witch doctor", "ogre magi", "disruptor", "oracle", "grimstroke", "dazzle",
+        "treant protector", "chen", "enchantress", "keeper of the light", "undying", "lich"
     }
 }
 
@@ -133,39 +138,41 @@ def fetch_single_matchup(enemy_id: int):
 
 
 def get_recommendations_for_role(role_key: str, candidate_stats: dict, heroes_map: dict) -> list[str]:
-  """Находит самого лучшего героя на роль и топ альтернатив без ограничения в 50%."""
   valid_heroes_for_role = ROLES_DB.get(role_key, set())
-  results = []
+  
+  all_candidates = []
+  role_candidates = []
 
   for cid, data in candidate_stats.items():
     hero_name = heroes_map.get(cid, "")
-    if data["games"] < 30:
+    if not hero_name or data["games"] < 10:
       continue
 
     wr = (data["wins"] / data["games"]) * 100
+    item = (hero_name, wr, data["games"])
 
-    # Проверяем привязку к роли
-    if valid_heroes_for_role and hero_name not in valid_heroes_for_role:
-      continue
+    all_candidates.append(item)
+    if hero_name.lower() in valid_heroes_for_role:
+      role_candidates.append(item)
 
-    results.append((hero_name, wr, data["games"]))
+  # Сортировка по винрейту
+  role_candidates.sort(key=lambda x: x[1], reverse=True)
+  all_candidates.sort(key=lambda x: x[1], reverse=True)
 
-  # Сортируем от высшего винрейта к низшему
-  results.sort(key=lambda x: x[1], reverse=True)
+  # Если по ролевому фильтру никто не найден, берем общих лучших
+  final_list = role_candidates if role_candidates else all_candidates
 
   formatted = []
-  if results:
-    # Самый лучший герой по математике
-    best_hero, best_wr, best_games = results[0]
+  if final_list:
+    best_hero, best_wr, best_games = final_list[0]
     formatted.append(f"  ★ САМЫЙ ЛУЧШИЙ ПИК: {best_hero} — {best_wr:.1f}% винрейт (матчей: {best_games})")
     
-    # Другие сильные варианты
-    if len(results) > 1:
-      formatted.append("  Другие варианты в эту позицию:")
-      for h_name, wr, games in results[1:4]:
+    if len(final_list) > 1:
+      formatted.append("  Другие сильные варианты:")
+      for h_name, wr, games in final_list[1:4]:
         formatted.append(f"    • {h_name}: {wr:.1f}% винрейт (матчей: {games})")
   else:
-    formatted.append("  • Не удалось подобрать героя под эту роль")
+    formatted.append("  • Не удалось загрузить статистику по этой роли")
 
   return formatted
 
