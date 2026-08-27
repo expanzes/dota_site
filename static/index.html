@@ -15,9 +15,98 @@
       background-color: #0b0e11;
       color: #e1e6eb;
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      display: flex;
       min-height: 100vh;
       overflow-x: hidden;
+    }
+
+    /* Приветственный экран (Splash Screen) */
+    #welcome-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #161c24 0%, #080a0d 100%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.7s;
+    }
+
+    #welcome-splash.splash-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .splash-content {
+      text-align: center;
+      max-width: 620px;
+      padding: 30px;
+      animation: splashAppear 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .splash-logo {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #ff4655 0%, #bd1b2b 100%);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 34px;
+      color: white;
+      margin: 0 auto 24px auto;
+      box-shadow: 0 10px 30px rgba(255, 70, 85, 0.4);
+    }
+
+    .splash-title {
+      font-size: 44px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .splash-title span {
+      color: #ff4655;
+    }
+
+    .splash-desc {
+      font-size: 16px;
+      color: #8e9297;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    .splash-prompt {
+      font-size: 13px;
+      color: #ff4655;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+      animation: pulse 2s infinite;
+    }
+
+    /* Главный интерфейс приложения */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      opacity: 0;
+      transform: scale(0.98);
+      transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .app-container.app-visible {
+      opacity: 1;
+      transform: scale(1);
     }
 
     /* Боковое меню */
@@ -115,12 +204,10 @@
       flex: 1;
       padding: 36px 48px;
       max-width: 1150px;
-      animation: fadeIn 0.4s ease-out;
     }
 
     .header-section {
       margin-bottom: 32px;
-      animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .app-title {
@@ -128,9 +215,6 @@
       font-weight: 800;
       color: #ffffff;
       margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
     }
 
     .app-title span {
@@ -144,7 +228,7 @@
       max-width: 700px;
     }
 
-    /* Форма ввода драфта */
+    /* Формы и кнопки */
     .flex-grid {
       display: flex;
       gap: 24px;
@@ -229,10 +313,6 @@
     button.btn-analyze:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(255, 70, 85, 0.4);
-    }
-
-    button.btn-analyze:active {
-      transform: translateY(0);
     }
 
     button.btn-clear {
@@ -379,10 +459,21 @@
       font-weight: 600;
     }
 
-    /* Анимации */
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    /* Keyframes */
+    @keyframes splashAppear {
+      from {
+        opacity: 0;
+        transform: scale(0.92) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
     }
 
     @keyframes fadeInUp {
@@ -396,101 +487,100 @@
       }
     }
 
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-12px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Адаптивность для мобильных */
     @media (max-width: 850px) {
-      body {
-        flex-direction: column;
-      }
-      .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #1e2630;
-      }
-      .flex-grid {
-        flex-direction: column;
-      }
-      .main-content {
-        padding: 20px;
-      }
+      .app-container { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #1e2630; }
+      .flex-grid { flex-direction: column; }
+      .main-content { padding: 20px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Боковое меню -->
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-logo">D2</div>
-      <div class="brand-title">Dota 2 Helper</div>
-    </div>
-    <ul class="nav-list">
-      <li class="nav-item active">
-        <span>Draft Helper</span>
-      </li>
-      <li class="nav-item disabled">
-        <span>Fantasy Helper</span>
-        <span class="badge-soon">Скоро</span>
-      </li>
-      <li class="nav-item disabled">
-        <span>Match Analyzer</span>
-        <span class="badge-soon">Скоро</span>
-      </li>
-    </ul>
-  </aside>
-
-  <!-- Основная область -->
-  <main class="main-content">
-    <div class="header-section">
-      <h1 class="app-title">Dota 2 <span>Helper</span></h1>
-      <p class="app-subtitle">
-        Интеллектуальный веб-сервис для анализа драфтов и расчета оптимальных контрпиков на основе актуальной матчап-статистики OpenDota.
+  <!-- Экран приветствия -->
+  <div id="welcome-splash" onclick="enterApp()">
+    <div class="splash-content">
+      <div class="splash-logo">D2</div>
+      <h1 class="splash-title">Dota 2 <span>Helper</span></h1>
+      <p class="splash-desc">
+        Многофункциональный аналитический веб-сервис для игроков Dota 2. Подбор идеальных контрпиков, аналитика матчей и рекомендации для фэнтези.
       </p>
+      <div class="splash-prompt">Нажмите в любом месте, чтобы войти</div>
     </div>
+  </div>
 
-    <datalist id="heroes-list"></datalist>
+  <!-- Главное приложение -->
+  <div id="app-container" class="app-container">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">D2</div>
+        <div class="brand-title">Dota 2 Helper</div>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item active">
+          <span>Draft Helper</span>
+        </li>
+        <li class="nav-item disabled">
+          <span>Fantasy Helper</span>
+          <span class="badge-soon">Скоро</span>
+        </li>
+        <li class="nav-item disabled">
+          <span>Match Analyzer</span>
+          <span class="badge-soon">Скоро</span>
+        </li>
+      </ul>
+    </aside>
 
-    <div class="flex-grid">
-      <!-- Моя команда -->
-      <div class="panel team-my">
-        <h2>Моя команда</h2>
-        <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" list="heroes-list" placeholder="Выберите героя..."></div>
-        <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" list="heroes-list" placeholder="Выберите героя..."></div>
-        <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" list="heroes-list" placeholder="Выберите героя..."></div>
-        <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" list="heroes-list" value="Ancient Apparition / Аппарат"></div>
-        <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" list="heroes-list" value="Bane / Бейн"></div>
+    <main class="main-content">
+      <div class="header-section">
+        <h1 class="app-title">Draft <span>Helper</span></h1>
+        <p class="app-subtitle">
+          Введите известных героев вашей команды и команды соперника для расчета наилучших контрпиков на основе статистики OpenDota.
+        </p>
       </div>
 
-      <!-- Враги -->
-      <div class="panel team-enemy">
-        <h2>Команда противника</h2>
-        <div class="input-group"><label>Враг 1</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-        <div class="input-group"><label>Враг 2</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-        <div class="input-group"><label>Враг 3</label><input class="enemy" list="heroes-list" value="Timbersaw / Тимбер"></div>
-        <div class="input-group"><label>Враг 4</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-        <div class="input-group"><label>Враг 5</label><input class="enemy" list="heroes-list" value="Jakiro / Джакиро"></div>
+      <datalist id="heroes-list"></datalist>
+
+      <div class="flex-grid">
+        <!-- Моя команда -->
+        <div class="panel team-my">
+          <h2>Моя команда</h2>
+          <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" list="heroes-list" placeholder="Выберите героя..."></div>
+          <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" list="heroes-list" placeholder="Выберите героя..."></div>
+          <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" list="heroes-list" placeholder="Выберите героя..."></div>
+          <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" list="heroes-list" value="Ancient Apparition / Аппарат"></div>
+          <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" list="heroes-list" value="Bane / Бейн"></div>
+        </div>
+
+        <!-- Враги -->
+        <div class="panel team-enemy">
+          <h2>Команда противника</h2>
+          <div class="input-group"><label>Враг 1</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+          <div class="input-group"><label>Враг 2</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+          <div class="input-group"><label>Враг 3</label><input class="enemy" list="heroes-list" value="Timbersaw / Тимбер"></div>
+          <div class="input-group"><label>Враг 4</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
+          <div class="input-group"><label>Враг 5</label><input class="enemy" list="heroes-list" value="Jakiro / Джакиро"></div>
+        </div>
       </div>
-    </div>
 
-    <div class="action-row">
-      <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
-      <button class="btn-clear" onclick="clearInputs()">Очистить</button>
-    </div>
+      <div class="action-row">
+        <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
+        <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+      </div>
 
-    <div id="results" class="results-container"></div>
-  </main>
+      <div id="results" class="results-container"></div>
+    </main>
+  </div>
 
 <script>
+function enterApp() {
+  const splash = document.getElementById('welcome-splash');
+  const app = document.getElementById('app-container');
+  
+  splash.classList.add('splash-hidden');
+  app.classList.add('app-visible');
+}
+
 async function loadHeroesList() {
   try {
     const res = await fetch('/api/heroes');
