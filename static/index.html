@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dota 2 AI Draft Helper</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121318; color: #ffffff; padding: 40px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; background: #1b1d24; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h1 { color: #e54736; margin-top: 0; }
+        .team-input { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #aaa; }
+        input { width: 100%; padding: 12px; background: #0f1014; border: 1px solid #333; color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 15px; }
+        input:focus { border-color: #e54736; outline: none; }
+        button { background: #e54736; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        button:hover { background: #ff5542; }
+        #result { margin-top: 25px; background: #0f1014; padding: 20px; border-radius: 6px; white-space: pre-wrap; line-height: 1.6; border-left: 4px solid #e54736; font-size: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dota 2 AI Draft Helper</h1>
+        <p>Введите имена героев через запятую для каждой команды:</p>
+        
+        <div class="team-input">
+            <label>Герои Radiant (Силы Света):</label>
+            <input type="text" id="radiantInput" value="Pudge, Crystal Maiden" placeholder="Например: Pudge, CM">
+        </div>
+
+        <div class="team-input">
+            <label>Герои Dire (Силы Тьмы):</label>
+            <input type="text" id="direInput" value="Axe, Invoker" placeholder="Например: Axe, Invoker">
+        </div>
+
+        <button onclick="sendDraft()">Проанализировать драфт</button>
+
+        <div id="result">Результат анализа появится здесь...</div>
+    </div>
+
+    <script>
+        async function sendDraft() {
+            const resultBox = document.getElementById('result');
+            resultBox.innerText = "⏳ Анализируем драфт... Пожалуйста, подождите.";
+
+            // 1. Считываем текст из полей ввода и превращаем его в массивы имен
+            const radiantText = document.getElementById('radiantInput').value;
+            const direText = document.getElementById('direInput').value;
+
+            const radiantHeroes = radiantText.split(',').map(h => h.trim()).filter(h => h);
+            const direHeroes = direText.split(',').map(h => h.trim()).filter(h => h);
+
+            // 2. Отправляем данные на наш Python-сервер
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        radiant: radiantHeroes,
+                        dire: direHeroes
+                    })
+                });
+
+                const data = await response.json();
+                
+                // 3. Выводим результат анализа на страницу
+                if (data.analysis) {
+                    resultBox.innerText = data.analysis;
+                } else {
+                    resultBox.innerText = "❌ Ошибка при получении ответа от сервера.";
+                }
+            } catch (error) {
+                resultBox.innerText = "❌ Ошибка соединения с сервером: " + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
