@@ -13,6 +13,7 @@ MATCHUP_CACHE: Dict[int, List[dict]] = {}
 
 MIN_GAMES_FOR_RANK = 50      # минимум игр героя в паблике, чтобы считать его винрейт надёжным
 MIN_GAMES_FOR_MATCHUP = 30   # минимум игр в конкретном противостоянии, иначе выборка ненадёжна
+OTHERS_COUNT = 3             # сколько доп. карточек показывать под топ-плашками
 
 ROLES = {
     "pos1": "Поз 1 (Керри)",
@@ -27,6 +28,150 @@ FALLBACK_HEROES = [
     {"id": 14, "name": "Pudge", "img": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png"},
     {"id": 74, "name": "Invoker", "img": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/invoker.png"},
 ]
+
+# ---------------------------------------------------------------------------
+# Соответствие героев ролям (позициям 1-5).
+#
+# OpenDota не отдаёт готовые данные "герой играет на позиции 1-5" — это
+# игровая мета, которой нет в их API как отдельного поля. Поэтому таблица
+# ниже курируется вручную на основе актуальной меты. Список охватывает
+# практически весь ростер героев; если герой не найден в таблице —
+# считаем его подходящим для любой позиции (чтобы не ломать выдачу на
+# только что вышедших героях, которых мы не успели вписать).
+# ---------------------------------------------------------------------------
+
+HERO_POSITIONS: Dict[str, List[int]] = {
+    "Abaddon": [3, 4, 5],
+    "Alchemist": [1, 3],
+    "Ancient Apparition": [4, 5],
+    "Anti-Mage": [1],
+    "Arc Warden": [1, 2],
+    "Axe": [3],
+    "Bane": [4, 5],
+    "Batrider": [2, 3],
+    "Beastmaster": [3],
+    "Bloodseeker": [1, 2],
+    "Bounty Hunter": [4],
+    "Brewmaster": [3],
+    "Bristleback": [3],
+    "Broodmother": [1, 2, 3],
+    "Centaur Warrunner": [3],
+    "Chaos Knight": [1],
+    "Chen": [5],
+    "Clinkz": [1, 2, 3],
+    "Clockwerk": [3, 4],
+    "Crystal Maiden": [5],
+    "Dark Seer": [3],
+    "Dark Willow": [4, 5],
+    "Dawnbreaker": [3, 4],
+    "Dazzle": [4, 5],
+    "Death Prophet": [2, 3],
+    "Disruptor": [5],
+    "Doom": [3],
+    "Dragon Knight": [2, 3],
+    "Drow Ranger": [1],
+    "Earth Spirit": [3, 4],
+    "Earthshaker": [3, 4],
+    "Elder Titan": [3, 4],
+    "Ember Spirit": [2],
+    "Enchantress": [4, 5],
+    "Enigma": [3, 4],
+    "Faceless Void": [1],
+    "Grimstroke": [4, 5],
+    "Gyrocopter": [1, 2],
+    "Hoodwink": [4, 5],
+    "Huskar": [1, 2],
+    "Invoker": [2],
+    "Io": [5],
+    "Jakiro": [4, 5],
+    "Juggernaut": [1],
+    "Keeper of the Light": [4, 5],
+    "Kez": [1, 2],
+    "Kunkka": [2, 3],
+    "Legion Commander": [3],
+    "Leshrac": [2, 3],
+    "Lich": [4, 5],
+    "Lifestealer": [1],
+    "Lina": [2, 4],
+    "Lion": [4, 5],
+    "Luna": [1],
+    "Lycan": [1, 3],
+    "Magnus": [2, 3],
+    "Marci": [3, 4],
+    "Mars": [3],
+    "Medusa": [1],
+    "Meepo": [1, 2],
+    "Mirana": [2, 4],
+    "Monkey King": [1, 2, 3],
+    "Morphling": [1],
+    "Muerta": [2, 5],
+    "Naga Siren": [1],
+    "Nature's Prophet": [2, 3],
+    "Necrophos": [2, 3],
+    "Night Stalker": [3],
+    "Nyx Assassin": [3, 4],
+    "Ogre Magi": [4, 5],
+    "Omniknight": [4, 5],
+    "Oracle": [4, 5],
+    "Outworld Destroyer": [2, 3],
+    "Pangolier": [2, 3],
+    "Phantom Assassin": [1],
+    "Phantom Lancer": [1],
+    "Primal Beast": [3, 4],
+    "Puck": [2],
+    "Pudge": [3, 4],
+    "Pugna": [2, 5],
+    "Queen of Pain": [2],
+    "Razor": [1, 2, 3],
+    "Riki": [1, 3, 4],
+    "Ringmaster": [4, 5],
+    "Rubick": [4, 5],
+    "Sand King": [3],
+    "Shadow Demon": [4, 5],
+    "Shadow Fiend": [2],
+    "Shadow Shaman": [4, 5],
+    "Silencer": [4, 5],
+    "Skywrath Mage": [4, 5],
+    "Slardar": [3],
+    "Slark": [1],
+    "Snapfire": [4, 5],
+    "Sniper": [1, 2],
+    "Spectre": [1],
+    "Spirit Breaker": [3, 4],
+    "Storm Spirit": [2],
+    "Sven": [1, 3],
+    "Techies": [4, 5],
+    "Templar Assassin": [2],
+    "Terrorblade": [1],
+    "Tidehunter": [3],
+    "Timbersaw": [3],
+    "Tinker": [2],
+    "Tiny": [1, 3],
+    "Treant Protector": [4, 5],
+    "Troll Warlord": [1],
+    "Tusk": [3, 4],
+    "Underlord": [3],
+    "Undying": [4, 5],
+    "Ursa": [1, 2, 3],
+    "Vengeful Spirit": [4, 5],
+    "Venomancer": [3, 4],
+    "Viper": [2, 3],
+    "Visage": [4, 5],
+    "Void Spirit": [2, 3],
+    "Warlock": [4, 5],
+    "Weaver": [1, 2, 4],
+    "Windranger": [2, 4],
+    "Winter Wyvern": [4, 5],
+    "Witch Doctor": [4, 5],
+    "Wraith King": [1, 3],
+    "Zeus": [2, 4],
+}
+
+
+def positions_for_hero(hero_name: str) -> List[int]:
+    """Позиции, для которых подходит герой. Если героя нет в таблице —
+    считаем подходящим для любой позиции, чтобы не терять новых героев."""
+    return HERO_POSITIONS.get(hero_name, [1, 2, 3, 4, 5])
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +275,50 @@ def format_hero(candidate: Optional[dict]) -> Optional[dict]:
     }
 
 
+def build_recommendation_pool_for_position(
+    all_candidates: List[dict],
+    pos_num: int,
+    favorite_ids: List[int],
+) -> dict:
+    """Строит рекомендации (пул/винрейт/остальные) для конкретной позиции,
+    отфильтровав кандидатов заранее по тому, подходят ли они на эту роль."""
+
+    eligible = [c for c in all_candidates if pos_num in positions_for_hero(c["name"])]
+    # На случай если фильтр по позиции внезапно вырезал всех кандидатов
+    # (не должно происходить при полной таблице позиций) — не оставляем
+    # пользователя без рекомендаций вообще.
+    pool_source = eligible if eligible else all_candidates
+
+    reliable = [c for c in pool_source if c["games"] >= MIN_GAMES_FOR_RANK]
+    pool = reliable if reliable else pool_source
+
+    ranked_by_winrate = sorted(pool, key=lambda c: -c["winrate"])
+
+    used_ids = set()
+
+    def take_first(sorted_list):
+        for c in sorted_list:
+            if c["id"] not in used_ids:
+                used_ids.add(c["id"])
+                return c
+        return None
+
+    top_winrate = take_first(ranked_by_winrate)
+
+    top_favorite = None
+    if favorite_ids:
+        favorite_candidates = [c for c in ranked_by_winrate if c["id"] in favorite_ids]
+        top_favorite = take_first(favorite_candidates)
+
+    others = [c for c in ranked_by_winrate if c["id"] not in used_ids][:OTHERS_COUNT]
+
+    return {
+        "top_favorite": format_hero(top_favorite),
+        "top_winrate": format_hero(top_winrate),
+        "others": [format_hero(c) for c in others],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Основной алгоритм подбора
 # ---------------------------------------------------------------------------
@@ -180,8 +369,8 @@ async def analyze_draft(payload: DraftRequest):
             entry[0] += candidate_wr_vs_this_enemy * games
             entry[1] += games
 
-    # --- Итоговая оценка кандидатов ---
-    candidates = []
+    # --- Итоговая оценка кандидатов (общая, без учёта позиции) ---
+    all_candidates = []
     for h in heroes_list:
         name = h["name"]
         if name.lower() in picked_names_lower:
@@ -199,7 +388,7 @@ async def analyze_draft(payload: DraftRequest):
         else:
             draft_winrate = base
 
-        candidates.append({
+        all_candidates.append({
             "id": h["id"],
             "name": name,
             "img": h["img"],
@@ -207,45 +396,17 @@ async def analyze_draft(payload: DraftRequest):
             "games": games,
         })
 
-    # Отсекаем шумные данные с маленькой выборкой, если после отсечения
-    # кандидатов достаточно; иначе используем весь список как запасной вариант.
-    reliable = [c for c in candidates if c["games"] >= MIN_GAMES_FOR_RANK]
-    pool = reliable if reliable else candidates
-
-    ranked_by_winrate = sorted(pool, key=lambda c: -c["winrate"])
-    ranked_by_games = sorted(pool, key=lambda c: -c["games"])
-
-    used_ids = set()
-
-    def take_first(sorted_list):
-        for c in sorted_list:
-            if c["id"] not in used_ids:
-                used_ids.add(c["id"])
-                return c
-        return None
-
-    top_winrate = take_first(ranked_by_winrate)
-    top_games = take_first(ranked_by_games)
-
     favorite_ids = get_user_favorite_ids(payload.user_id)
-    top_favorite = None
-    if favorite_ids:
-        favorite_candidates = [c for c in ranked_by_winrate if c["id"] in favorite_ids]
-        top_favorite = take_first(favorite_candidates)
 
-    others = [c for c in ranked_by_winrate if c["id"] not in used_ids][:6]
-
-    recommendation_pool = {
-        "top_favorite": format_hero(top_favorite),
-        "top_winrate": format_hero(top_winrate),
-        "top_games": format_hero(top_games),
-        "others": [format_hero(c) for c in others],
-    }
-
-    results = [
-        {"role": role_title, "data": recommendation_pool}
-        for role_key, role_title in ROLES.items()
-        if not payload.my_team.get(role_key)
-    ]
+    # --- Для каждой незаполненной роли строим отдельный, отфильтрованный по позиции пул ---
+    results = []
+    for role_key, role_title in ROLES.items():
+        if payload.my_team.get(role_key):
+            continue
+        pos_num = int(role_key[-1])
+        recommendation_pool = build_recommendation_pool_for_position(
+            all_candidates, pos_num, favorite_ids
+        )
+        results.append({"role": role_title, "data": recommendation_pool})
 
     return {"results": results}
