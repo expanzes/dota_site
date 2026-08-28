@@ -97,14 +97,14 @@
       background: #2f3446;
     }
 
-    /* --- Модальное окно авторизации --- */
+    /* --- Модальные окна --- */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.8);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -117,19 +117,25 @@
       border-radius: 12px;
       padding: 30px;
       width: 100%;
-      max-width: 380px;
+      max-width: 420px;
       display: flex;
       flex-direction: column;
       gap: 15px;
     }
 
-    .modal-card input {
+    .modal-large {
+      max-width: 700px;
+      max-height: 85vh;
+    }
+
+    .modal-card input[type="text"], .modal-card input[type="password"] {
       background: #121214;
       border: 1px solid #2a2e3d;
       color: #fff;
       padding: 12px;
       border-radius: 6px;
       font-size: 1rem;
+      width: 100%;
     }
 
     .modal-card input:focus {
@@ -168,6 +174,50 @@
       margin-top: 5px;
     }
 
+    /* --- Выбор избранных героев --- */
+    .fav-heroes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      max-height: 50vh;
+      overflow-y: auto;
+      padding-right: 5px;
+      margin-top: 10px;
+    }
+
+    .fav-hero-chip {
+      background: #121214;
+      border: 1px solid #2a2e3d;
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+    }
+
+    .fav-hero-chip img {
+      width: 32px;
+      height: 18px;
+      border-radius: 2px;
+      object-fit: cover;
+    }
+
+    .fav-hero-chip span {
+      font-size: 0.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fav-hero-chip.selected {
+      border-color: #f5a623;
+      background: rgba(245, 166, 35, 0.15);
+      color: #f5a623;
+    }
+
     /* --- Главный интерфейс --- */
     #main-app {
       flex: 1;
@@ -193,7 +243,7 @@
     .user-panel {
       display: flex;
       align-items: center;
-      gap: 15px;
+      gap: 12px;
     }
 
     .user-badge {
@@ -202,6 +252,22 @@
       border-radius: 20px;
       font-size: 0.9rem;
       color: #a0a5b5;
+    }
+
+    .btn-fav {
+      background: #252836;
+      border: 1px solid #f5a623;
+      color: #f5a623;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-fav:hover {
+      background: #f5a623;
+      color: #121214;
     }
 
     .btn-logout {
@@ -287,6 +353,11 @@
       border-radius: 6px;
     }
 
+    .input-row input:focus {
+      outline: none;
+      border-color: #ff4655;
+    }
+
     .analyze-btn-wrapper {
       text-align: center;
       margin-bottom: 30px;
@@ -370,7 +441,6 @@
       position: absolute;
       top: -8px;
       right: -8px;
-      background: #ff4655;
       color: #fff;
       font-size: 0.7rem;
       padding: 2px 6px;
@@ -378,7 +448,7 @@
       font-weight: bold;
     }
 
-    .badge-fav { background: #f5a623; }
+    .badge-fav { background: #f5a623; color: #000; }
     .badge-wr { background: #4caf50; }
     .badge-gm { background: #2196f3; }
 
@@ -390,6 +460,9 @@
   </style>
 </head>
 <body>
+
+  <!-- Автодополнение для списка героев -->
+  <datalist id="heroes-list"></datalist>
 
   <!-- 1. Экран приветствия (Превью) -->
   <div id="welcome-screen">
@@ -421,11 +494,29 @@
     </div>
   </div>
 
-  <!-- 3. Главный интерфейс приложения -->
+  <!-- 3. Модальное окно «Любимые герои» -->
+  <div id="fav-modal" class="modal-overlay hidden">
+    <div class="modal-card modal-large">
+      <h2 style="color: #f5a623; text-align: center;">Любимые герои</h2>
+      <p style="color: #a0a5b5; font-size: 0.85rem; text-align: center;">Выберите персонажей, на которых вы играете чаще всего</p>
+      
+      <input type="text" id="fav-search-input" placeholder="Поиск героя..." oninput="filterFavHeroes()">
+      
+      <div id="fav-heroes-container" class="fav-heroes-grid"></div>
+
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button onclick="saveFavorites()" class="btn-primary" style="flex: 1; background: #f5a623; color: #121214;">Сохранить</button>
+        <button onclick="closeFavModal()" class="btn-secondary" style="flex: 1;">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Главный интерфейс приложения -->
   <div id="main-app" class="hidden">
     <header>
       <div class="logo">Dota 2 Helper</div>
       <div class="user-panel">
+        <button id="fav-btn" onclick="openFavModal()" class="btn-fav">⭐ Любимые герои</button>
         <span id="user-display-name" class="user-badge">Гость</span>
         <button onclick="logout()" class="btn-logout">Выйти</button>
       </div>
@@ -437,11 +528,11 @@
         <div class="team-box">
           <h3 class="allies-title">Союзники (Наша команда)</h3>
           <div class="inputs-grid">
-            <div class="input-row"><label>Поз 1 (Керри):</label><input type="text" id="my-pos1" placeholder="Например: Sven"></div>
-            <div class="input-row"><label>Поз 2 (Мид):</label><input type="text" id="my-pos2" placeholder="Например: SF"></div>
-            <div class="input-row"><label>Поз 3 (Тройка):</label><input type="text" id="my-pos3" placeholder="Например: Axe"></div>
-            <div class="input-row"><label>Поз 4 (Четверка):</label><input type="text" id="my-pos4" placeholder="Например: Rubick"></div>
-            <div class="input-row"><label>Поз 5 (Пятерка):</label><input type="text" id="my-pos5" placeholder="Например: CM"></div>
+            <div class="input-row"><label>Поз 1 (Керри):</label><input type="text" id="my-pos1" list="heroes-list" placeholder="Например: Sven"></div>
+            <div class="input-row"><label>Поз 2 (Мид):</label><input type="text" id="my-pos2" list="heroes-list" placeholder="Например: SF"></div>
+            <div class="input-row"><label>Поз 3 (Тройка):</label><input type="text" id="my-pos3" list="heroes-list" placeholder="Например: Axe"></div>
+            <div class="input-row"><label>Поз 4 (Четверка):</label><input type="text" id="my-pos4" list="heroes-list" placeholder="Например: Rubick"></div>
+            <div class="input-row"><label>Поз 5 (Пятерка):</label><input type="text" id="my-pos5" list="heroes-list" placeholder="Например: CM"></div>
           </div>
         </div>
 
@@ -449,11 +540,11 @@
         <div class="team-box">
           <h3 class="enemies-title">Враги (Пики противника)</h3>
           <div class="inputs-grid">
-            <div class="input-row"><label>Враг 1:</label><input type="text" id="enemy-1" placeholder="Герой врага 1"></div>
-            <div class="input-row"><label>Враг 2:</label><input type="text" id="enemy-2" placeholder="Герой врага 2"></div>
-            <div class="input-row"><label>Враг 3:</label><input type="text" id="enemy-3" placeholder="Герой врага 3"></div>
-            <div class="input-row"><label>Враг 4:</label><input type="text" id="enemy-4" placeholder="Герой врага 4"></div>
-            <div class="input-row"><label>Враг 5:</label><input type="text" id="enemy-5" placeholder="Герой врага 5"></div>
+            <div class="input-row"><label>Враг 1:</label><input type="text" id="enemy-1" list="heroes-list" placeholder="Герой врага 1"></div>
+            <div class="input-row"><label>Враг 2:</label><input type="text" id="enemy-2" list="heroes-list" placeholder="Герой врага 2"></div>
+            <div class="input-row"><label>Враг 3:</label><input type="text" id="enemy-3" list="heroes-list" placeholder="Герой врага 3"></div>
+            <div class="input-row"><label>Враг 4:</label><input type="text" id="enemy-4" list="heroes-list" placeholder="Герой врага 4"></div>
+            <div class="input-row"><label>Враг 5:</label><input type="text" id="enemy-5" list="heroes-list" placeholder="Герой врага 5"></div>
           </div>
         </div>
       </div>
@@ -470,12 +561,17 @@
   <script>
     let authMode = 'login';
     let currentUser = null;
+    let allHeroes = [];
+    let selectedFavorites = new Set();
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadHeroes();
+
       const savedUser = localStorage.getItem('dota_helper_user');
       if (savedUser) {
         try {
           currentUser = JSON.parse(savedUser);
+          await loadUserFavorites();
           showMainApp();
         } catch (e) {
           showWelcomeScreen();
@@ -484,6 +580,41 @@
         showWelcomeScreen();
       }
     });
+
+    async function loadHeroes() {
+      try {
+        const res = await fetch('/api/heroes');
+        if (res.ok) {
+          allHeroes = await res.json();
+          populateDatalist();
+        }
+      } catch (err) {
+        console.error("Ошибка загрузки героев:", err);
+      }
+    }
+
+    function populateDatalist() {
+      const datalist = document.getElementById('heroes-list');
+      datalist.innerHTML = '';
+      allHeroes.forEach(hero => {
+        const option = document.createElement('option');
+        option.value = hero.name;
+        datalist.appendChild(option);
+      });
+    }
+
+    async function loadUserFavorites() {
+      if (!currentUser || !currentUser.user_id) return;
+      try {
+        const res = await fetch(`/api/favorites/${currentUser.user_id}`);
+        if (res.ok) {
+          const favs = await res.json();
+          selectedFavorites = new Set(favs);
+        }
+      } catch (err) {
+        console.error("Ошибка загрузки избранного:", err);
+      }
+    }
 
     function showWelcomeScreen() {
       document.getElementById('welcome-screen').classList.remove('hidden');
@@ -496,21 +627,27 @@
       document.getElementById('main-app').classList.remove('hidden');
 
       const nameLabel = document.getElementById('user-display-name');
+      const favBtn = document.getElementById('fav-btn');
+
       if (currentUser && currentUser.username) {
         nameLabel.innerText = currentUser.username;
+        favBtn.classList.remove('hidden');
       } else {
         nameLabel.innerText = 'Режим: Гость';
+        favBtn.classList.add('hidden');
       }
     }
 
     function enterAsGuest() {
       currentUser = null;
+      selectedFavorites.clear();
       localStorage.removeItem('dota_helper_user');
       showMainApp();
     }
 
     function logout() {
       currentUser = null;
+      selectedFavorites.clear();
       localStorage.removeItem('dota_helper_user');
       showWelcomeScreen();
     }
@@ -577,6 +714,7 @@
         };
 
         localStorage.setItem('dota_helper_user', JSON.stringify(currentUser));
+        await loadUserFavorites();
         closeAuthModal();
         showMainApp();
 
@@ -586,6 +724,63 @@
       }
     }
 
+    /* --- Избранные герои --- */
+    function openFavModal() {
+      document.getElementById('fav-modal').classList.remove('hidden');
+      document.getElementById('fav-search-input').value = '';
+      renderFavHeroes();
+    }
+
+    function closeFavModal() {
+      document.getElementById('fav-modal').classList.add('hidden');
+    }
+
+    function renderFavHeroes() {
+      const container = document.getElementById('fav-heroes-container');
+      const searchQuery = document.getElementById('fav-search-input').value.toLowerCase().trim();
+      container.innerHTML = '';
+
+      allHeroes.forEach(hero => {
+        if (searchQuery && !hero.name.toLowerCase().includes(searchQuery)) return;
+
+        const isSelected = selectedFavorites.has(hero.name);
+        const chip = document.createElement('div');
+        chip.className = `fav-hero-chip ${isSelected ? 'selected' : ''}`;
+        chip.innerHTML = `<img src="${hero.img}" alt="${hero.name}"><span>${hero.name}</span>`;
+        chip.onclick = () => {
+          if (selectedFavorites.has(hero.name)) {
+            selectedFavorites.delete(hero.name);
+          } else {
+            selectedFavorites.add(hero.name);
+          }
+          renderFavHeroes();
+        };
+        container.appendChild(chip);
+      });
+    }
+
+    function filterFavHeroes() {
+      renderFavHeroes();
+    }
+
+    async function saveFavorites() {
+      if (!currentUser || !currentUser.user_id) return;
+      try {
+        await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUser.user_id,
+            heroes: Array.from(selectedFavorites)
+          })
+        });
+        closeFavModal();
+      } catch (err) {
+        alert("Ошибка при сохранении избранного");
+      }
+    }
+
+    /* --- Анализ Драфта --- */
     async function analyzeDraft() {
       const myTeam = {
         pos1: document.getElementById('my-pos1').value.trim(),
