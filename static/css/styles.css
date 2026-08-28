@@ -1,14 +1,17 @@
 :root {
-  --bg-dark: #0f1117;
-  --bg-card: #161922;
-  --bg-input: #202431;
-  --border-color: #2e3446;
-  --text-main: #e6e8ee;
-  --text-muted: #8b949e;
-  --accent-blue: #3b82f6;
-  --accent-green: #22c55e;
-  --accent-red: #ef4444;
+  --bg-dark: #0b0d12;
+  --bg-card: #12151e;
+  --bg-input: #171b26;
+  --border-color: #202636;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  
+  --accent-red: #f43f5e;
+  --accent-red-hover: #e11d48;
+  --accent-green: #20c997;
   --accent-yellow: #eab308;
+  --accent-purple: #a855f7;
+  --accent-blue: #3b82f6;
 }
 
 * {
@@ -30,13 +33,12 @@ body {
   display: none !important;
 }
 
-/* 1. Приветственный экран */
 #welcome-screen {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: radial-gradient(circle at center, #1e2330 0%, var(--bg-dark) 100%);
+  background: radial-gradient(circle at center, #171b26 0%, var(--bg-dark) 100%);
 }
 
 .welcome-card {
@@ -53,7 +55,7 @@ body {
 .welcome-card h1 {
   font-size: 2.2rem;
   margin-bottom: 12px;
-  color: var(--accent-blue);
+  color: var(--accent-red);
 }
 
 .welcome-card p {
@@ -67,7 +69,6 @@ body {
   gap: 12px;
 }
 
-/* Кнопки */
 button {
   cursor: pointer;
   border: none;
@@ -79,23 +80,254 @@ button {
 }
 
 .btn-primary {
-  background: var(--accent-blue);
+  background: var(--accent-red);
   color: white;
 }
-.btn-primary:hover { background: #2563eb; }
+.btn-primary:hover { background: var(--accent-red-hover); }
 
 .btn-secondary {
   background: var(--bg-input);
   color: var(--text-main);
   border: 1px solid var(--border-color);
 }
-.btn-secondary:hover { background: #2a3042; }
+.btn-secondary:hover { background: #202636; }
 
-/* 2. Модальные окна */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 40px;
+  background: var(--bg-dark);
+}
+
+.logo {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--accent-red);
+  letter-spacing: -0.5px;
+}
+
+.user-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-badge {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.btn-fav {
+  background: rgba(234, 179, 8, 0.08);
+  color: var(--accent-yellow);
+  border: 1px solid var(--accent-yellow);
+  padding: 8px 16px;
+}
+.btn-fav:hover { background: rgba(234, 179, 8, 0.18); }
+
+.btn-logout {
+  background: rgba(244, 63, 94, 0.08);
+  color: var(--accent-red);
+  border: 1px solid var(--accent-red);
+  padding: 8px 16px;
+}
+.btn-logout:hover { background: rgba(244, 63, 94, 0.2); }
+
+main {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px 40px 40px 40px;
+}
+
+.draft-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .draft-container { grid-template-columns: 1fr; }
+  main { padding: 16px; }
+}
+
+.team-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.allies-title { color: var(--accent-green); margin-bottom: 20px; font-size: 1.1rem; }
+.enemies-title { color: var(--accent-red); margin-bottom: 20px; font-size: 1.1rem; }
+
+.inputs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.input-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-field-group label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+input[type="text"], input[type="password"] {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--text-main);
+  outline: none;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+input[type="text"]:focus, input[type="password"]:focus {
+  border-color: #3b82f6;
+}
+
+.actions-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.btn-analyze {
+  background: var(--accent-red);
+  color: white;
+  padding: 16px;
+  font-size: 1.05rem;
+  border-radius: 10px;
+}
+.btn-analyze:hover { background: var(--accent-red-hover); }
+
+.btn-clear {
+  background: var(--bg-input);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  padding: 16px;
+  font-size: 1.05rem;
+  border-radius: 10px;
+}
+.btn-clear:hover { background: #202636; }
+
+/* Карточки результатов */
+.results-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.role-group-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.hero-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 14px;
+}
+
+.result-hero-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.result-hero-card.badge-purple {
+  border: 1.5px solid var(--accent-purple);
+}
+
+.result-hero-card.badge-yellow {
+  border: 1.5px solid var(--accent-yellow);
+}
+
+.result-hero-card.badge-blue {
+  border: 1.5px solid var(--accent-blue);
+}
+
+.card-top-badge {
+  position: absolute;
+  top: -10px;
+  right: 12px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-purple .card-top-badge {
+  background: var(--accent-purple);
+  color: white;
+}
+
+.badge-yellow .card-top-badge {
+  background: var(--accent-yellow);
+  color: black;
+}
+
+.badge-blue .card-top-badge {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.result-hero-card img {
+  width: 48px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.result-hero-card .hero-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-hero-card .hero-info .hero-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+}
+
+.result-hero-card .hero-info .hero-stats {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.hero-stats .val-green {
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
+/* Модалки */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
@@ -115,9 +347,7 @@ button {
   gap: 16px;
 }
 
-.modal-large {
-  max-width: 650px;
-}
+.modal-large { max-width: 650px; }
 
 .auth-tabs {
   display: flex;
@@ -135,12 +365,12 @@ button {
 }
 
 .auth-tab.active {
-  color: var(--accent-blue);
-  border-bottom-color: var(--accent-blue);
+  color: var(--accent-red);
+  border-bottom-color: var(--accent-red);
 }
 
 .alert-error {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(244, 63, 94, 0.15);
   border: 1px solid var(--accent-red);
   color: #fca5a5;
   padding: 10px;
@@ -148,128 +378,6 @@ button {
   font-size: 0.85rem;
 }
 
-/* 3. Главный интерфейс */
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 32px;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.logo {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--accent-blue);
-}
-
-.user-panel {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.user-badge {
-  background: var(--bg-input);
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.btn-fav {
-  background: rgba(234, 179, 8, 0.15);
-  color: var(--accent-yellow);
-  border: 1px solid var(--accent-yellow);
-}
-
-.btn-logout {
-  background: transparent;
-  color: var(--text-muted);
-}
-.btn-logout:hover { color: var(--accent-red); }
-
-main {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 24px;
-}
-
-.draft-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-@media (max-width: 768px) {
-  .draft-container { grid-template-columns: 1fr; }
-}
-
-.team-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.allies-title { color: var(--accent-green); margin-bottom: 16px; }
-.enemies-title { color: var(--accent-red); margin-bottom: 16px; }
-
-.inputs-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.input-field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.input-field-group label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-input[type="text"], input[type="password"] {
-  background: var(--bg-input);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 10px 14px;
-  color: var(--text-main);
-  outline: none;
-  font-size: 0.95rem;
-}
-
-input[type="text"]:focus, input[type="password"]:focus {
-  border-color: var(--accent-blue);
-}
-
-.actions-row {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  margin-bottom: 32px;
-}
-
-.btn-analyze {
-  background: var(--accent-green);
-  color: white;
-  padding: 14px 32px;
-  font-size: 1.05rem;
-}
-.btn-analyze:hover { background: #16a34a; }
-
-.btn-clear {
-  background: var(--bg-input);
-  color: var(--text-muted);
-}
-
-/* 4. Сетка любимых героев */
 .fav-heroes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -308,10 +416,13 @@ input[type="text"]:focus, input[type="password"]:focus {
   text-overflow: ellipsis;
 }
 
-/* Кастомное выпадающее меню выбора героев */
 .autocomplete-wrapper {
   position: relative;
   width: 100%;
+}
+
+.autocomplete-wrapper input {
+  padding-right: 36px;
 }
 
 .autocomplete-dropdown {
@@ -320,20 +431,12 @@ input[type="text"]:focus, input[type="password"]:focus {
   left: 0;
   right: 0;
   max-height: 240px;
-  background: #181c27;
+  background: #171b26;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow-y: auto;
   z-index: 1000;
   box-shadow: 0 10px 25px rgba(0,0,0,0.7);
-}
-
-.autocomplete-dropdown::-webkit-scrollbar {
-  width: 6px;
-}
-.autocomplete-dropdown::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 3px;
 }
 
 .autocomplete-item {
@@ -342,45 +445,20 @@ input[type="text"]:focus, input[type="password"]:focus {
   gap: 12px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: background 0.15s ease;
 }
 
-.autocomplete-item:hover, 
-.autocomplete-item.active {
-  background: #252b3b;
-}
+.autocomplete-item:hover { background: #202636; }
 
 .autocomplete-item img {
   width: 42px;
   height: 24px;
   object-fit: cover;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
 }
 
-.autocomplete-item .hero-name {
-  font-size: 0.9rem;
-  color: var(--text-main);
-  font-weight: 500;
-}
+.autocomplete-item .hero-name { font-size: 0.9rem; color: var(--text-main); }
+.autocomplete-item .hero-alias { font-size: 0.75rem; color: var(--text-muted); margin-left: auto; }
 
-.autocomplete-item .hero-alias {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-left: auto;
-}
-
-/* Выравнивание заголовков по центру */
-.allies-title, .enemies-title {
-  text-align: center;
-}
-
-/* Настройка поля ввода под крестик */
-.autocomplete-wrapper input {
-  padding-right: 36px;
-}
-
-/* Кнопка очистки поля (крестик) */
 .clear-input-btn {
   position: absolute;
   right: 10px;
@@ -388,20 +466,12 @@ input[type="text"]:focus, input[type="password"]:focus {
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: #7a8b9e;
+  color: var(--text-muted);
   font-size: 1.3rem;
-  line-height: 1;
   cursor: pointer;
   display: none;
   z-index: 5;
-  transition: color 0.15s ease;
 }
 
-.clear-input-btn:hover {
-  color: var(--accent-red, #ff4d4f);
-}
-
-/* Показываем крестик, только когда поле не пустое */
-.autocomplete-wrapper input:not(:placeholder-shown) ~ .clear-input-btn {
-  display: block;
-}
+.clear-input-btn:hover { color: var(--accent-red); }
+.autocomplete-wrapper input:not(:placeholder-shown) ~ .clear-input-btn { display: block; }
