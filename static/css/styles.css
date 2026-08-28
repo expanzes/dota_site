@@ -369,3 +369,39 @@ input[type="text"]:focus, input[type="password"]:focus {
   color: var(--text-muted);
   margin-left: auto;
 }
+
+/* Выравнивание заголовков по центру */
+.allies-title, .enemies-title {
+  text-align: center;
+}
+
+/* Настройка поля ввода под крестик */
+.autocomplete-wrapper input {
+  padding-right: 36px;
+}
+
+/* Кнопка очистки поля (крестик) */
+.clear-input-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #7a8b9e;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  z-index: 5;
+  transition: color 0.15s ease;
+}
+
+.clear-input-btn:hover {
+  color: var(--accent-red, #ff4d4f);
+}
+
+/* Показываем крестик, только когда поле не пустое */
+.autocomplete-wrapper input:not(:placeholder-shown) ~ .clear-input-btn {
+  display: block;
+}
