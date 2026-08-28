@@ -3,14 +3,21 @@ import sqlite3
 import hashlib
 import requests
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 
 app = FastAPI(title="Dota 2 Helper")
 
-DB_NAME = "dota_helper.db"
+# Использование абсолютных путей для стабильной работы на Render и локально
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+INDEX_HTML = os.path.join(STATIC_DIR, "index.html")
+DB_NAME = os.path.join(BASE_DIR, "dota_helper.db")
+
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -35,15 +42,16 @@ def init_db():
 
 init_db()
 
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def read_root():
-    if os.path.exists("static/index.html"):
-        with open("static/index.html", "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h1>Dota 2 Helper API Running</h1>"
+    if os.path.exists(INDEX_HTML):
+        return FileResponse(INDEX_HTML)
+    
+    root_index = os.path.join(BASE_DIR, "index.html")
+    if os.path.exists(root_index):
+        return FileResponse(root_index)
+        
+    return HTMLResponse("<h1>Dota 2 Helper API Running</h1><p>Файл index.html не найден в папке static.</p>")
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -93,8 +101,6 @@ def get_opendota_heroes():
     except Exception:
         pass
     return {}
-
-# --- AUTH & FAVORITES ---
 
 class AuthRequest(BaseModel):
     username: str
@@ -164,8 +170,6 @@ def api_heroes():
         })
     return sorted(out, key=lambda x: x["name"])
 
-# --- ИСПРАВЛЕННАЯ ЛОГИКА ДРАФТА ---
-
 def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict, user_favs: set, banned_hero_ids: set):
     valid_heroes = ROLES_DB.get(role_key, set())
     role_candidates = []
@@ -182,8 +186,6 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict, user_f
         cand_wins = data["cand_wins"]
         games = data["games"]
         wr = (cand_wins / games) * 100 if games > 0 else 0
-
-        # Если против хотя бы одного врага винрейт кандидата < 42%, ставим флаг hard_countered
         has_hard_counter = data.get("has_hard_counter", False)
 
         item = {
@@ -203,7 +205,6 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict, user_f
     if not pool:
         return None
 
-    # Фильтруем героев без смертельных контрпиков для ТОП параметров
     safe_pool = [h for h in pool if not h["has_hard_counter"]]
     eval_pool = safe_pool if safe_pool else pool
 
@@ -213,7 +214,6 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict, user_f
     top_wr = by_winrate[0]
     top_gm = by_games[0]
 
-    # Любимый герой выбирается ТОЛЬКО если у него нет критического контрпика и адекватный винрейт
     fav_candidates = [h for h in by_winrate if h["is_fav"] and not h["has_hard_counter"] and h["winrate"] >= 46.0]
     top_fav = fav_candidates[0] if fav_candidates else None
 
@@ -239,7 +239,6 @@ class DraftRequest(BaseModel):
 def analyze_draft(req: DraftRequest):
     heroes_map = get_opendota_heroes()
     
-    # Резолвим имена в ID
     name_to_id = {}
     for hid, info in heroes_map.items():
         name_to_id[info["name"].lower()] = hid
@@ -247,7 +246,6 @@ def analyze_draft(req: DraftRequest):
 
     banned_hero_ids = set()
 
-    # Собираем забаненных/выбранных героев
     for hname in list(req.my_team.values()) + req.enemy_team:
         clean = hname.strip().lower()
         if clean in HERO_ALIASES:
@@ -284,7 +282,7 @@ def analyze_draft(req: DraftRequest):
                         games = item["games_played"]
                         enemy_wins = item["wins"]
                         
-                        # ИСПРАВЛЕНИЕ: Победи кандидата против этого врага = Всего игр - Победы врага
+                        # Расчет побед кандидата против конкретного врага
                         cand_wins_vs_enemy = games - enemy_wins
                         single_matchup_wr = (cand_wins_vs_enemy / games) * 100 if games > 0 else 50.0
 
@@ -294,7 +292,7 @@ def analyze_draft(req: DraftRequest):
                         candidate_stats[cid]["games"] += games
                         candidate_stats[cid]["cand_wins"] += cand_wins_vs_enemy
 
-                        # Если кандидат проигрывает этому врагу с винрейтом ниже 42.0%, помечаем hard_counter
+                        # Фильтрация смертельных контрпиков (<42% WR)
                         if single_matchup_wr < 42.0:
                             candidate_stats[cid]["has_hard_counter"] = True
             except Exception:
