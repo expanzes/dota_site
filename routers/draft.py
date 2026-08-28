@@ -41,15 +41,15 @@ FALLBACK_HEROES = [
 # ---------------------------------------------------------------------------
 
 HERO_POSITIONS: Dict[str, List[int]] = {
-    "Abaddon": [3, 4, 5],
-    "Alchemist": [1, 3],
+    "Abaddon": [1, 3, 4, 5],
+    "Alchemist": [1, 3, 4, 5],
     "Ancient Apparition": [4, 5],
     "Anti-Mage": [1],
     "Arc Warden": [1, 2],
     "Axe": [3],
     "Bane": [4, 5],
     "Batrider": [2, 3],
-    "Beastmaster": [3],
+    "Beastmaster": [2, 3],
     "Bloodseeker": [1, 2],
     "Bounty Hunter": [4],
     "Brewmaster": [3],
