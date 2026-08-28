@@ -9,11 +9,11 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
-      background-color: #121214;
+      background-color: #0d0e12;
       color: #e1e1e6;
       min-height: 100vh;
       display: flex;
@@ -24,29 +24,29 @@
       display: none !important;
     }
 
-    /* --- Экран приветствия (Превью) --- */
+    /* --- Экран приветствия --- */
     #welcome-screen {
       flex: 1;
       display: flex;
       justify-content: center;
       align-items: center;
-      background: radial-gradient(circle at center, #1f232d 0%, #0d0e12 100%);
+      background: radial-gradient(circle at center, #1a1d26 0%, #0d0e12 100%);
       padding: 20px;
     }
 
     .welcome-card {
-      background: #181a20;
-      border: 1px solid #2a2e3d;
+      background: #16181f;
+      border: 1px solid #272a37;
       border-radius: 12px;
       padding: 40px;
       max-width: 450px;
       width: 100%;
       text-align: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
     }
 
     .welcome-card h1 {
-      color: #ff4655;
+      color: #e11d48;
       font-size: 2.2rem;
       margin-bottom: 12px;
       text-transform: uppercase;
@@ -54,9 +54,9 @@
     }
 
     .welcome-card p {
-      color: #a0a5b5;
+      color: #8b949e;
       margin-bottom: 30px;
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
 
     .btn-group {
@@ -66,11 +66,11 @@
     }
 
     .btn-primary {
-      background: #ff4655;
+      background: #e11d48;
       color: #fff;
       border: none;
       padding: 12px 20px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-weight: 600;
       font-size: 1rem;
       cursor: pointer;
@@ -78,15 +78,15 @@
     }
 
     .btn-primary:hover {
-      background: #e03e4c;
+      background: #be123c;
     }
 
     .btn-secondary {
-      background: #252836;
+      background: #212430;
       color: #e1e1e6;
-      border: 1px solid #3b3f54;
+      border: 1px solid #33384a;
       padding: 12px 20px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-weight: 600;
       font-size: 1rem;
       cursor: pointer;
@@ -94,7 +94,7 @@
     }
 
     .btn-secondary:hover {
-      background: #2f3446;
+      background: #2b2f3e;
     }
 
     /* --- Модальные окна --- */
@@ -104,7 +104,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -112,8 +112,8 @@
     }
 
     .modal-card {
-      background: #181a20;
-      border: 1px solid #2a2e3d;
+      background: #16181f;
+      border: 1px solid #272a37;
       border-radius: 12px;
       padding: 30px;
       width: 100%;
@@ -129,8 +129,8 @@
     }
 
     .modal-card input[type="text"], .modal-card input[type="password"] {
-      background: #121214;
-      border: 1px solid #2a2e3d;
+      background: #0d0e12;
+      border: 1px solid #272a37;
       color: #fff;
       padding: 12px;
       border-radius: 6px;
@@ -140,7 +140,7 @@
 
     .modal-card input:focus {
       outline: none;
-      border-color: #ff4655;
+      border-color: #e11d48;
     }
 
     .auth-tabs {
@@ -154,27 +154,27 @@
       padding: 8px;
       background: transparent;
       border: none;
-      color: #a0a5b5;
+      color: #8b949e;
       border-bottom: 2px solid transparent;
       cursor: pointer;
       font-weight: 600;
     }
 
     .auth-tab.active {
-      color: #ff4655;
-      border-color: #ff4655;
+      color: #e11d48;
+      border-color: #e11d48;
     }
 
     .btn-close {
       background: transparent;
       border: none;
-      color: #a0a5b5;
+      color: #8b949e;
       cursor: pointer;
       text-decoration: underline;
       margin-top: 5px;
     }
 
-    /* --- Выбор избранных героев --- */
+    /* --- Избранные герои --- */
     .fav-heroes-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -186,8 +186,8 @@
     }
 
     .fav-hero-chip {
-      background: #121214;
-      border: 1px solid #2a2e3d;
+      background: #0d0e12;
+      border: 1px solid #272a37;
       border-radius: 6px;
       padding: 8px;
       display: flex;
@@ -213,9 +213,9 @@
     }
 
     .fav-hero-chip.selected {
-      border-color: #f5a623;
-      background: rgba(245, 166, 35, 0.15);
-      color: #f5a623;
+      border-color: #eab308;
+      background: rgba(234, 179, 8, 0.15);
+      color: #eab308;
     }
 
     /* --- Главный интерфейс --- */
@@ -226,8 +226,8 @@
     }
 
     header {
-      background: #181a20;
-      border-bottom: 1px solid #2a2e3d;
+      background: #16181f;
+      border-bottom: 1px solid #272a37;
       padding: 15px 30px;
       display: flex;
       justify-content: space-between;
@@ -236,8 +236,8 @@
 
     .logo {
       font-weight: bold;
-      font-size: 1.4rem;
-      color: #ff4655;
+      font-size: 1.3rem;
+      color: #e11d48;
     }
 
     .user-panel {
@@ -247,55 +247,57 @@
     }
 
     .user-badge {
-      background: #252836;
+      background: #212430;
       padding: 6px 12px;
       border-radius: 20px;
-      font-size: 0.9rem;
-      color: #a0a5b5;
+      font-size: 0.85rem;
+      color: #8b949e;
     }
 
     .btn-fav {
-      background: #252836;
-      border: 1px solid #f5a623;
-      color: #f5a623;
+      background: #212430;
+      border: 1px solid #eab308;
+      color: #eab308;
       padding: 6px 14px;
       border-radius: 6px;
       cursor: pointer;
       font-weight: 600;
+      font-size: 0.85rem;
       transition: all 0.2s;
     }
 
     .btn-fav:hover {
-      background: #f5a623;
-      color: #121214;
+      background: #eab308;
+      color: #0d0e12;
     }
 
     .btn-logout {
       background: transparent;
-      border: 1px solid #ff4655;
-      color: #ff4655;
+      border: 1px solid #e11d48;
+      color: #e11d48;
       padding: 6px 14px;
       border-radius: 6px;
       cursor: pointer;
       font-weight: 600;
+      font-size: 0.85rem;
       transition: all 0.2s;
     }
 
     .btn-logout:hover {
-      background: #ff4655;
+      background: #e11d48;
       color: #fff;
     }
 
     main {
-      padding: 30px;
-      max-width: 1200px;
+      padding: 25px 30px;
+      max-width: 1280px;
       margin: 0 auto;
       width: 100%;
     }
 
     .alert-error {
       background: #3d1a1d;
-      border: 1px solid #ff4655;
+      border: 1px solid #e11d48;
       color: #ff808b;
       padding: 10px;
       border-radius: 6px;
@@ -303,159 +305,192 @@
       text-align: center;
     }
 
-    /* --- Стили Драфта --- */
+    /* --- Стили полей ввода --- */
     .draft-container {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 25px;
+      gap: 25px;
+      margin-bottom: 20px;
     }
 
     .team-box {
-      background: #181a20;
-      border: 1px solid #2a2e3d;
-      border-radius: 10px;
+      background: #16181f;
+      border: 1px solid #272a37;
+      border-radius: 12px;
       padding: 20px;
     }
 
     .team-box h3 {
-      margin-bottom: 15px;
       font-size: 1.1rem;
+      font-weight: 700;
+      padding-bottom: 12px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #272a37;
     }
 
-    .allies-title { color: #42a5f5; }
-    .enemies-title { color: #ff4655; }
+    .allies-title { color: #10b981; }
+    .enemies-title { color: #f43f5e; }
 
     .inputs-grid {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 14px;
     }
 
-    .input-row {
+    .input-field-group {
       display: flex;
-      align-items: center;
-      gap: 10px;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    .input-row label {
-      width: 120px;
-      font-size: 0.85rem;
-      color: #a0a5b5;
+    .input-field-group label {
+      font-size: 0.8rem;
+      color: #8b949e;
+      font-weight: 500;
     }
 
-    .input-row input {
-      flex: 1;
-      background: #121214;
-      border: 1px solid #2a2e3d;
+    .input-field-group input {
+      background: #0d0e12;
+      border: 1px solid #272a37;
       color: #fff;
-      padding: 8px 12px;
+      padding: 10px 14px;
       border-radius: 6px;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
     }
 
-    .input-row input:focus {
+    .input-field-group input:focus {
       outline: none;
-      border-color: #ff4655;
+      border-color: #3b82f6;
     }
 
-    .analyze-btn-wrapper {
-      text-align: center;
+    /* Кнопки действия (Проанализировать + Очистить) */
+    .actions-row {
+      display: flex;
+      gap: 15px;
       margin-bottom: 30px;
     }
 
     .btn-analyze {
-      background: #ff4655;
+      flex: 3;
+      background: #e11d48;
       color: #fff;
       border: none;
-      padding: 14px 40px;
+      padding: 14px 20px;
       border-radius: 8px;
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
       transition: background 0.2s;
     }
 
     .btn-analyze:hover {
-      background: #e03e4c;
+      background: #be123c;
     }
 
-    /* --- Карточки результатов --- */
+    .btn-clear {
+      flex: 1;
+      background: #212430;
+      color: #a0a5b5;
+      border: 1px solid #33384a;
+      padding: 14px 20px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-clear:hover {
+      background: #2b2f3e;
+      color: #fff;
+    }
+
+    /* --- Вывод результатов --- */
     .results-grid {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 25px;
     }
 
-    .role-card {
-      background: #181a20;
-      border: 1px solid #2a2e3d;
-      border-radius: 10px;
-      padding: 20px;
-    }
-
-    .role-title {
+    .role-section-title {
       font-size: 1.2rem;
-      color: #ff4655;
+      font-weight: bold;
+      color: #fff;
       margin-bottom: 15px;
-      border-bottom: 1px solid #2a2e3d;
-      padding-bottom: 8px;
     }
 
-    .heroes-flex {
+    .heroes-cards-flex {
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
     }
 
-    .hero-item {
-      background: #212430;
-      border: 1px solid #33384a;
+    .card-hero {
+      background: #16181f;
       border-radius: 8px;
-      padding: 10px;
-      width: 180px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 290px;
+      position: relative;
+      border: 2px solid transparent;
+    }
+
+    .card-hero.pool-card { border-color: #a855f7; }
+    .card-hero.winrate-card { border-color: #eab308; }
+    .card-hero.games-card { border-color: #3b82f6; }
+    .card-hero.standard-card { border-color: #272a37; }
+
+    .badge-pill {
+      position: absolute;
+      top: -10px;
+      right: 15px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-pill.pool { background: #a855f7; color: #ffffff; }
+    .badge-pill.winrate { background: #eab308; color: #000000; }
+    .badge-pill.games { background: #3b82f6; color: #ffffff; }
+
+    .hero-img-avatar {
+      width: 55px;
+      height: 32px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+
+    .hero-info-text {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      text-align: center;
-      position: relative;
+      gap: 2px;
     }
 
-    .hero-item img {
-      width: 100%;
-      border-radius: 4px;
-      margin-bottom: 8px;
+    .hero-info-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #ffffff;
     }
 
-    .hero-name {
-      font-weight: bold;
-      font-size: 0.95rem;
-      margin-bottom: 4px;
+    .hero-info-stat {
+      font-size: 0.82rem;
+      color: #8b949e;
     }
 
-    .hero-stat {
-      font-size: 0.85rem;
-      color: #a0a5b5;
+    .stat-green {
+      color: #10b981;
+      font-weight: 600;
     }
-
-    .badge {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      color: #fff;
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 10px;
-      font-weight: bold;
-    }
-
-    .badge-fav { background: #f5a623; color: #000; }
-    .badge-wr { background: #4caf50; }
-    .badge-gm { background: #2196f3; }
 
     @media (max-width: 768px) {
-      .draft-container {
-        grid-template-columns: 1fr;
-      }
+      .draft-container { grid-template-columns: 1fr; }
+      .actions-row { flex-direction: column; }
     }
   </style>
 </head>
@@ -464,7 +499,7 @@
   <!-- Автодополнение для списка героев -->
   <datalist id="heroes-list"></datalist>
 
-  <!-- 1. Экран приветствия (Превью) -->
+  <!-- 1. Экран приветствия -->
   <div id="welcome-screen">
     <div class="welcome-card">
       <h1>Dota 2 Helper</h1>
@@ -497,15 +532,15 @@
   <!-- 3. Модальное окно «Любимые герои» -->
   <div id="fav-modal" class="modal-overlay hidden">
     <div class="modal-card modal-large">
-      <h2 style="color: #f5a623; text-align: center;">Любимые герои</h2>
-      <p style="color: #a0a5b5; font-size: 0.85rem; text-align: center;">Выберите персонажей, на которых вы играете чаще всего</p>
+      <h2 style="color: #eab308; text-align: center;">Любимые герои</h2>
+      <p style="color: #8b949e; font-size: 0.85rem; text-align: center;">Выберите персонажей, на которых вы играете чаще всего</p>
       
       <input type="text" id="fav-search-input" placeholder="Поиск героя..." oninput="filterFavHeroes()">
       
       <div id="fav-heroes-container" class="fav-heroes-grid"></div>
 
       <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <button onclick="saveFavorites()" class="btn-primary" style="flex: 1; background: #f5a623; color: #121214;">Сохранить</button>
+        <button onclick="saveFavorites()" class="btn-primary" style="flex: 1; background: #eab308; color: #0d0e12;">Сохранить</button>
         <button onclick="closeFavModal()" class="btn-secondary" style="flex: 1;">Отмена</button>
       </div>
     </div>
@@ -526,34 +561,66 @@
       <div class="draft-container">
         <!-- Наша команда -->
         <div class="team-box">
-          <h3 class="allies-title">Союзники (Наша команда)</h3>
+          <h3 class="allies-title">Моя команда</h3>
           <div class="inputs-grid">
-            <div class="input-row"><label>Поз 1 (Керри):</label><input type="text" id="my-pos1" list="heroes-list" placeholder="Например: Sven"></div>
-            <div class="input-row"><label>Поз 2 (Мид):</label><input type="text" id="my-pos2" list="heroes-list" placeholder="Например: SF"></div>
-            <div class="input-row"><label>Поз 3 (Тройка):</label><input type="text" id="my-pos3" list="heroes-list" placeholder="Например: Axe"></div>
-            <div class="input-row"><label>Поз 4 (Четверка):</label><input type="text" id="my-pos4" list="heroes-list" placeholder="Например: Rubick"></div>
-            <div class="input-row"><label>Поз 5 (Пятерка):</label><input type="text" id="my-pos5" list="heroes-list" placeholder="Например: CM"></div>
+            <div class="input-field-group">
+              <label>Поз 1 — Керри</label>
+              <input type="text" id="my-pos1" list="heroes-list" placeholder="Выберите героя...">
+            </div>
+            <div class="input-field-group">
+              <label>Поз 2 — Мид</label>
+              <input type="text" id="my-pos2" list="heroes-list" placeholder="Выберите героя...">
+            </div>
+            <div class="input-field-group">
+              <label>Поз 3 — Тройка</label>
+              <input type="text" id="my-pos3" list="heroes-list" placeholder="Выберите героя...">
+            </div>
+            <div class="input-field-group">
+              <label>Поз 4 — Четверка</label>
+              <input type="text" id="my-pos4" list="heroes-list" placeholder="Выберите героя...">
+            </div>
+            <div class="input-field-group">
+              <label>Поз 5 — Пятерка</label>
+              <input type="text" id="my-pos5" list="heroes-list" placeholder="Выберите героя...">
+            </div>
           </div>
         </div>
 
-        <!-- Команда врага -->
+        <!-- Команда противника -->
         <div class="team-box">
-          <h3 class="enemies-title">Враги (Пики противника)</h3>
+          <h3 class="enemies-title">Команда противника</h3>
           <div class="inputs-grid">
-            <div class="input-row"><label>Враг 1:</label><input type="text" id="enemy-1" list="heroes-list" placeholder="Герой врага 1"></div>
-            <div class="input-row"><label>Враг 2:</label><input type="text" id="enemy-2" list="heroes-list" placeholder="Герой врага 2"></div>
-            <div class="input-row"><label>Враг 3:</label><input type="text" id="enemy-3" list="heroes-list" placeholder="Герой врага 3"></div>
-            <div class="input-row"><label>Враг 4:</label><input type="text" id="enemy-4" list="heroes-list" placeholder="Герой врага 4"></div>
-            <div class="input-row"><label>Враг 5:</label><input type="text" id="enemy-5" list="heroes-list" placeholder="Герой врага 5"></div>
+            <div class="input-field-group">
+              <label>Враг 1</label>
+              <input type="text" id="enemy-1" list="heroes-list" placeholder="Выберите героя...">
+            </div>
+            <div class="input-field-group">
+              <label>Враг 2</label>
+              <input type="text" id="enemy-2" list="heroes-list" placeholder="Выберите героя...">
+            </div>
+            <div class="input-field-group">
+              <label>Враг 3</label>
+              <input type="text" id="enemy-3" list="heroes-list" placeholder="Выберите героя...">
+            </div>
+            <div class="input-field-group">
+              <label>Враг 4</label>
+              <input type="text" id="enemy-4" list="heroes-list" placeholder="Выберите героя...">
+            </div>
+            <div class="input-field-group">
+              <label>Враг 5</label>
+              <input type="text" id="enemy-5" list="heroes-list" placeholder="Выберите героя...">
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="analyze-btn-wrapper">
-        <button onclick="analyzeDraft()" class="btn-analyze">Рассчитать наилучшие пики</button>
+      <!-- Кнопки расчета и очистки -->
+      <div class="actions-row">
+        <button onclick="analyzeDraft()" class="btn-analyze">Проанализировать драфт</button>
+        <button onclick="clearInputs()" class="btn-clear">Очистить</button>
       </div>
 
-      <!-- Вывод результатов -->
+      <!-- Контейнер вывода результатов -->
       <div id="results-container" class="results-grid"></div>
     </main>
   </div>
@@ -780,6 +847,22 @@
       }
     }
 
+    function clearInputs() {
+      document.getElementById('my-pos1').value = '';
+      document.getElementById('my-pos2').value = '';
+      document.getElementById('my-pos3').value = '';
+      document.getElementById('my-pos4').value = '';
+      document.getElementById('my-pos5').value = '';
+
+      document.getElementById('enemy-1').value = '';
+      document.getElementById('enemy-2').value = '';
+      document.getElementById('enemy-3').value = '';
+      document.getElementById('enemy-4').value = '';
+      document.getElementById('enemy-5').value = '';
+
+      document.getElementById('results-container').innerHTML = '';
+    }
+
     /* --- Анализ Драфта --- */
     async function analyzeDraft() {
       const myTeam = {
@@ -805,7 +888,7 @@
       };
 
       const container = document.getElementById('results-container');
-      container.innerHTML = '<p style="text-align: center; color: #a0a5b5;">Загрузка и расчет контрпиков...</p>';
+      container.innerHTML = '<p style="text-align: center; color: #8b949e;">Загрузка и расчет контрпиков...</p>';
 
       try {
         const res = await fetch('/api/analyze', {
@@ -818,36 +901,38 @@
         container.innerHTML = '';
 
         if (!data.results || data.results.length === 0) {
-          container.innerHTML = '<p style="text-align: center; color: #a0a5b5;">Все роли у вас уже укомплектованы или нет данных.</p>';
+          container.innerHTML = '<p style="text-align: center; color: #8b949e;">Все роли у вас уже укомплектованы или нет данных.</p>';
           return;
         }
 
         data.results.forEach(r => {
           if (!r.data) return;
 
-          const card = document.createElement('div');
-          card.className = 'role-card';
-
-          let html = `<div class="role-title">${r.role}</div><div class="heroes-flex">`;
+          const section = document.createElement('div');
+          
+          let html = `<div class="role-section-title">${r.role}</div><div class="heroes-cards-flex">`;
 
           if (r.data.top_favorite) {
-            html += renderHeroCard(r.data.top_favorite, 'Избранный', 'badge-fav');
+            html += renderHeroCard(r.data.top_favorite, '⭐ ИЗ ВАШЕГО ПУЛА', 'pool-card', 'pool', true);
           }
           if (r.data.top_winrate) {
-            html += renderHeroCard(r.data.top_winrate, 'Топ Винрейт', 'badge-wr');
+            html += renderHeroCard(r.data.top_winrate, '★ МАКС. ВИНРЕЙТ', 'winrate-card', 'winrate', true);
           }
           if (r.data.top_games) {
-            html += renderHeroCard(r.data.top_games, 'Много матчей', 'badge-gm');
+            html += renderHeroCard(r.data.top_games, '📊 МАКС. МАТЧЕЙ', 'games-card', 'games', false);
           }
-          if (r.data.others) {
-            r.data.others.forEach(h => {
-              html += renderHeroCard(h, null, null);
+
+          // Дополнительные 3 героя по винрейту
+          if (r.data.others && r.data.others.length > 0) {
+            const extraHeroes = r.data.others.slice(0, 3);
+            extraHeroes.forEach(h => {
+              html += renderHeroCard(h, null, 'standard-card', '', true);
             });
           }
 
           html += '</div>';
-          card.innerHTML = html;
-          container.appendChild(card);
+          section.innerHTML = html;
+          container.appendChild(section);
         });
 
       } catch (err) {
@@ -855,14 +940,19 @@
       }
     }
 
-    function renderHeroCard(hero, badgeText, badgeClass) {
+    function renderHeroCard(hero, badgeText, cardClass, badgeClass, showWinrateFirst) {
+      const statsText = showWinrateFirst
+        ? `Винрейт: <span class="stat-green">${hero.winrate}%</span> (${hero.games} игр)`
+        : `Матчей: ${hero.games} (<span class="stat-green">${hero.winrate}% WR</span>)`;
+
       return `
-        <div class="hero-item">
-          ${badgeText ? `<span class="badge ${badgeClass}">${badgeText}</span>` : ''}
-          <img src="${hero.img}" alt="${hero.name}" />
-          <div class="hero-name">${hero.name}</div>
-          <div class="hero-stat">Винрейт: <b>${hero.winrate}%</b></div>
-          <div class="hero-stat">Матчей: ${hero.games}</div>
+        <div class="card-hero ${cardClass}">
+          ${badgeText ? `<span class="badge-pill ${badgeClass}">${badgeText}</span>` : ''}
+          <img class="hero-img-avatar" src="${hero.img}" alt="${hero.name}" />
+          <div class="hero-info-text">
+            <span class="hero-info-name">${hero.name}</span>
+            <span class="hero-info-stat">${statsText}</span>
+          </div>
         </div>
       `;
     }
