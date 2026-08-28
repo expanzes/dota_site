@@ -10,14 +10,46 @@ from typing import List, Dict, Optional
 
 app = FastAPI(title="Dota 2 Helper")
 
-# Использование абсолютных путей для стабильной работы на Render и локально
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
-INDEX_HTML = os.path.join(STATIC_DIR, "index.html")
-DB_NAME = os.path.join(BASE_DIR, "dota_helper.db")
 
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+@app.get("/")
+async def read_root():
+    # Поиск index.html во всех возможных папках
+    possible_paths = [
+        os.path.join(STATIC_DIR, "index.html"),
+        os.path.join(BASE_DIR, "index.html"),
+        "static/index.html",
+        "index.html"
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            return FileResponse(path)
+
+    # Если файл не найден — выводим диагностику
+    files_in_base = os.listdir(BASE_DIR) if os.path.exists(BASE_DIR) else []
+    files_in_static = os.listdir(STATIC_DIR) if os.path.exists(STATIC_DIR) else "Папка static отсутствует"
+    
+    debug_html = f"""
+    <html>
+        <body style="font-family: sans-serif; background: #111; color: #fff; padding: 20px;">
+            <h1 style="color: #ff4655;">Сервер запущен, но index.html не найден!</h1>
+            <p><b>Текущая директория (BASE_DIR):</b> {BASE_DIR}</p>
+            <p><b>Файлы в корнях проекта:</b> {files_in_base}</p>
+            <p><b>Файлы в папки static:</b> {files_in_static}</p>
+            <hr>
+            <p>Убедитесь, что файл index.html лежит в папке static и запушен на GitHub.</p>
+        </body>
+    </html>
+    """
+    return HTMLResponse(content=debug_html, status_code=200)
+
+# --- Всё остальное без изменений ---
+DB_NAME = os.path.join(BASE_DIR, "dota_helper.db")
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -41,17 +73,6 @@ def init_db():
     conn.close()
 
 init_db()
-
-@app.get("/")
-async def read_root():
-    if os.path.exists(INDEX_HTML):
-        return FileResponse(INDEX_HTML)
-    
-    root_index = os.path.join(BASE_DIR, "index.html")
-    if os.path.exists(root_index):
-        return FileResponse(root_index)
-        
-    return HTMLResponse("<h1>Dota 2 Helper API Running</h1><p>Файл index.html не найден в папке static.</p>")
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -282,7 +303,6 @@ def analyze_draft(req: DraftRequest):
                         games = item["games_played"]
                         enemy_wins = item["wins"]
                         
-                        # Расчет побед кандидата против конкретного врага
                         cand_wins_vs_enemy = games - enemy_wins
                         single_matchup_wr = (cand_wins_vs_enemy / games) * 100 if games > 0 else 50.0
 
@@ -292,7 +312,6 @@ def analyze_draft(req: DraftRequest):
                         candidate_stats[cid]["games"] += games
                         candidate_stats[cid]["cand_wins"] += cand_wins_vs_enemy
 
-                        # Фильтрация смертельных контрпиков (<42% WR)
                         if single_matchup_wr < 42.0:
                             candidate_stats[cid]["has_hard_counter"] = True
             except Exception:
