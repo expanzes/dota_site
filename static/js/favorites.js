@@ -23,7 +23,6 @@ async function loadFavoritesModalData() {
     const heroesRes = await fetch('/api/heroes');
     if (heroesRes.ok) {
       allHeroesForFavorites = await heroesRes.json();
-      // Сортировка героев по алфавиту (A–Z)
       allHeroesForFavorites.sort((a, b) => a.name.localeCompare(b.name));
     }
 
@@ -31,7 +30,9 @@ async function loadFavoritesModalData() {
       const favRes = await fetch(`/api/favorites?user_id=${currentUser.user_id}`);
       if (favRes.ok) {
         const favData = await favRes.json();
-        selectedFavoriteIds = new Set(favData.favorite_ids || []);
+        // Сервер может возвращать массив в поле heroes или favorite_ids
+        const list = favData.heroes || favData.favorite_ids || (Array.isArray(favData) ? favData : []);
+        selectedFavoriteIds = new Set(list);
       }
     }
 
@@ -95,8 +96,8 @@ async function saveFavorites() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        user_id: currentUser.user_id,
-        favorite_ids: Array.from(selectedFavoriteIds)
+        user_id: String(currentUser.user_id),
+        heroes: Array.from(selectedFavoriteIds) // Исправлено: передаем 'heroes' вместо 'favorite_ids'
       })
     });
 
@@ -106,6 +107,8 @@ async function saveFavorites() {
         loadUserProfile();
       }
     } else {
+      const errDetails = await response.json().catch(() => ({}));
+      console.error('Ошибка от сервера:', errDetails);
       alert('Не удалось сохранить изменения.');
     }
   } catch (err) {
