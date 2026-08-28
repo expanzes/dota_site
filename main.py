@@ -1,15 +1,43 @@
 import os
+import sqlite3
+import hashlib
 import requests
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 
-# Создаем экземпляр FastAPI на верхнем уровне
 app = FastAPI(title="Dota 2 Helper")
 
-# Подключение статических файлов, если папка static существует
+# Инициализация базы данных SQLite
+DB_NAME = "dota_helper.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    # Таблица пользователей
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL
+        )
+    ''')
+    # Таблица любимых героев (пул)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS favorites (
+            user_id INTEGER NOT NULL,
+            hero_name TEXT NOT NULL,
+            PRIMARY KEY (user_id, hero_name),
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -24,7 +52,9 @@ async def read_root():
 async def read_site():
     return await read_root()
 
-# База данных ролей
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
 ROLES_DB = {
     "pos1": {"antimage", "spectre", "phantom_assassin", "juggernaut", "faceless_void", "slark", "sven", "bloodseeker", "gyrocopter", "lifestealer", "luna", "medusa", "monkey_king", "morphling", "naga_siren", "sniper", "terrorblade", "troll_warlord", "ursa", "wraith_king", "weaver", "clinkz", "drow_ranger"},
     "pos2": {"storm_spirit", "ember_spirit", "void_spirit", "invoker", "shadow_fiend", "puck", "queen_of_pain", "tinker", "lina", "sniper", "templar_assassin", "dragon_knight", "death_prophet", "leshrac", "kunkka", "meepo", "necrophos", "pudge", "tiny", "windranger", "zeus"},
@@ -42,13 +72,72 @@ def get_opendota_heroes():
         pass
     return {}
 
+# --- ЭНДПОИНТЫ АВТОРИЗАЦИИ И ПУЛА ГЕРОЕВ ---
+
+class AuthRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/register")
+def register(req: AuthRequest):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    pwd_hash = hash_password(req.password)
+    try:
+        cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (req.username, pwd_hash))
+        conn.commit()
+        user_id = cursor.lastrowid
+        conn.close()
+        return {"status": "ok", "user_id": user_id, "username": req.username}
+    except sqlite3.IntegrityError:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Пользователь с таким именем уже существует")
+
+@app.post("/api/login")
+def login(req: AuthRequest):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    pwd_hash = hash_password(req.password)
+    cursor.execute("SELECT id, username FROM users WHERE username = ? AND password_hash = ?", (req.username, pwd_hash))
+    user = cursor.fetchone()
+    conn.close()
+    if user:
+        return {"status": "ok", "user_id": user[0], "username": user[1]}
+    raise HTTPException(status_code=400, detail="Неверное имя пользователя или пароль")
+
+class FavoritesRequest(BaseModel):
+    user_id: int
+    heroes: List[str]
+
+@app.get("/api/favorites/{user_id}")
+def get_favorites(user_id: int):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT hero_name FROM favorites WHERE user_id = ?", (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [r[0] for r in rows]
+
+@app.post("/api/favorites")
+def save_favorites(req: FavoritesRequest):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM favorites WHERE user_id = ?", (req.user_id,))
+    for hero in req.heroes:
+        cursor.execute("INSERT INTO favorites (user_id, hero_name) VALUES (?, ?)", (req.user_id, hero))
+    conn.commit()
+    conn.close()
+    return {"status": "ok"}
+
 @app.get("/api/heroes")
 def api_heroes():
     heroes = get_opendota_heroes()
     names = [h["name"] for h in heroes.values()]
     return sorted(names)
 
-def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
+# --- ЛОГИКА ДРАФТА С УЧЕТОМ ПУЛА ГЕРОЕВ ---
+
+def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict, user_favs: set):
     valid_heroes = ROLES_DB.get(role_key, set())
     role_candidates = []
     all_candidates = []
@@ -65,6 +154,7 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
             "winrate": round(wr, 1),
             "games": data["games"],
             "img": img_url,
+            "is_fav": hero_info["name"].lower() in user_favs
         }
 
         all_candidates.append(item)
@@ -81,11 +171,19 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
     top_wr = by_winrate[0]
     top_gm = by_games[0]
 
-    # Исключаем главных героев из списка "Другие варианты"
+    # Ищем лучший контрпик из пула авторизованного пользователя
+    fav_candidates = [h for h in by_winrate if h["is_fav"]]
+    top_fav = fav_candidates[0] if fav_candidates else None
+
+    # Исключаем главных героев из блока "Другие варианты"
     excluded_names = {top_wr["name"], top_gm["name"]}
+    if top_fav:
+        excluded_names.add(top_fav["name"])
+
     others = [h for h in by_winrate if h["name"] not in excluded_names][:3]
 
     return {
+        "top_favorite": top_fav,
         "top_winrate": top_wr,
         "top_games": top_gm,
         "others": others,
@@ -94,11 +192,22 @@ def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict):
 class DraftRequest(BaseModel):
     my_team: Dict[str, str]
     enemy_team: List[str]
+    user_id: Optional[int] = None
 
 @app.post("/api/analyze")
 def analyze_draft(req: DraftRequest):
     heroes_map = get_opendota_heroes()
     name_to_id = {info["name"].lower(): hid for hid, info in heroes_map.items()}
+
+    # Если передан user_id, загружаем пул героя данного пользователя
+    user_favs = set()
+    if req.user_id:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT hero_name FROM favorites WHERE user_id = ?", (req.user_id,))
+        rows = cursor.fetchall()
+        conn.close()
+        user_favs = {r[0].lower() for r in rows}
 
     enemy_ids = []
     for e in req.enemy_team:
@@ -132,7 +241,7 @@ def analyze_draft(req: DraftRequest):
     results = []
     for role_name, role_key in roles_display:
         if not req.my_team.get(role_key):
-            rdata = get_role_data(role_key, candidate_stats, heroes_map)
+            rdata = get_role_data(role_key, candidate_stats, heroes_map, user_favs)
             results.append({"role": role_name, "data": rdata})
 
     return {"status": "ok", "results": results}
