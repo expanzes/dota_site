@@ -1,5 +1,4 @@
 fastapi
 uvicorn
-requests
+httpx
 pydantic
-psycopg2-binary
