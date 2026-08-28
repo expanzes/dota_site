@@ -1,29 +1,20 @@
 let allHeroesForFavorites = [];
 let selectedFavoriteIds = new Set();
 
-// Алиас на случай, если в HTML используется openFavorites() или openFavoritesModal()
-function openFavorites() {
-  openFavoritesModal();
-}
-
-async function openFavoritesModal() {
-  const modal = document.getElementById('favorites-modal') || document.getElementById('favoritesModal');
+async function openFavModal() {
+  const modal = document.getElementById('fav-modal');
   if (modal) {
+    modal.classList.remove('hidden');
     modal.style.display = 'flex';
-    modal.classList.add('active');
-    modal.classList.add('show');
-  } else {
-    console.error('Модальное окно любимых героев не найдено в HTML (favorites-modal)');
   }
   await loadFavoritesModalData();
 }
 
-function closeFavoritesModal() {
-  const modal = document.getElementById('favorites-modal') || document.getElementById('favoritesModal');
+function closeFavModal() {
+  const modal = document.getElementById('fav-modal');
   if (modal) {
+    modal.classList.add('hidden');
     modal.style.display = 'none';
-    modal.classList.remove('active');
-    modal.classList.remove('show');
   }
 }
 
@@ -32,8 +23,7 @@ async function loadFavoritesModalData() {
     const heroesRes = await fetch('/api/heroes');
     if (heroesRes.ok) {
       allHeroesForFavorites = await heroesRes.json();
-      
-      // Сортировка героев строго по алфавиту (A–Z)
+      // Сортировка героев по алфавиту (A–Z)
       allHeroesForFavorites.sort((a, b) => a.name.localeCompare(b.name));
     }
 
@@ -45,17 +35,17 @@ async function loadFavoritesModalData() {
       }
     }
 
-    renderFavoritesGrid();
+    renderFavGrid();
   } catch (err) {
-    console.error('Ошибка при загрузке героев:', err);
+    console.error('Ошибка при загрузке любимых героев:', err);
   }
 }
 
-function renderFavoritesGrid(searchQuery = '') {
-  const grid = document.getElementById('favorites-grid') || document.getElementById('favoritesGrid');
-  if (!grid) return;
+function renderFavGrid(searchQuery = '') {
+  const container = document.getElementById('fav-heroes-container');
+  if (!container) return;
 
-  grid.innerHTML = '';
+  container.innerHTML = '';
   const q = searchQuery.toLowerCase().trim();
 
   const filtered = allHeroesForFavorites.filter(hero => {
@@ -65,7 +55,8 @@ function renderFavoritesGrid(searchQuery = '') {
 
   filtered.forEach(hero => {
     const card = document.createElement('div');
-    card.className = `favorite-hero-card ${selectedFavoriteIds.has(hero.id) ? 'selected' : ''}`;
+    const isSelected = selectedFavoriteIds.has(hero.id);
+    card.className = `fav-hero-card ${isSelected ? 'selected' : ''}`;
     card.dataset.id = hero.id;
 
     card.innerHTML = `
@@ -83,14 +74,14 @@ function renderFavoritesGrid(searchQuery = '') {
       }
     };
 
-    grid.appendChild(card);
+    container.appendChild(card);
   });
 }
 
-function filterFavoritesSearch() {
-  const input = document.getElementById('favorites-search-input') || document.getElementById('favoritesSearchInput');
+function filterFavHeroes() {
+  const input = document.getElementById('fav-search-input');
   const query = input ? input.value : '';
-  renderFavoritesGrid(query);
+  renderFavGrid(query);
 }
 
 async function saveFavorites() {
@@ -110,7 +101,7 @@ async function saveFavorites() {
     });
 
     if (response.ok) {
-      closeFavoritesModal();
+      closeFavModal();
       if (typeof loadUserProfile === 'function') {
         loadUserProfile();
       }
