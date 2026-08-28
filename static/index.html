@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dota 2 Draft Helper</title>
+  <title>Dota 2 Helper</title>
   <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
 
-  <!-- 1. Экран приветствия -->
   <div id="welcome-screen">
     <div class="welcome-card">
-      <h1>Dota 2 Draft Helper</h1>
+      <h1>Dota 2 Helper</h1>
       <p>Анализ пиков, контрпиков и персональные рекомендации</p>
       <div class="btn-group">
         <button class="btn-primary" onclick="openAuthModal()">Войти / Зарегистрироваться</button>
@@ -20,20 +19,18 @@
     </div>
   </div>
 
-  <!-- 2. Главное приложение -->
   <div id="main-app" class="hidden">
     <header>
-      <div class="logo">Dota 2 Draft Helper</div>
+      <div class="logo">Dota 2 Helper</div>
       <div class="user-panel">
+        <button id="fav-btn" class="btn-fav hidden" onclick="openFavModal()">★ Любимые герои</button>
         <span id="user-display-name" class="user-badge">Гость</span>
-        <button id="fav-btn" class="btn-fav hidden" onclick="openFavModal()">⭐ Любимые герои</button>
         <button class="btn-logout" onclick="logout()">Выйти</button>
       </div>
     </header>
 
     <main>
       <div class="draft-container">
-        <!-- Ваша команда -->
         <div class="team-box">
           <h3 class="allies-title">Моя команда</h3>
           <div class="inputs-grid">
@@ -75,9 +72,8 @@
           </div>
         </div>
 
-        <!-- Вражеская команда -->
         <div class="team-box">
-          <h3 class="enemies-title">Вражеская команда</h3>
+          <h3 class="enemies-title">Команда противника</h3>
           <div class="inputs-grid">
             <div class="input-field-group">
               <label>Враг 1</label>
@@ -120,15 +116,13 @@
 
       <div class="actions-row">
         <button class="btn-analyze" onclick="analyzeDraft()">Проанализировать драфт</button>
-        <button class="btn-clear" onclick="clearInputs()">Очистить все</button>
+        <button class="btn-clear" onclick="clearInputs()">Очистить</button>
       </div>
 
-      <!-- Результаты анализа -->
-      <div id="results-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;"></div>
+      <div id="results-container"></div>
     </main>
   </div>
 
-  <!-- Модалка Авторизации -->
   <div id="auth-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="auth-tabs">
@@ -143,7 +137,6 @@
     </div>
   </div>
 
-  <!-- Модалка Избранных героев -->
   <div id="fav-modal" class="modal-overlay hidden">
     <div class="modal-card modal-large">
       <h3>Выберите ваших любимых героев</h3>
