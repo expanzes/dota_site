@@ -8,23 +8,20 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background-color: #0b0e11; color: #e1e6eb; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; min-height: 100vh; overflow-x: hidden; }
 
-    #welcome-splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at center, #161c24 0%, #080a0d 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; opacity: 1; visibility: visible; transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.7s; }
+    #welcome-splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at center, #161c24 0%, #080a0d 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; transition: opacity 0.5s ease; }
     #welcome-splash.splash-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-    .splash-content { text-align: center; max-width: 620px; padding: 30px; animation: splashAppear 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .splash-content { text-align: center; max-width: 620px; padding: 30px; }
     .splash-logo { width: 72px; height: 72px; background: linear-gradient(135deg, #ff4655 0%, #bd1b2b 100%); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 34px; color: white; margin: 0 auto 24px auto; box-shadow: 0 10px 30px rgba(255, 70, 85, 0.4); }
-    .splash-title { font-size: 44px; font-weight: 800; color: #ffffff; margin-bottom: 12px; letter-spacing: 0.5px; }
+    .splash-title { font-size: 44px; font-weight: 800; color: #ffffff; margin-bottom: 12px; }
     .splash-title span { color: #ff4655; }
     .splash-desc { font-size: 16px; color: #8e9297; line-height: 1.6; margin-bottom: 30px; }
-
     .splash-btn-group { display: flex; gap: 16px; justify-content: center; }
     .splash-btn { padding: 14px 28px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; border: none; transition: all 0.25s ease; }
-    .splash-btn.primary { background: linear-gradient(135deg, #ff4655 0%, #d62d3c 100%); color: #fff; box-shadow: 0 4px 15px rgba(255, 70, 85, 0.3); }
-    .splash-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 70, 85, 0.5); }
+    .splash-btn.primary { background: linear-gradient(135deg, #ff4655 0%, #d62d3c 100%); color: #fff; }
     .splash-btn.secondary { background: #1a222a; color: #a3a6aa; border: 1px solid #222b35; }
-    .splash-btn.secondary:hover { background: #252f3b; color: #fff; }
 
-    .app-container { display: flex; min-height: 100vh; opacity: 0; transform: scale(0.98); transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
-    .app-container.app-visible { opacity: 1; transform: scale(1); }
+    .app-container { display: flex; min-height: 100vh; opacity: 0; transition: opacity 0.5s ease; }
+    .app-container.app-visible { opacity: 1; }
 
     .sidebar { width: 260px; background: #12171d; border-right: 1px solid #1e2630; display: flex; flex-direction: column; padding: 24px 16px; flex-shrink: 0; }
     .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 24px; border-bottom: 1px solid #1e2630; margin-bottom: 24px; cursor: pointer; }
@@ -33,31 +30,39 @@
 
     .user-profile-badge { background: #161d24; border: 1px solid #222b35; border-radius: 8px; padding: 12px; margin-bottom: 20px; }
     .user-profile-name { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-    .btn-pool { width: 100%; background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; color: #ffd700; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 6px; transition: all 0.2s; }
-    .btn-pool:hover { background: #ffd700; color: #000; }
+    .btn-pool { width: 100%; background: rgba(255, 215, 0, 0.15); border: 1px solid #ffd700; color: #ffd700; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 6px; }
     .btn-logout { background: none; border: none; color: #ff4655; font-size: 11px; cursor: pointer; margin-top: 8px; text-decoration: underline; }
 
     .nav-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .nav-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 8px; color: #8e9297; text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.25s; }
-    .nav-item:hover:not(.disabled) { background: #1a222a; color: #ffffff; }
+    .nav-item { padding: 12px 16px; border-radius: 8px; color: #8e9297; font-size: 14px; font-weight: 500; cursor: pointer; }
     .nav-item.active { background: rgba(255, 70, 85, 0.15); color: #ff4655; border-left: 3px solid #ff4655; font-weight: 600; }
-    .nav-item.disabled { opacity: 0.45; cursor: not-allowed; }
 
     .main-content { flex: 1; padding: 36px 48px; max-width: 1200px; }
     .header-section { margin-bottom: 32px; }
     .app-title { font-size: 30px; font-weight: 800; color: #ffffff; margin-bottom: 8px; }
     .app-title span { color: #ff4655; }
-    .app-subtitle { font-size: 15px; color: #8e9297; line-height: 1.5; }
+    .app-subtitle { font-size: 15px; color: #8e9297; }
 
     .flex-grid { display: flex; gap: 24px; margin-bottom: 24px; }
     .panel { flex: 1; background: #151a21; border: 1px solid #222b35; border-radius: 12px; padding: 20px; }
-    .panel h2 { font-size: 16px; font-weight: 700; margin-top: 0; border-bottom: 2px solid #222b35; padding-bottom: 12px; margin-bottom: 16px; }
+    .panel h2 { font-size: 16px; font-weight: 700; border-bottom: 2px solid #222b35; padding-bottom: 12px; margin-bottom: 16px; }
     .team-my h2 { color: #43b581; border-color: rgba(67, 181, 129, 0.3); }
     .team-enemy h2 { color: #ff4655; border-color: rgba(255, 70, 85, 0.3); }
 
-    .input-group { margin-bottom: 12px; }
-    .input-group label { display: block; font-size: 12px; color: #8e9297; margin-bottom: 6px; }
-    input { width: 100%; box-sizing: border-box; background: #0d1014; border: 1px solid #222b35; color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 14px; }
+    /* КAСТОМНЫЙ ВЫБОР ГЕРОЯ */
+    .hero-select-wrapper { position: relative; margin-bottom: 12px; }
+    .hero-select-label { font-size: 12px; color: #8e9297; margin-bottom: 6px; display: block; }
+    .hero-input-box { display: flex; align-items: center; background: #0d1014; border: 1px solid #222b35; border-radius: 6px; padding: 4px 8px; height: 42px; position: relative; }
+    .hero-input-box img.hero-icon { width: 36px; height: 20px; border-radius: 3px; object-fit: cover; margin-right: 8px; display: none; }
+    .hero-input-box input { background: transparent; border: none; color: #fff; font-size: 14px; width: 100%; outline: none; }
+    .hero-input-box .clear-btn { color: #8e9297; font-size: 16px; cursor: pointer; padding: 0 4px; display: none; }
+    .hero-input-box .clear-btn:hover { color: #ff4655; }
+
+    .hero-dropdown { position: absolute; top: 100%; left: 0; width: 100%; max-height: 220px; overflow-y: auto; background: #12171d; border: 1px solid #222b35; border-radius: 6px; z-index: 1000; display: none; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+    .hero-option { display: flex; align-items: center; padding: 8px 12px; cursor: pointer; transition: background 0.15s; }
+    .hero-option:hover { background: #1e2630; }
+    .hero-option img { width: 36px; height: 20px; border-radius: 3px; object-fit: cover; margin-right: 10px; }
+    .hero-option span { font-size: 13px; color: #fff; }
 
     .action-row { display: flex; gap: 12px; }
     button.btn-analyze { flex: 3; background: linear-gradient(135deg, #ff4655 0%, #d62d3c 100%); color: white; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; }
@@ -90,34 +95,31 @@
     .other-name { font-size: 13px; font-weight: 600; color: #ffffff; }
     .other-stats { font-size: 11px; color: #8e9297; }
 
-    /* МОДАЛЬНЫЕ ОКНА */
+    /* МОДАЛКИ */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items: center; justify-content: center; }
-    .modal-box { background: #151a21; border: 1px solid #222b35; border-radius: 12px; width: 420px; max-width: 90%; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .modal-box { background: #151a21; border: 1px solid #222b35; border-radius: 12px; width: 420px; max-width: 90%; padding: 24px; }
     .modal-title { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 16px; text-align: center; }
     .modal-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
     .modal-tab { flex: 1; padding: 10px; text-align: center; background: #0d1014; border-radius: 6px; cursor: pointer; color: #8e9297; font-size: 14px; font-weight: 600; }
     .modal-tab.active { background: #ff4655; color: #fff; }
     .modal-field { margin-bottom: 12px; }
     .modal-field label { display: block; font-size: 12px; color: #8e9297; margin-bottom: 6px; }
+    .modal-field input { width: 100%; box-sizing: border-box; background: #0d1014; border: 1px solid #222b35; color: #fff; padding: 10px; border-radius: 6px; }
     .modal-btn { width: 100%; background: #ff4655; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 12px; }
 
     .pool-modal { width: 600px; max-height: 80vh; display: flex; flex-direction: column; }
     .pool-list { overflow-y: auto; max-height: 50vh; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; padding-right: 8px; margin-bottom: 16px; }
     .pool-item { display: flex; align-items: center; gap: 8px; background: #0d1014; border: 1px solid #1e2630; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-    .pool-item input { width: auto; }
-
-    @keyframes splashAppear { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   </style>
 </head>
 <body>
 
-  <!-- СПЛЭШ ЭКРАН -->
+  <!-- СПЛЭШ -->
   <div id="welcome-splash">
     <div class="splash-content">
       <div class="splash-logo">D2</div>
       <h1 class="splash-title">Dota 2 <span>Helper</span></h1>
       <p class="splash-desc">Персональный аналитический сервис для подбора лучших контрпиков под ваш стиль игры.</p>
-      
       <div class="splash-btn-group">
         <button class="splash-btn primary" onclick="openAuthModal()">Войти / Регистрация</button>
         <button class="splash-btn secondary" onclick="enterAsGuest()">Войти без входа</button>
@@ -141,8 +143,6 @@
 
       <ul class="nav-list">
         <li class="nav-item active"><span>Draft Helper</span></li>
-        <li class="nav-item disabled"><span>Новости Dota 2</span></li>
-        <li class="nav-item disabled"><span>Fantasy Helper</span></li>
       </ul>
     </aside>
 
@@ -150,34 +150,34 @@
       <div id="view-draft">
         <div class="header-section">
           <h1 class="app-title">Draft <span>Helper</span></h1>
-          <p class="app-subtitle">Укажите известную команду врага. Система подберет лучшие контрпики мета-героев и персонально из вашего пула.</p>
+          <p class="app-subtitle">Укажите известную команду врага. Система подберетточные контрпики с учетом жестких бан-листов.</p>
         </div>
 
-        <datalist id="heroes-list"></datalist>
-
         <div class="flex-grid">
+          <!-- СОЮЗНИКИ -->
           <div class="panel team-my">
             <h2>Моя команда</h2>
-            <div class="input-group"><label>Поз 1 — Керри</label><input id="pos1" list="heroes-list" placeholder="Выберите героя..."></div>
-            <div class="input-group"><label>Поз 2 — Мид</label><input id="pos2" list="heroes-list" placeholder="Выберите героя..."></div>
-            <div class="input-group"><label>Поз 3 — Тройка</label><input id="pos3" list="heroes-list" placeholder="Выберите героя..."></div>
-            <div class="input-group"><label>Поз 4 — Четверка</label><input id="pos4" list="heroes-list" value="Ancient Apparition"></div>
-            <div class="input-group"><label>Поз 5 — Пятерка</label><input id="pos5" list="heroes-list" value="Bane"></div>
+            <div id="slot-pos1"></div>
+            <div id="slot-pos2"></div>
+            <div id="slot-pos3"></div>
+            <div id="slot-pos4"></div>
+            <div id="slot-pos5"></div>
           </div>
 
+          <!-- ВРАГИ -->
           <div class="panel team-enemy">
             <h2>Команда противника</h2>
-            <div class="input-group"><label>Враг 1</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-            <div class="input-group"><label>Враг 2</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-            <div class="input-group"><label>Враг 3</label><input class="enemy" list="heroes-list" value="Timbersaw"></div>
-            <div class="input-group"><label>Враг 4</label><input class="enemy" list="heroes-list" placeholder="Выберите героя..."></div>
-            <div class="input-group"><label>Враг 5</label><input class="enemy" list="heroes-list" value="Jakiro"></div>
+            <div id="slot-enemy1"></div>
+            <div id="slot-enemy2"></div>
+            <div id="slot-enemy3"></div>
+            <div id="slot-enemy4"></div>
+            <div id="slot-enemy5"></div>
           </div>
         </div>
 
         <div class="action-row">
           <button class="btn-analyze" onclick="analyze()">Проанализировать драфт</button>
-          <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+          <button class="btn-clear" onclick="clearInputs()">Очистить все</button>
         </div>
 
         <div id="results" class="results-container"></div>
@@ -185,7 +185,7 @@
     </main>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+  <!-- МОДАЛКА АВТОРИЗАЦИИ -->
   <div id="auth-modal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-title">Авторизация</div>
@@ -207,11 +207,11 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО ПУЛА ГЕРОЕВ -->
+  <!-- МОДАЛКА ПУЛА -->
   <div id="pool-modal" class="modal-overlay">
     <div class="modal-box pool-modal">
       <div class="modal-title">⭐ Мой пул героев</div>
-      <p style="font-size:12px; color:#8e9297; margin-bottom:12px;">Отметьте героев, на которых вы умеете играть, чтобы алгоритм рекомендовал их в драфтах:</p>
+      <p style="font-size:12px; color:#8e9297; margin-bottom:12px;">Отметьте героев, на которых вы умеете играть:</p>
       <div class="pool-list" id="pool-list-container"></div>
       <button class="modal-btn" onclick="saveUserPool()">Сохранить пул</button>
       <button class="btn-logout" style="width:100%; margin-top:8px; text-align:center;" onclick="closePoolModal()">Закрыть</button>
@@ -220,8 +220,144 @@
 
 <script>
 let currentUser = JSON.parse(localStorage.getItem('dota_user')) || null;
-let allHeroesList = [];
+let allHeroes = [];
+let selectedSlots = {};
 let isRegMode = false;
+
+const SLOTS_CONFIG = [
+  { id: 'pos1', label: 'Поз 1 — Керри', group: 'my' },
+  { id: 'pos2', label: 'Поз 2 — Мид', group: 'my' },
+  { id: 'pos3', label: 'Поз 3 — Тройка', group: 'my' },
+  { id: 'pos4', label: 'Поз 4 — Четверка', group: 'my' },
+  { id: 'pos5', label: 'Поз 5 — Пятерка', group: 'my' },
+  { id: 'enemy1', label: 'Враг 1', group: 'enemy' },
+  { id: 'enemy2', label: 'Враг 2', group: 'enemy' },
+  { id: 'enemy3', label: 'Враг 3', group: 'enemy' },
+  { id: 'enemy4', label: 'Враг 4', group: 'enemy' },
+  { id: 'enemy5', label: 'Враг 5', group: 'enemy' },
+];
+
+const ALIAS_MAP = {
+  'сф': 'shadow fiend', 'sf': 'shadow fiend',
+  'ам': 'anti-mage', 'am': 'anti-mage',
+  'па': 'phantom assassin', 'pa': 'phantom assassin',
+  'морф': 'morphling', 'морфлинг': 'morphling',
+  'бара': 'spirit breaker', 'sb': 'spirit breaker',
+  'аппарат': 'ancient apparition', 'aa': 'ancient apparition',
+  'вр': 'windranger', 'wr': 'windranger',
+  'дк': 'dragon knight', 'dk': 'dragon knight',
+  'тб': 'terrorblade', 'tb': 'terrorblade',
+  'пб': 'primal beast', 'pb': 'primal beast',
+  'мк': 'monkey king', 'mk': 'monkey king',
+  'квопа': 'queen of pain', 'qop': 'queen of pain',
+  'та': 'templar assassin', 'ta': 'templar assassin'
+};
+
+function initSlotsUI() {
+  SLOTS_CONFIG.forEach(slot => {
+    const parent = document.getElementById(`slot-${slot.id}`);
+    parent.innerHTML = `
+      <div class="hero-select-wrapper">
+        <span class="hero-select-label">${slot.label}</span>
+        <div class="hero-input-box" id="box-${slot.id}">
+          <img class="hero-icon" id="icon-${slot.id}" src="" alt="">
+          <input type="text" id="input-${slot.id}" placeholder="Поиск (напр. сф, ам, морф)..." autocomplete="off" oninput="onSearchInput('${slot.id}')" onfocus="showDropdown('${slot.id}')">
+          <span class="clear-btn" id="clear-${slot.id}" onclick="clearSlot('${slot.id}')">✕</span>
+        </div>
+        <div class="hero-dropdown" id="dropdown-${slot.id}"></div>
+      </div>
+    `;
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.hero-select-wrapper')) {
+      document.querySelectorAll('.hero-dropdown').forEach(d => d.style.display = 'none');
+    }
+  });
+}
+
+function getChosenHeroNames() {
+  return Object.values(selectedSlots).map(h => h.name);
+}
+
+function renderDropdown(slotId, filterText = '') {
+  const dd = document.getElementById(`dropdown-${slotId}`);
+  dd.innerHTML = '';
+
+  const usedHeroNames = getChosenHeroNames();
+  let query = filterText.trim().toLowerCase();
+
+  if (ALIAS_MAP[query]) {
+    query = ALIAS_MAP[query];
+  }
+
+  const filtered = allHeroes.filter(h => {
+    if (selectedSlots[slotId] && selectedSlots[slotId].name === h.name) return true;
+    if (usedHeroNames.includes(h.name)) return false; // Убираем уже выбранных героев
+    if (!query) return true;
+
+    const nameMatch = h.name.toLowerCase().includes(query);
+    const slugMatch = h.slug.toLowerCase().includes(query);
+    return nameMatch || slugMatch;
+  });
+
+  if (filtered.length === 0) {
+    dd.style.display = 'none';
+    return;
+  }
+
+  filtered.forEach(hero => {
+    const opt = document.createElement('div');
+    opt.className = 'hero-option';
+    opt.innerHTML = `<img src="${hero.img}" alt=""><span>${hero.name}</span>`;
+    opt.onclick = () => selectHero(slotId, hero);
+    dd.appendChild(opt);
+  });
+
+  dd.style.display = 'block';
+}
+
+function showDropdown(slotId) {
+  const val = document.getElementById(`input-${slotId}`).value;
+  renderDropdown(slotId, val);
+}
+
+function onSearchInput(slotId) {
+  const val = document.getElementById(`input-${slotId}`).value;
+  if (selectedSlots[slotId] && selectedSlots[slotId].name !== val) {
+    delete selectedSlots[slotId];
+    document.getElementById(`icon-${slotId}`).style.display = 'none';
+    document.getElementById(`clear-${slotId}`).style.display = 'none';
+  }
+  renderDropdown(slotId, val);
+}
+
+function selectHero(slotId, hero) {
+  selectedSlots[slotId] = hero;
+  const input = document.getElementById(`input-${slotId}`);
+  const icon = document.getElementById(`icon-${slotId}`);
+  const clear = document.getElementById(`clear-${slotId}`);
+
+  input.value = hero.name;
+  icon.src = hero.img;
+  icon.style.display = 'block';
+  clear.style.display = 'block';
+
+  document.getElementById(`dropdown-${slotId}`).style.display = 'none';
+}
+
+function clearSlot(slotId) {
+  delete selectedSlots[slotId];
+  document.getElementById(`input-${slotId}`).value = '';
+  document.getElementById(`icon-${slotId}`).style.display = 'none';
+  document.getElementById(`clear-${slotId}`).style.display = 'none';
+  document.getElementById(`dropdown-${slotId}`).style.display = 'none';
+}
+
+function clearInputs() {
+  SLOTS_CONFIG.forEach(slot => clearSlot(slot.id));
+  document.getElementById('results').innerHTML = '';
+}
 
 function enterAsGuest() {
   document.getElementById('welcome-splash').classList.add('splash-hidden');
@@ -244,12 +380,8 @@ function updateUserUI() {
   }
 }
 
-function openAuthModal() {
-  document.getElementById('auth-modal').style.display = 'flex';
-}
-function closeAuthModal() {
-  document.getElementById('auth-modal').style.display = 'none';
-}
+function openAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
+function closeAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
 
 function switchAuthTab(tab) {
   isRegMode = (tab === 'reg');
@@ -311,13 +443,13 @@ async function openPoolModal() {
     const userFavs = await resFav.json();
 
     container.innerHTML = '';
-    allHeroesList.forEach(hero => {
-      const isChecked = userFavs.includes(hero);
+    allHeroes.forEach(hero => {
+      const isChecked = userFavs.includes(hero.name);
       const item = document.createElement('label');
       item.className = 'pool-item';
       item.innerHTML = `
-        <input type="checkbox" value="${hero}" ${isChecked ? 'checked' : ''}>
-        <span>${hero}</span>
+        <input type="checkbox" value="${hero.name}" ${isChecked ? 'checked' : ''}>
+        <span>${hero.name}</span>
       `;
       container.appendChild(item);
     });
@@ -326,19 +458,17 @@ async function openPoolModal() {
   }
 }
 
-function closePoolModal() {
-  document.getElementById('pool-modal').style.display = 'none';
-}
+function closePoolModal() { document.getElementById('pool-modal').style.display = 'none'; }
 
 async function saveUserPool() {
   if (!currentUser) return;
   const checkboxes = document.querySelectorAll('#pool-list-container input[type="checkbox"]:checked');
-  const selectedHeroes = Array.from(checkboxes).map(c => c.value);
+  const selected = Array.from(checkboxes).map(c => c.value);
 
   await fetch('/api/favorites', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ user_id: currentUser.user_id, heroes: selectedHeroes })
+    body: JSON.stringify({ user_id: currentUser.user_id, heroes: selected })
   });
 
   closePoolModal();
@@ -347,36 +477,29 @@ async function saveUserPool() {
 async function loadHeroesList() {
   try {
     const res = await fetch('/api/heroes');
-    allHeroesList = await res.json();
-    const list = document.getElementById('heroes-list');
-    allHeroesList.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      list.appendChild(opt);
-    });
+    allHeroes = await res.json();
   } catch(e) {}
-}
-
-function clearInputs() {
-  document.querySelectorAll('input').forEach(i => i.value = '');
-  document.getElementById('results').innerHTML = '';
 }
 
 async function analyze() {
   const container = document.getElementById('results');
-  container.innerHTML = '<div style="text-align:center; padding:30px; color:#8e9297;">Загрузка статистики OpenDota...</div>';
+  container.innerHTML = '<div style="text-align:center; padding:30px; color:#8e9297;">Вычисление точных контрпиков...</div>';
 
-  const enemies = Array.from(document.querySelectorAll('.enemy')).map(i => i.value).filter(v => v.trim() !== '');
-  
+  const myTeamPayload = {
+    pos1: selectedSlots['pos1'] ? selectedSlots['pos1'].name : '',
+    pos2: selectedSlots['pos2'] ? selectedSlots['pos2'].name : '',
+    pos3: selectedSlots['pos3'] ? selectedSlots['pos3'].name : '',
+    pos4: selectedSlots['pos4'] ? selectedSlots['pos4'].name : '',
+    pos5: selectedSlots['pos5'] ? selectedSlots['pos5'].name : ''
+  };
+
+  const enemiesPayload = ['enemy1', 'enemy2', 'enemy3', 'enemy4', 'enemy5']
+    .map(id => selectedSlots[id] ? selectedSlots[id].name : '')
+    .filter(v => v !== '');
+
   const payload = {
-    my_team: {
-      pos1: document.getElementById('pos1').value,
-      pos2: document.getElementById('pos2').value,
-      pos3: document.getElementById('pos3').value,
-      pos4: document.getElementById('pos4').value,
-      pos5: document.getElementById('pos5').value
-    },
-    enemy_team: enemies,
+    my_team: myTeamPayload,
+    enemy_team: enemiesPayload,
     user_id: currentUser ? currentUser.user_id : null
   };
 
@@ -397,7 +520,7 @@ async function analyze() {
       let html = `<div class="role-title">${item.role}</div>`;
 
       if (!item.data) {
-        html += `<div style="color:#8e9297;">Не удалось подобрать подходящего героя.</div>`;
+        html += `<div style="color:#8e9297;">Нет кандидатов без критических контрпиков.</div>`;
       } else {
         const topFav = item.data.top_favorite;
         const topWr = item.data.top_winrate;
@@ -446,7 +569,7 @@ async function analyze() {
         if (others.length > 0) {
           html += `
             <div class="others-container">
-              <div class="others-title">Другие сильные варианты:</div>
+              <div class="others-title">Другие безопасные контрпики:</div>
               <div class="others-grid">
                 ${others.map(h => `
                   <div class="other-card">
@@ -472,8 +595,9 @@ async function analyze() {
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  loadHeroesList();
+window.addEventListener('DOMContentLoaded', async () => {
+  initSlotsUI();
+  await loadHeroesList();
   if (currentUser) updateUserUI();
 });
 </script>
