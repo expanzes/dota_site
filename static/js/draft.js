@@ -241,20 +241,20 @@ function renderResults(results) {
     }
 
     if (item.data.top_winrate && isHeroFitForPos(item.data.top_winrate.name, posNum) && !shownHeroNames.has(item.data.top_winrate.name)) {
-      topRow.appendChild(createTopPickCardHTML(item.data.top_winrate, 'winrate', 'Самый большой винрейт'));
+      topRow.appendChild(createTopPickCardHTML(item.data.top_winrate, 'winrate', 'Самый высокий винрейт'));
       shownHeroNames.add(item.data.top_winrate.name);
       topCardsAdded++;
     }
 
     if (item.data.top_games && isHeroFitForPos(item.data.top_games.name, posNum) && !shownHeroNames.has(item.data.top_games.name)) {
-      topRow.appendChild(createTopPickCardHTML(item.data.top_games, 'games', 'Больше всего игр', true));
+      topRow.appendChild(createTopPickCardHTML(item.data.top_games, 'games', 'Больше всего игр'));
       shownHeroNames.add(item.data.top_games.name);
       topCardsAdded++;
     }
 
     // Фолбэк, если после жёсткой фильтрации по позиции подиум пуст
     if (topCardsAdded === 0 && item.data.top_winrate) {
-      topRow.appendChild(createTopPickCardHTML(item.data.top_winrate, 'winrate', 'Самый большой винрейт'));
+      topRow.appendChild(createTopPickCardHTML(item.data.top_winrate, 'winrate', 'Самый высокий винрейт'));
       topCardsAdded++;
     }
 
@@ -288,22 +288,15 @@ function renderResults(results) {
   });
 }
 
-function createTopPickCardHTML(hero, type, label, prioritizeGames = false) {
+function createTopPickCardHTML(hero, type, label) {
   const card = document.createElement('div');
   card.className = `top-pick-card ${type}`;
-
-  let statsMarkup = '';
-  if (prioritizeGames) {
-    statsMarkup = `Матчей: ${hero.games} (<span class="val-green">${hero.winrate}% WR</span>)`;
-  } else {
-    statsMarkup = `Винрейт: <span class="val-green">${hero.winrate}%</span> (${hero.games} игр)`;
-  }
 
   card.innerHTML = `
     <div class="top-pick-label">${label}</div>
     <img src="${hero.img}" alt="${hero.name}">
     <div class="top-pick-hero-name">${hero.name}</div>
-    <div class="top-pick-hero-stats">${statsMarkup}</div>
+    <div class="top-pick-hero-stats">Винрейт: <span class="val-green">${hero.winrate}%</span> (${hero.games} игр)</div>
   `;
 
   return card;
