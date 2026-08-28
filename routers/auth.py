@@ -1,8 +1,8 @@
 import os
 import psycopg2
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 router = APIRouter()
 
@@ -88,20 +88,27 @@ async def login(data: AuthModel):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка БД: {str(e)}")
 
-@router.get("/favorites/{user_id}")
-async def get_favorites(user_id: str):
+# Поддержка загрузки избранного как через Query (/favorites?user_id=X), так и через Path (/favorites/X)
+@router.get("/favorites")
+@router.get("/favorites/{user_id_path}")
+async def get_favorites(user_id: Optional[str] = Query(None), user_id_path: Optional[str] = None):
     ensure_tables_exist()
+    target_id = user_id or user_id_path
+    if not target_id:
+        return {"heroes": []}
+        
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT heroes FROM favorites WHERE user_id = %s;", (user_id,))
+        cur.execute("SELECT heroes FROM favorites WHERE user_id = %s;", (target_id,))
         row = cur.fetchone()
         cur.close()
         conn.close()
 
-        return row[0] if row and row[0] else []
+        heroes_list = row[0] if row and row[0] else []
+        return {"heroes": heroes_list}
     except Exception:
-        return []
+        return {"heroes": []}
 
 @router.post("/favorites")
 async def save_favorites(data: FavoriteModel):
