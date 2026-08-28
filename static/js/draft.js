@@ -47,30 +47,6 @@ const HERO_ALIASES = {
   "Vengeful Spirit": ["венга"]
 };
 
-// Соответствие позиций для фильтрации рекомендуемых героев
-const HERO_POSITIONS = {
-  "Anti-Mage": [1], "Phantom Assassin": [1], "Phantom Lancer": [1], "Terrorblade": [1], "Faceless Void": [1], "Slark": [1], "Juggernaut": [1], "Morphling": [1, 2], "Sven": [1], "Clinkz": [1, 2], "Naga Siren": [1], "Monkey King": [1, 2], "Lifestealer": [1], "Ursa": [1, 2, 3], "Bloodseeker": [1, 2], "Drow Ranger": [1], "Spectre": [1], "Medusa": [1], "Luna": [1], "Troll Warlord": [1], "Sniper": [1, 2], "Razor": [1, 2, 3],
-  "Shadow Fiend": [2], "Queen of Pain": [2], "Outworld Destroyer": [2], "Ember Spirit": [2], "Storm Spirit": [2], "Void Spirit": [2], "Invoker": [2], "Tinker": [2], "Zeus": [2], "Puck": [2], "Templar Assassin": [2], "Lina": [2], "Pangolier": [2], "Dragon Knight": [2, 3], "Earth Spirit": [2, 4],
-  "Centaur Warrunner": [3], "Bristleback": [3], "Axe": [3], "Mars": [3], "Tidehunter": [3], "Slardar": [3], "Underlord": [3], "Legion Commander": [3], "Doom": [3], "Dark Seer": [3], "Night Stalker": [3], "Primal Beast": [3], "Sand King": [3], "Timbersaw": [3], "Enigma": [3, 4], "Magnus": [3], "Beastmaster": [3], "Bane": [3, 5],
-  "Crystal Maiden": [5], "Witch Doctor": [4, 5], "Ancient Apparition": [4, 5], "Rubick": [4], "Mirana": [4], "Bounty Hunter": [4], "Spirit Breaker": [4], "Earthshaker": [4], "Clockwerk": [4], "Pudge": [4], "Techies": [4], "Lion": [4, 5], "Shadow Shaman": [4, 5], "Ogre Magi": [4, 5], "Jakiro": [4, 5], "Dazzle": [5], "Oracle": [5], "Skywrath Mage": [4], "Vengeful Spirit": [4, 5], "Disruptor": [5], "Treant Protector": [5], "Keeper of the Light": [4, 5], "Silencer": [4, 5], "Chen": [5], "Enchantress": [4, 5], "Grimstroke": [4, 5], "Hoodwink": [4], "Snapfire": [4, 5]
-};
-
-function getPosNumber(roleName) {
-  if (roleName.includes('Поз 1') || roleName.includes('Керри')) return 1;
-  if (roleName.includes('Поз 2') || roleName.includes('Мид')) return 2;
-  if (roleName.includes('Поз 3') || roleName.includes('Тройка')) return 3;
-  if (roleName.includes('Поз 4') || roleName.includes('Четверка')) return 4;
-  if (roleName.includes('Поз 5') || roleName.includes('Пятерка')) return 5;
-  return null;
-}
-
-function isHeroFitForPos(heroName, posNum) {
-  if (!posNum) return true;
-  const allowed = HERO_POSITIONS[heroName];
-  if (!allowed) return true;
-  return allowed.includes(posNum);
-}
-
 async function loadHeroes() {
   try {
     const response = await fetch('/api/heroes');
@@ -215,11 +191,7 @@ function renderResults(results) {
     return;
   }
 
-  const shownHeroNames = new Set();
-
   results.forEach(item => {
-    const posNum = getPosNumber(item.role);
-
     const groupDiv = document.createElement('div');
     groupDiv.className = 'results-section';
 
@@ -228,32 +200,19 @@ function renderResults(results) {
     title.innerText = item.role;
     groupDiv.appendChild(title);
 
-    // --- Топ-3 плашки (подиум): любимый / лучший винрейт / больше всего игр ---
+    // --- Топ-плашки: из пула игрока / самый высокий винрейт ---
+    // Позиционная фильтрация уже сделана на бэкенде, поэтому здесь просто отображаем то, что пришло.
     const topRow = document.createElement('div');
     topRow.className = 'top-picks-row';
 
     let topCardsAdded = 0;
 
-    if (item.data.top_favorite && isHeroFitForPos(item.data.top_favorite.name, posNum) && !shownHeroNames.has(item.data.top_favorite.name)) {
+    if (item.data.top_favorite) {
       topRow.appendChild(createTopPickCardHTML(item.data.top_favorite, 'favorite', 'Из вашего пула'));
-      shownHeroNames.add(item.data.top_favorite.name);
       topCardsAdded++;
     }
 
-    if (item.data.top_winrate && isHeroFitForPos(item.data.top_winrate.name, posNum) && !shownHeroNames.has(item.data.top_winrate.name)) {
-      topRow.appendChild(createTopPickCardHTML(item.data.top_winrate, 'winrate', 'Самый высокий винрейт'));
-      shownHeroNames.add(item.data.top_winrate.name);
-      topCardsAdded++;
-    }
-
-    if (item.data.top_games && isHeroFitForPos(item.data.top_games.name, posNum) && !shownHeroNames.has(item.data.top_games.name)) {
-      topRow.appendChild(createTopPickCardHTML(item.data.top_games, 'games', 'Больше всего игр'));
-      shownHeroNames.add(item.data.top_games.name);
-      topCardsAdded++;
-    }
-
-    // Фолбэк, если после жёсткой фильтрации по позиции подиум пуст
-    if (topCardsAdded === 0 && item.data.top_winrate) {
+    if (item.data.top_winrate) {
       topRow.appendChild(createTopPickCardHTML(item.data.top_winrate, 'winrate', 'Самый высокий винрейт'));
       topCardsAdded++;
     }
@@ -262,10 +221,8 @@ function renderResults(results) {
       groupDiv.appendChild(topRow);
     }
 
-    // --- Остальные неплохие варианты ---
-    const others = (item.data.others || []).filter(
-      hero => isHeroFitForPos(hero.name, posNum) && !shownHeroNames.has(hero.name)
-    );
+    // --- Ещё подходящие герои ---
+    const others = item.data.others || [];
 
     if (others.length > 0) {
       const othersTitle = document.createElement('div');
@@ -278,7 +235,6 @@ function renderResults(results) {
 
       others.forEach(hero => {
         grid.appendChild(createHeroCardHTML(hero));
-        shownHeroNames.add(hero.name);
       });
 
       groupDiv.appendChild(grid);
