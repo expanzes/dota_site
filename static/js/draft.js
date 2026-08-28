@@ -228,61 +228,69 @@ function renderResults(results) {
     title.innerText = item.role;
     groupDiv.appendChild(title);
 
-    const grid = document.createElement('div');
-    grid.className = 'hero-cards-grid';
+    // --- Топ-3 плашки (подиум): любимый / лучший винрейт / больше всего игр ---
+    const topRow = document.createElement('div');
+    topRow.className = 'top-picks-row';
 
-    let cardsAdded = 0;
+    let topCardsAdded = 0;
 
-    // 1. Топ из пула пользователя
     if (item.data.top_favorite && isHeroFitForPos(item.data.top_favorite.name, posNum) && !shownHeroNames.has(item.data.top_favorite.name)) {
-      grid.appendChild(createHeroCardHTML(item.data.top_favorite, 'badge-purple', '★ ИЗ ВАШЕГО ПУЛА'));
+      topRow.appendChild(createTopPickCardHTML(item.data.top_favorite, 'favorite', 'Из вашего пула'));
       shownHeroNames.add(item.data.top_favorite.name);
-      cardsAdded++;
+      topCardsAdded++;
     }
 
-    // 2. Максимальный винрейт
     if (item.data.top_winrate && isHeroFitForPos(item.data.top_winrate.name, posNum) && !shownHeroNames.has(item.data.top_winrate.name)) {
-      grid.appendChild(createHeroCardHTML(item.data.top_winrate, 'badge-yellow', '★ МАКС. ВИНРЕЙТ'));
+      topRow.appendChild(createTopPickCardHTML(item.data.top_winrate, 'winrate', 'Самый большой винрейт'));
       shownHeroNames.add(item.data.top_winrate.name);
-      cardsAdded++;
+      topCardsAdded++;
     }
 
-    // 3. Максимальное количество матчей
     if (item.data.top_games && isHeroFitForPos(item.data.top_games.name, posNum) && !shownHeroNames.has(item.data.top_games.name)) {
-      grid.appendChild(createHeroCardHTML(item.data.top_games, 'badge-blue', '📊 МАКС. МАТЧЕЙ', true));
+      topRow.appendChild(createTopPickCardHTML(item.data.top_games, 'games', 'Больше всего игр', true));
       shownHeroNames.add(item.data.top_games.name);
-      cardsAdded++;
+      topCardsAdded++;
     }
 
-    // 4. Остальные подходящие герои
-    if (item.data.others) {
-      item.data.others.forEach(hero => {
-        if (isHeroFitForPos(hero.name, posNum) && !shownHeroNames.has(hero.name)) {
-          grid.appendChild(createHeroCardHTML(hero));
-          shownHeroNames.add(hero.name);
-          cardsAdded++;
-        }
+    // Фолбэк, если после жёсткой фильтрации по позиции подиум пуст
+    if (topCardsAdded === 0 && item.data.top_winrate) {
+      topRow.appendChild(createTopPickCardHTML(item.data.top_winrate, 'winrate', 'Самый большой винрейт'));
+      topCardsAdded++;
+    }
+
+    if (topCardsAdded > 0) {
+      groupDiv.appendChild(topRow);
+    }
+
+    // --- Остальные неплохие варианты ---
+    const others = (item.data.others || []).filter(
+      hero => isHeroFitForPos(hero.name, posNum) && !shownHeroNames.has(hero.name)
+    );
+
+    if (others.length > 0) {
+      const othersTitle = document.createElement('div');
+      othersTitle.className = 'other-picks-title';
+      othersTitle.innerText = 'Другие варианты на основе OpenDota';
+      groupDiv.appendChild(othersTitle);
+
+      const grid = document.createElement('div');
+      grid.className = 'hero-cards-grid';
+
+      others.forEach(hero => {
+        grid.appendChild(createHeroCardHTML(hero));
+        shownHeroNames.add(hero.name);
       });
+
+      groupDiv.appendChild(grid);
     }
 
-    // Фолбэк, если после жесткой фильтрации не осталось героев
-    if (cardsAdded === 0 && item.data.top_winrate) {
-      grid.appendChild(createHeroCardHTML(item.data.top_winrate, 'badge-yellow', '★ МАКС. ВИНРЕЙТ'));
-    }
-
-    groupDiv.appendChild(grid);
     resultsContainer.appendChild(groupDiv);
   });
 }
 
-function createHeroCardHTML(hero, badgeClass = '', badgeText = '', prioritizeGames = false) {
+function createTopPickCardHTML(hero, type, label, prioritizeGames = false) {
   const card = document.createElement('div');
-  card.className = `result-hero-card ${badgeClass}`;
-
-  let badgeMarkup = '';
-  if (badgeText) {
-    badgeMarkup = `<div class="card-top-badge">${badgeText}</div>`;
-  }
+  card.className = `top-pick-card ${type}`;
 
   let statsMarkup = '';
   if (prioritizeGames) {
@@ -292,7 +300,22 @@ function createHeroCardHTML(hero, badgeClass = '', badgeText = '', prioritizeGam
   }
 
   card.innerHTML = `
-    ${badgeMarkup}
+    <div class="top-pick-label">${label}</div>
+    <img src="${hero.img}" alt="${hero.name}">
+    <div class="top-pick-hero-name">${hero.name}</div>
+    <div class="top-pick-hero-stats">${statsMarkup}</div>
+  `;
+
+  return card;
+}
+
+function createHeroCardHTML(hero) {
+  const card = document.createElement('div');
+  card.className = 'result-hero-card';
+
+  const statsMarkup = `Винрейт: <span class="val-green">${hero.winrate}%</span> (${hero.games} игр)`;
+
+  card.innerHTML = `
     <img src="${hero.img}" alt="${hero.name}">
     <div class="hero-info">
       <span class="hero-name">${hero.name}</span>
