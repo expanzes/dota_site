@@ -57,14 +57,13 @@ async function submitAuth() {
 
     currentUser = data;
     localStorage.setItem('dota_user', JSON.stringify(data));
-    
+
     document.getElementById('welcome-screen').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
     document.getElementById('user-display-name').innerText = data.username;
     document.getElementById('fav-btn').classList.remove('hidden');
     closeAuthModal();
     loadHeroes();
-    loadUserFavorites();
   } catch (err) {
     errorBox.innerText = 'Ошибка соединения с сервером';
     errorBox.classList.remove('hidden');
@@ -85,6 +84,5 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('user-display-name').innerText = currentUser.username;
     document.getElementById('fav-btn').classList.remove('hidden');
     loadHeroes();
-    loadUserFavorites();
   }
 });
