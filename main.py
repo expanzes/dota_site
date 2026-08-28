@@ -8,6 +8,14 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 
+# Подключение PostgreSQL для Render / Neon.tech
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    import psycopg2
+    # В некоторых сервисах URL начинается с postgres://, заменяем на postgresql:// для psycopg2
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 app = FastAPI(title="Dota 2 Helper")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +26,6 @@ if os.path.exists(STATIC_DIR):
 
 @app.get("/")
 async def read_root():
-    # Поиск index.html во всех возможных папках
     possible_paths = [
         os.path.join(STATIC_DIR, "index.html"),
         os.path.join(BASE_DIR, "index.html"),
@@ -30,7 +37,6 @@ async def read_root():
         if os.path.exists(path):
             return FileResponse(path)
 
-    # Если файл не найден — выводим диагностику
     files_in_base = os.listdir(BASE_DIR) if os.path.exists(BASE_DIR) else []
     files_in_static = os.listdir(STATIC_DIR) if os.path.exists(STATIC_DIR) else "Папка static отсутствует"
     
@@ -39,36 +45,58 @@ async def read_root():
         <body style="font-family: sans-serif; background: #111; color: #fff; padding: 20px;">
             <h1 style="color: #ff4655;">Сервер запущен, но index.html не найден!</h1>
             <p><b>Текущая директория (BASE_DIR):</b> {BASE_DIR}</p>
-            <p><b>Файлы в корнях проекта:</b> {files_in_base}</p>
-            <p><b>Файлы в папки static:</b> {files_in_static}</p>
-            <hr>
-            <p>Убедитесь, что файл index.html лежит в папке static и запушен на GitHub.</p>
+            <p><b>Файлы в корне проекта:</b> {files_in_base}</p>
+            <p><b>Файлы в папке static:</b> {files_in_static}</p>
         </body>
     </html>
     """
     return HTMLResponse(content=debug_html, status_code=200)
 
-# --- Всё остальное без изменений ---
-DB_NAME = os.path.join(BASE_DIR, "dota_helper.db")
+# --- Работа с БД (PostgreSQL на Render / SQLite локально) ---
+def get_db():
+    if DATABASE_URL:
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn, "pg"
+    else:
+        DB_NAME = os.path.join(BASE_DIR, "dota_helper.db")
+        conn = sqlite3.connect(DB_NAME)
+        return conn, "sqlite"
 
 def init_db():
-    conn = sqlite3.connect(DB_NAME)
+    conn, db_type = get_db()
     cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS favorites (
-            user_id INTEGER NOT NULL,
-            hero_name TEXT NOT NULL,
-            PRIMARY KEY (user_id, hero_name),
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-        )
-    ''')
+    if db_type == "pg":
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL
+            );
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS favorites (
+                user_id INTEGER NOT NULL,
+                hero_name TEXT NOT NULL,
+                PRIMARY KEY (user_id, hero_name),
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            );
+        ''')
+    else:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS favorites (
+                user_id INTEGER NOT NULL,
+                hero_name TEXT NOT NULL,
+                PRIMARY KEY (user_id, hero_name),
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            )
+        ''')
     conn.commit()
     conn.close()
 
@@ -129,25 +157,30 @@ class AuthRequest(BaseModel):
 
 @app.post("/api/register")
 def register(req: AuthRequest):
-    conn = sqlite3.connect(DB_NAME)
+    conn, db_type = get_db()
     cursor = conn.cursor()
     pwd_hash = hash_password(req.password)
     try:
-        cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (req.username, pwd_hash))
+        if db_type == "pg":
+            cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id", (req.username, pwd_hash))
+            user_id = cursor.fetchone()[0]
+        else:
+            cursor.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (req.username, pwd_hash))
+            user_id = cursor.lastrowid
         conn.commit()
-        user_id = cursor.lastrowid
         conn.close()
         return {"status": "ok", "user_id": user_id, "username": req.username}
-    except sqlite3.IntegrityError:
+    except Exception:
         conn.close()
         raise HTTPException(status_code=400, detail="Пользователь с таким именем уже существует")
 
 @app.post("/api/login")
 def login(req: AuthRequest):
-    conn = sqlite3.connect(DB_NAME)
+    conn, db_type = get_db()
     cursor = conn.cursor()
     pwd_hash = hash_password(req.password)
-    cursor.execute("SELECT id, username FROM users WHERE username = ? AND password_hash = ?", (req.username, pwd_hash))
+    placeholder = "%s" if db_type == "pg" else "?"
+    cursor.execute(f"SELECT id, username FROM users WHERE username = {placeholder} AND password_hash = {placeholder}", (req.username, pwd_hash))
     user = cursor.fetchone()
     conn.close()
     if user:
@@ -160,20 +193,22 @@ class FavoritesRequest(BaseModel):
 
 @app.get("/api/favorites/{user_id}")
 def get_favorites(user_id: int):
-    conn = sqlite3.connect(DB_NAME)
+    conn, db_type = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT hero_name FROM favorites WHERE user_id = ?", (user_id,))
+    placeholder = "%s" if db_type == "pg" else "?"
+    cursor.execute(f"SELECT hero_name FROM favorites WHERE user_id = {placeholder}", (user_id,))
     rows = cursor.fetchall()
     conn.close()
     return [r[0] for r in rows]
 
 @app.post("/api/favorites")
 def save_favorites(req: FavoritesRequest):
-    conn = sqlite3.connect(DB_NAME)
+    conn, db_type = get_db()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM favorites WHERE user_id = ?", (req.user_id,))
+    placeholder = "%s" if db_type == "pg" else "?"
+    cursor.execute(f"DELETE FROM favorites WHERE user_id = {placeholder}", (req.user_id,))
     for hero in req.heroes:
-        cursor.execute("INSERT INTO favorites (user_id, hero_name) VALUES (?, ?)", (req.user_id, hero))
+        cursor.execute(f"INSERT INTO favorites (user_id, hero_name) VALUES ({placeholder}, {placeholder})", (req.user_id, hero))
     conn.commit()
     conn.close()
     return {"status": "ok"}
@@ -284,9 +319,10 @@ def analyze_draft(req: DraftRequest):
 
     user_favs = set()
     if req.user_id:
-        conn = sqlite3.connect(DB_NAME)
+        conn, db_type = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT hero_name FROM favorites WHERE user_id = ?", (req.user_id,))
+        placeholder = "%s" if db_type == "pg" else "?"
+        cursor.execute(f"SELECT hero_name FROM favorites WHERE user_id = {placeholder}", (req.user_id,))
         rows = cursor.fetchall()
         conn.close()
         user_favs = {r[0].lower() for r in rows}
