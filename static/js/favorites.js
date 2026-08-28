@@ -1,18 +1,29 @@
 let allHeroesForFavorites = [];
 let selectedFavoriteIds = new Set();
 
+// Алиас на случай, если в HTML используется openFavorites() или openFavoritesModal()
+function openFavorites() {
+  openFavoritesModal();
+}
+
 async function openFavoritesModal() {
-  const modal = document.getElementById('favorites-modal');
+  const modal = document.getElementById('favorites-modal') || document.getElementById('favoritesModal');
   if (modal) {
     modal.style.display = 'flex';
+    modal.classList.add('active');
+    modal.classList.add('show');
+  } else {
+    console.error('Модальное окно любимых героев не найдено в HTML (favorites-modal)');
   }
   await loadFavoritesModalData();
 }
 
 function closeFavoritesModal() {
-  const modal = document.getElementById('favorites-modal');
+  const modal = document.getElementById('favorites-modal') || document.getElementById('favoritesModal');
   if (modal) {
     modal.style.display = 'none';
+    modal.classList.remove('active');
+    modal.classList.remove('show');
   }
 }
 
@@ -22,7 +33,7 @@ async function loadFavoritesModalData() {
     if (heroesRes.ok) {
       allHeroesForFavorites = await heroesRes.json();
       
-      // Сортировка героев по алфавиту (A–Z)
+      // Сортировка героев строго по алфавиту (A–Z)
       allHeroesForFavorites.sort((a, b) => a.name.localeCompare(b.name));
     }
 
@@ -41,7 +52,7 @@ async function loadFavoritesModalData() {
 }
 
 function renderFavoritesGrid(searchQuery = '') {
-  const grid = document.getElementById('favorites-grid');
+  const grid = document.getElementById('favorites-grid') || document.getElementById('favoritesGrid');
   if (!grid) return;
 
   grid.innerHTML = '';
@@ -77,7 +88,7 @@ function renderFavoritesGrid(searchQuery = '') {
 }
 
 function filterFavoritesSearch() {
-  const input = document.getElementById('favorites-search-input');
+  const input = document.getElementById('favorites-search-input') || document.getElementById('favoritesSearchInput');
   const query = input ? input.value : '';
   renderFavoritesGrid(query);
 }
