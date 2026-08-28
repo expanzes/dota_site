@@ -49,7 +49,6 @@
     .team-my h2 { color: #43b581; border-color: rgba(67, 181, 129, 0.3); }
     .team-enemy h2 { color: #ff4655; border-color: rgba(255, 70, 85, 0.3); }
 
-    /* КAСТОМНЫЙ ВЫБОР ГЕРОЯ */
     .hero-select-wrapper { position: relative; margin-bottom: 12px; }
     .hero-select-label { font-size: 12px; color: #8e9297; margin-bottom: 6px; display: block; }
     .hero-input-box { display: flex; align-items: center; background: #0d1014; border: 1px solid #222b35; border-radius: 6px; padding: 4px 8px; height: 42px; position: relative; }
@@ -95,7 +94,6 @@
     .other-name { font-size: 13px; font-weight: 600; color: #ffffff; }
     .other-stats { font-size: 11px; color: #8e9297; }
 
-    /* МОДАЛКИ */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items: center; justify-content: center; }
     .modal-box { background: #151a21; border: 1px solid #222b35; border-radius: 12px; width: 420px; max-width: 90%; padding: 24px; }
     .modal-title { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 16px; text-align: center; }
@@ -114,12 +112,11 @@
 </head>
 <body>
 
-  <!-- СПЛЭШ -->
   <div id="welcome-splash">
     <div class="splash-content">
       <div class="splash-logo">D2</div>
       <h1 class="splash-title">Dota 2 <span>Helper</span></h1>
-      <p class="splash-desc">Персональный аналитический сервис для подбора лучших контрпиков под ваш стиль игры.</p>
+      <p class="splash-desc">Персональный аналитический сервис для подбора точных контрпиков под ваш пул героев.</p>
       <div class="splash-btn-group">
         <button class="splash-btn primary" onclick="openAuthModal()">Войти / Регистрация</button>
         <button class="splash-btn secondary" onclick="enterAsGuest()">Войти без входа</button>
@@ -127,7 +124,6 @@
     </div>
   </div>
 
-  <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
   <div id="app-container" class="app-container">
     <aside class="sidebar">
       <div class="brand" onclick="showSplash()">
@@ -150,11 +146,10 @@
       <div id="view-draft">
         <div class="header-section">
           <h1 class="app-title">Draft <span>Helper</span></h1>
-          <p class="app-subtitle">Укажите известную команду врага. Система подберетточные контрпики с учетом жестких бан-листов.</p>
+          <p class="app-subtitle">Укажите известную команду врага. Система подберет идеальные контрпики с учетом анти-контрпиков.</p>
         </div>
 
         <div class="flex-grid">
-          <!-- СОЮЗНИКИ -->
           <div class="panel team-my">
             <h2>Моя команда</h2>
             <div id="slot-pos1"></div>
@@ -164,7 +159,6 @@
             <div id="slot-pos5"></div>
           </div>
 
-          <!-- ВРАГИ -->
           <div class="panel team-enemy">
             <h2>Команда противника</h2>
             <div id="slot-enemy1"></div>
@@ -185,7 +179,6 @@
     </main>
   </div>
 
-  <!-- МОДАЛКА АВТОРИЗАЦИИ -->
   <div id="auth-modal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-title">Авторизация</div>
@@ -207,7 +200,6 @@
     </div>
   </div>
 
-  <!-- МОДАЛКА ПУЛА -->
   <div id="pool-modal" class="modal-overlay">
     <div class="modal-box pool-modal">
       <div class="modal-title">⭐ Мой пул героев</div>
@@ -293,7 +285,7 @@ function renderDropdown(slotId, filterText = '') {
 
   const filtered = allHeroes.filter(h => {
     if (selectedSlots[slotId] && selectedSlots[slotId].name === h.name) return true;
-    if (usedHeroNames.includes(h.name)) return false; // Убираем уже выбранных героев
+    if (usedHeroNames.includes(h.name)) return false;
     if (!query) return true;
 
     const nameMatch = h.name.toLowerCase().includes(query);
