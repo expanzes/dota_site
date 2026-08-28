@@ -294,7 +294,7 @@ input[type="text"]:focus, input[type="password"]:focus {
   font-weight: 600;
 }
 
-/* --- Топ-3 плашки (подиум) --- */
+/* --- Топ-плашки (из пула / самый высокий винрейт) --- */
 .top-picks-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -354,13 +354,6 @@ input[type="text"]:focus, input[type="password"]:focus {
 }
 .top-pick-card.winrate .top-pick-label {
   color: var(--accent-yellow);
-}
-
-.top-pick-card.games {
-  border-color: var(--accent-green);
-}
-.top-pick-card.games .top-pick-label {
-  color: var(--accent-green);
 }
 
 @media (max-width: 700px) {
