@@ -10,13 +10,11 @@ from typing import List, Dict, Optional
 
 app = FastAPI(title="Dota 2 Helper")
 
-# Инициализация базы данных SQLite
 DB_NAME = "dota_helper.db"
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    # Таблица пользователей
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,7 +22,6 @@ def init_db():
             password_hash TEXT NOT NULL
         )
     ''')
-    # Таблица любимых героев (пул)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS favorites (
             user_id INTEGER NOT NULL,
@@ -48,31 +45,56 @@ async def read_root():
             return f.read()
     return "<h1>Dota 2 Helper API Running</h1>"
 
-@app.get("/site", response_class=HTMLResponse)
-async def read_site():
-    return await read_root()
-
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
 ROLES_DB = {
-    "pos1": {"antimage", "spectre", "phantom_assassin", "juggernaut", "faceless_void", "slark", "sven", "bloodseeker", "gyrocopter", "lifestealer", "luna", "medusa", "monkey_king", "morphling", "naga_siren", "sniper", "terrorblade", "troll_warlord", "ursa", "wraith_king", "weaver", "clinkz", "drow_ranger"},
-    "pos2": {"storm_spirit", "ember_spirit", "void_spirit", "invoker", "shadow_fiend", "puck", "queen_of_pain", "tinker", "lina", "sniper", "templar_assassin", "dragon_knight", "death_prophet", "leshrac", "kunkka", "meepo", "necrophos", "pudge", "tiny", "windranger", "zeus"},
-    "pos3": {"mars", "tidehunter", "axe", "centaur", "bristleback", "slardar", "underlord", "beastmaster", "brewmaster", "doom", "dark_seer", "enigma", "legion_commander", "magnus", "night_stalker", "sand_king", "timbersaw", "viper", "visage"},
-    "pos4": {"rubick", "mirana", "lion", "shadow_shaman", "earth_spirit", "tusk", "clockwerk", "bounty_hunter", "hoodwink", "nyx_assassin", "phoenix", "pudge", "skywrath_mage", "snapfire", "spirit_breaker", "techies", "tiny", "ancient_apparition"},
-    "pos5": {"crystal_maiden", "jakiro", "witch_doctor", "ogre_magi", "dazzle", "disruptor", "lich", "oracle", "shadow_demon", "silencer", "treant", "warlock", "bane", "chen", "grimstroke", "io", "keeper_of_the_light", "omniknight", "undying"}
+    "pos1": {"antimage", "spectre", "phantom_assassin", "juggernaut", "faceless_void", "slark", "sven", "bloodseeker", "gyrocopter", "lifestealer", "luna", "medusa", "monkey_king", "morphling", "naga_siren", "sniper", "terrorblade", "troll_warlord", "ursa", "wraith_king", "weaver", "clinkz", "drow_ranger", "riki", "void_spirit"},
+    "pos2": {"storm_spirit", "ember_spirit", "void_spirit", "invoker", "shadow_fiend", "puck", "queen_of_pain", "tinker", "lina", "sniper", "templar_assassin", "dragon_knight", "death_prophet", "leshrac", "kunkka", "meepo", "necrophos", "pudge", "tiny", "windranger", "zeus", "earth_spirit", "pangolier"},
+    "pos3": {"mars", "tidehunter", "axe", "centaur", "bristleback", "slardar", "underlord", "beastmaster", "brewmaster", "doom", "dark_seer", "enigma", "legion_commander", "magnus", "night_stalker", "sand_king", "timbersaw", "viper", "visage", "dawnbreaker", "primal_beast"},
+    "pos4": {"rubick", "mirana", "lion", "shadow_shaman", "earth_spirit", "tusk", "clockwerk", "bounty_hunter", "hoodwink", "nyx_assassin", "phoenix", "pudge", "skywrath_mage", "snapfire", "spirit_breaker", "techies", "tiny", "ancient_apparition", "marci"},
+    "pos5": {"crystal_maiden", "jakiro", "witch_doctor", "ogre_magi", "dazzle", "disruptor", "lich", "oracle", "shadow_demon", "silencer", "treant", "warlock", "bane", "chen", "grimstroke", "io", "keeper_of_the_light", "omniknight", "undying", "abaddon"}
+}
+
+HERO_ALIASES = {
+    "сф": "shadow fiend", "sf": "shadow fiend",
+    "ам": "anti-mage", "am": "anti-mage",
+    "па": "phantom assassin", "pa": "phantom assassin",
+    "морф": "morphling", "morph": "morphling",
+    "бара": "spirit breaker", "sb": "spirit breaker",
+    "аппарат": "ancient apparition", "aa": "ancient apparition",
+    "вр": "windranger", "wr": "windranger",
+    "дк": "dragon knight", "dk": "dragon knight",
+    "тб": "terrorblade", "tb": "terrorblade",
+    "пб": "primal beast", "pb": "primal beast",
+    "мк": "monkey king", "mk": "monkey king",
+    "квопа": "queen of pain", "qop": "queen of pain",
+    "та": "templar assassin", "ta": "templar assassin",
+    "воид": "faceless void", "fv": "faceless void",
+    "шторм": "storm spirit", "шторм спирит": "storm spirit",
+    "земля": "earth spirit", "земля спирит": "earth spirit",
+    "эмбер": "ember spirit", "эмбер спирит": "ember spirit"
 }
 
 def get_opendota_heroes():
     try:
         r = requests.get("https://api.opendota.com/api/heroes", timeout=10)
         if r.status_code == 200:
-            return {h["id"]: {"name": h["localized_name"], "slug": h["name"].replace("npc_dota_hero_", "")} for h in r.json()}
+            res = {}
+            for h in r.json():
+                slug = h["name"].replace("npc_dota_hero_", "")
+                res[h["id"]] = {
+                    "id": h["id"],
+                    "name": h["localized_name"],
+                    "slug": slug,
+                    "img": f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{slug}.png"
+                }
+            return res
     except Exception:
         pass
     return {}
 
-# --- ЭНДПОИНТЫ АВТОРИЗАЦИИ И ПУЛА ГЕРОЕВ ---
+# --- AUTH & FAVORITES ---
 
 class AuthRequest(BaseModel):
     username: str
@@ -132,50 +154,69 @@ def save_favorites(req: FavoritesRequest):
 @app.get("/api/heroes")
 def api_heroes():
     heroes = get_opendota_heroes()
-    names = [h["name"] for h in heroes.values()]
-    return sorted(names)
+    out = []
+    for h in heroes.values():
+        out.append({
+            "id": h["id"],
+            "name": h["name"],
+            "slug": h["slug"],
+            "img": h["img"]
+        })
+    return sorted(out, key=lambda x: x["name"])
 
-# --- ЛОГИКА ДРАФТА С УЧЕТОМ ПУЛА ГЕРОЕВ ---
+# --- ИСПРАВЛЕННАЯ ЛОГИКА ДРАФТА ---
 
-def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict, user_favs: set):
+def get_role_data(role_key: str, candidate_stats: dict, heroes_map: dict, user_favs: set, banned_hero_ids: set):
     valid_heroes = ROLES_DB.get(role_key, set())
     role_candidates = []
     all_candidates = []
 
     for cid, data in candidate_stats.items():
-        hero_info = heroes_map.get(cid)
-        if not hero_info or data.get("games", 0) < 1:
+        if cid in banned_hero_ids:
             continue
 
-        wr = (data["wins"] / data["games"]) * 100 if data["games"] > 0 else 0
-        img_url = f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{hero_info['slug']}.png"
+        hero_info = heroes_map.get(cid)
+        if not hero_info or data.get("games", 0) < 10:
+            continue
+
+        cand_wins = data["cand_wins"]
+        games = data["games"]
+        wr = (cand_wins / games) * 100 if games > 0 else 0
+
+        # Если против хотя бы одного врага винрейт кандидата < 42%, ставим флаг hard_countered
+        has_hard_counter = data.get("has_hard_counter", False)
+
         item = {
             "name": hero_info["name"],
             "winrate": round(wr, 1),
-            "games": data["games"],
-            "img": img_url,
-            "is_fav": hero_info["name"].lower() in user_favs
+            "games": games,
+            "img": hero_info["img"],
+            "is_fav": hero_info["name"].lower() in user_favs,
+            "has_hard_counter": has_hard_counter
         }
 
         all_candidates.append(item)
         if hero_info["slug"] in valid_heroes or hero_info["name"].lower().replace(" ", "_") in valid_heroes:
             role_candidates.append(item)
 
-    final_list = role_candidates if role_candidates else all_candidates
-    if not final_list:
+    pool = role_candidates if role_candidates else all_candidates
+    if not pool:
         return None
 
-    by_winrate = sorted(final_list, key=lambda x: x["winrate"], reverse=True)
-    by_games = sorted(final_list, key=lambda x: x["games"], reverse=True)
+    # Фильтруем героев без смертельных контрпиков для ТОП параметров
+    safe_pool = [h for h in pool if not h["has_hard_counter"]]
+    eval_pool = safe_pool if safe_pool else pool
+
+    by_winrate = sorted(eval_pool, key=lambda x: x["winrate"], reverse=True)
+    by_games = sorted(eval_pool, key=lambda x: x["games"], reverse=True)
 
     top_wr = by_winrate[0]
     top_gm = by_games[0]
 
-    # Ищем лучший контрпик из пула авторизованного пользователя
-    fav_candidates = [h for h in by_winrate if h["is_fav"]]
+    # Любимый герой выбирается ТОЛЬКО если у него нет критического контрпика и адекватный винрейт
+    fav_candidates = [h for h in by_winrate if h["is_fav"] and not h["has_hard_counter"] and h["winrate"] >= 46.0]
     top_fav = fav_candidates[0] if fav_candidates else None
 
-    # Исключаем главных героев из блока "Другие варианты"
     excluded_names = {top_wr["name"], top_gm["name"]}
     if top_fav:
         excluded_names.add(top_fav["name"])
@@ -197,9 +238,31 @@ class DraftRequest(BaseModel):
 @app.post("/api/analyze")
 def analyze_draft(req: DraftRequest):
     heroes_map = get_opendota_heroes()
-    name_to_id = {info["name"].lower(): hid for hid, info in heroes_map.items()}
+    
+    # Резолвим имена в ID
+    name_to_id = {}
+    for hid, info in heroes_map.items():
+        name_to_id[info["name"].lower()] = hid
+        name_to_id[info["slug"].lower()] = hid
 
-    # Если передан user_id, загружаем пул героя данного пользователя
+    banned_hero_ids = set()
+
+    # Собираем забаненных/выбранных героев
+    for hname in list(req.my_team.values()) + req.enemy_team:
+        clean = hname.strip().lower()
+        if clean in HERO_ALIASES:
+            clean = HERO_ALIASES[clean]
+        if clean in name_to_id:
+            banned_hero_ids.add(name_to_id[clean])
+
+    enemy_ids = []
+    for e in req.enemy_team:
+        clean = e.strip().lower()
+        if clean in HERO_ALIASES:
+            clean = HERO_ALIASES[clean]
+        if clean in name_to_id:
+            enemy_ids.append(name_to_id[clean])
+
     user_favs = set()
     if req.user_id:
         conn = sqlite3.connect(DB_NAME)
@@ -209,13 +272,8 @@ def analyze_draft(req: DraftRequest):
         conn.close()
         user_favs = {r[0].lower() for r in rows}
 
-    enemy_ids = []
-    for e in req.enemy_team:
-        clean_name = e.split('/')[0].strip().lower()
-        if clean_name in name_to_id:
-            enemy_ids.append(name_to_id[clean_name])
-
     candidate_stats = {}
+
     if enemy_ids:
         for eid in enemy_ids:
             try:
@@ -223,10 +281,22 @@ def analyze_draft(req: DraftRequest):
                 if r.status_code == 200:
                     for item in r.json():
                         cid = item["hero_id"]
+                        games = item["games_played"]
+                        enemy_wins = item["wins"]
+                        
+                        # ИСПРАВЛЕНИЕ: Победи кандидата против этого врага = Всего игр - Победы врага
+                        cand_wins_vs_enemy = games - enemy_wins
+                        single_matchup_wr = (cand_wins_vs_enemy / games) * 100 if games > 0 else 50.0
+
                         if cid not in candidate_stats:
-                            candidate_stats[cid] = {"wins": 0, "games": 0}
-                        candidate_stats[cid]["games"] += item["games_played"]
-                        candidate_stats[cid]["wins"] += item["wins"]
+                            candidate_stats[cid] = {"cand_wins": 0, "games": 0, "has_hard_counter": False}
+
+                        candidate_stats[cid]["games"] += games
+                        candidate_stats[cid]["cand_wins"] += cand_wins_vs_enemy
+
+                        # Если кандидат проигрывает этому врагу с винрейтом ниже 42.0%, помечаем hard_counter
+                        if single_matchup_wr < 42.0:
+                            candidate_stats[cid]["has_hard_counter"] = True
             except Exception:
                 pass
 
@@ -241,32 +311,10 @@ def analyze_draft(req: DraftRequest):
     results = []
     for role_name, role_key in roles_display:
         if not req.my_team.get(role_key):
-            rdata = get_role_data(role_key, candidate_stats, heroes_map, user_favs)
+            rdata = get_role_data(role_key, candidate_stats, heroes_map, user_favs, banned_hero_ids)
             results.append({"role": role_name, "data": rdata})
 
     return {"status": "ok", "results": results}
-
-@app.get("/api/news")
-def get_news():
-    try:
-        r = requests.get("https://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=570&count=5&maxlength=300&format=json", timeout=5)
-        if r.status_code == 200:
-            items = r.json().get("appnews", {}).get("newsitems", [])
-            news_list = []
-            import datetime
-            for item in items:
-                date_str = datetime.datetime.fromtimestamp(item.get("date", 0)).strftime("%d.%m.%Y")
-                news_list.append({
-                    "title": item.get("title", ""),
-                    "contents": item.get("contents", ""),
-                    "url": item.get("url", "#"),
-                    "author": item.get("author", "Valve"),
-                    "date": date_str
-                })
-            return news_list
-    except Exception:
-        pass
-    return []
 
 if __name__ == "__main__":
     import uvicorn
