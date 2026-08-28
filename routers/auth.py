@@ -1,8 +1,9 @@
 import os
+import bcrypt
 import psycopg2
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 
 router = APIRouter()
 
@@ -22,11 +23,11 @@ def ensure_tables_exist():
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(100) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL
+                password_hash VARCHAR(255) NOT NULL
             );
             CREATE TABLE IF NOT EXISTS favorites (
                 user_id VARCHAR(100) PRIMARY KEY,
-                heroes TEXT[]
+                favorite_ids INTEGER[]
             );
         """)
         conn.commit()
@@ -41,7 +42,13 @@ class AuthModel(BaseModel):
 
 class FavoriteModel(BaseModel):
     user_id: str
-    heroes: List[str]
+    favorite_ids: List[int]
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+def verify_password(password: str, password_hash: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 @router.post("/register")
 async def register(data: AuthModel):
@@ -49,18 +56,22 @@ async def register(data: AuthModel):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
+
         cur.execute("SELECT username FROM users WHERE username = %s;", (data.username,))
         if cur.fetchone():
             cur.close()
             conn.close()
             raise HTTPException(status_code=400, detail="Пользователь уже существует")
-        
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s);", (data.username, data.password))
+
+        password_hash = hash_password(data.password)
+        cur.execute(
+            "INSERT INTO users (username, password_hash) VALUES (%s, %s);",
+            (data.username, password_hash),
+        )
         conn.commit()
         cur.close()
         conn.close()
-        
+
         return {"user_id": f"user_{data.username}", "username": data.username}
     except HTTPException as he:
         raise he
@@ -73,15 +84,15 @@ async def login(data: AuthModel):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        
-        cur.execute("SELECT username, password FROM users WHERE username = %s;", (data.username,))
+
+        cur.execute("SELECT username, password_hash FROM users WHERE username = %s;", (data.username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
 
-        if not user or user[1] != data.password:
+        if not user or not verify_password(data.password, user[1]):
             raise HTTPException(status_code=400, detail="Неверное имя пользователя или пароль")
-        
+
         return {"user_id": f"user_{data.username}", "username": data.username}
     except HTTPException as he:
         raise he
@@ -89,25 +100,19 @@ async def login(data: AuthModel):
         raise HTTPException(status_code=500, detail=f"Ошибка БД: {str(e)}")
 
 @router.get("/favorites")
-@router.get("/favorites/{user_id_path}")
-async def get_favorites(user_id: Optional[str] = Query(None), user_id_path: Optional[str] = None):
+async def get_favorites(user_id: str):
     ensure_tables_exist()
-    target_id = user_id or user_id_path
-    if not target_id:
-        return {"heroes": []}
-        
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT heroes FROM favorites WHERE user_id = %s;", (target_id,))
+        cur.execute("SELECT favorite_ids FROM favorites WHERE user_id = %s;", (user_id,))
         row = cur.fetchone()
         cur.close()
         conn.close()
 
-        heroes_list = row[0] if row and row[0] else []
-        return {"heroes": heroes_list}
+        return {"favorite_ids": row[0] if row and row[0] else []}
     except Exception:
-        return {"heroes": []}
+        return {"favorite_ids": []}
 
 @router.post("/favorites")
 async def save_favorites(data: FavoriteModel):
@@ -116,10 +121,10 @@ async def save_favorites(data: FavoriteModel):
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO favorites (user_id, heroes)
+            INSERT INTO favorites (user_id, favorite_ids)
             VALUES (%s, %s)
-            ON CONFLICT (user_id) DO UPDATE SET heroes = EXCLUDED.heroes;
-        """, (data.user_id, data.heroes))
+            ON CONFLICT (user_id) DO UPDATE SET favorite_ids = EXCLUDED.favorite_ids;
+        """, (data.user_id, data.favorite_ids))
         conn.commit()
         cur.close()
         conn.close()
