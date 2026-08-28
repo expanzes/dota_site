@@ -1,78 +1,112 @@
-let userFavorites = new Set();
+let allHeroesForFavorites = [];
+let selectedFavoriteIds = new Set();
 
-async function loadUserFavorites() {
-  if (!currentUser || !currentUser.user_id) return;
+async function openFavoritesModal() {
+  const modal = document.getElementById('favorites-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+  await loadFavoritesModalData();
+}
 
+function closeFavoritesModal() {
+  const modal = document.getElementById('favorites-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+async function loadFavoritesModalData() {
   try {
-    const response = await fetch(`/api/favorites/${currentUser.user_id}`);
-    if (response.ok) {
-      const data = await response.json();
-      userFavorites = new Set(data);
+    const heroesRes = await fetch('/api/heroes');
+    if (heroesRes.ok) {
+      allHeroesForFavorites = await heroesRes.json();
+      
+      // Сортировка героев по алфавиту (A–Z)
+      allHeroesForFavorites.sort((a, b) => a.name.localeCompare(b.name));
     }
+
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.user_id) {
+      const favRes = await fetch(`/api/favorites?user_id=${currentUser.user_id}`);
+      if (favRes.ok) {
+        const favData = await favRes.json();
+        selectedFavoriteIds = new Set(favData.favorite_ids || []);
+      }
+    }
+
+    renderFavoritesGrid();
   } catch (err) {
-    console.error('Ошибка загрузки избранных героев:', err);
+    console.error('Ошибка при загрузке героев:', err);
   }
 }
 
-function openFavModal() {
-  document.getElementById('fav-modal').classList.remove('hidden');
-  renderFavHeroes();
-}
+function renderFavoritesGrid(searchQuery = '') {
+  const grid = document.getElementById('favorites-grid');
+  if (!grid) return;
 
-function closeFavModal() {
-  document.getElementById('fav-modal').classList.add('hidden');
-}
+  grid.innerHTML = '';
+  const q = searchQuery.toLowerCase().trim();
 
-function renderFavHeroes() {
-  const container = document.getElementById('fav-heroes-container');
-  const search = document.getElementById('fav-search-input').value.toLowerCase();
-  container.innerHTML = '';
-
-  if (typeof heroesList === 'undefined' || heroesList.length === 0) {
-    container.innerHTML = '<p style="color: var(--text-muted); text-align: center; grid-column: 1/-1;">Список героев пуст</p>';
-    return;
-  }
-
-  const filtered = heroesList.filter(h => h.name.toLowerCase().includes(search));
+  const filtered = allHeroesForFavorites.filter(hero => {
+    if (!q) return true;
+    return hero.name.toLowerCase().includes(q);
+  });
 
   filtered.forEach(hero => {
-    const isSelected = userFavorites.has(hero.name);
     const card = document.createElement('div');
-    card.className = `fav-hero-card ${isSelected ? 'selected' : ''}`;
+    card.className = `favorite-hero-card ${selectedFavoriteIds.has(hero.id) ? 'selected' : ''}`;
+    card.dataset.id = hero.id;
+
     card.innerHTML = `
       <img src="${hero.img}" alt="${hero.name}">
       <span>${hero.name}</span>
     `;
+
     card.onclick = () => {
-      if (userFavorites.has(hero.name)) {
-        userFavorites.delete(hero.name);
+      if (selectedFavoriteIds.has(hero.id)) {
+        selectedFavoriteIds.delete(hero.id);
+        card.classList.remove('selected');
       } else {
-        userFavorites.add(hero.name);
+        selectedFavoriteIds.add(hero.id);
+        card.classList.add('selected');
       }
-      renderFavHeroes();
     };
-    container.appendChild(card);
+
+    grid.appendChild(card);
   });
 }
 
-function filterFavHeroes() {
-  renderFavHeroes();
+function filterFavoritesSearch() {
+  const input = document.getElementById('favorites-search-input');
+  const query = input ? input.value : '';
+  renderFavoritesGrid(query);
 }
 
 async function saveFavorites() {
-  if (!currentUser || !currentUser.user_id) return;
+  if (typeof currentUser === 'undefined' || !currentUser || !currentUser.user_id) {
+    alert('Пожалуйста, авторизуйтесь для сохранения любимых героев.');
+    return;
+  }
 
   try {
-    await fetch('/api/favorites', {
+    const response = await fetch('/api/favorites', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         user_id: currentUser.user_id,
-        heroes: Array.from(userFavorites)
+        favorite_ids: Array.from(selectedFavoriteIds)
       })
     });
-    closeFavModal();
+
+    if (response.ok) {
+      closeFavoritesModal();
+      if (typeof loadUserProfile === 'function') {
+        loadUserProfile();
+      }
+    } else {
+      alert('Не удалось сохранить изменения.');
+    }
   } catch (err) {
-    alert('Не удалось сохранить список избранных героев');
+    console.error('Ошибка сохранения любимых героев:', err);
   }
 }
