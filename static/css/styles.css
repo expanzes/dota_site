@@ -307,3 +307,65 @@ input[type="text"]:focus, input[type="password"]:focus {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Кастомное выпадающее меню выбора героев */
+.autocomplete-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  background: #181c27;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+}
+
+.autocomplete-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.autocomplete-dropdown::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.autocomplete-item:hover, 
+.autocomplete-item.active {
+  background: #252b3b;
+}
+
+.autocomplete-item img {
+  width: 42px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.autocomplete-item .hero-name {
+  font-size: 0.9rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.autocomplete-item .hero-alias {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
