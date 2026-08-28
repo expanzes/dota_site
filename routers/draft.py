@@ -10,10 +10,16 @@ router = APIRouter()
 HEROES_CACHE: List[dict] = []
 HERO_STATS_CACHE: List[dict] = []
 MATCHUP_CACHE: Dict[int, List[dict]] = {}
+LANE_ROLES_CACHE: Dict[int, Dict[int, int]] = {}  # hero_id -> {lane_role: games}
 
 MIN_GAMES_FOR_RANK = 50      # минимум игр героя в паблике, чтобы считать его винрейт надёжным
 MIN_GAMES_FOR_MATCHUP = 30   # минимум игр в конкретном противостоянии, иначе выборка ненадёжна
 OTHERS_COUNT = 3             # сколько доп. карточек показывать под топ-плашками
+
+# Порог доли игр героя на нужной линии, чтобы считать его "реально играющимся"
+# на позиции, которая туда завязана. Например, если у героя было выбрано
+# safe lane только в 3% игр — это шум/аномалия, а не реальная практика игры на поз. 1/5.
+MIN_LANE_SHARE = 0.10
 
 ROLES = {
     "pos1": "Поз 1 (Керри)",
@@ -30,26 +36,27 @@ FALLBACK_HEROES = [
 ]
 
 # ---------------------------------------------------------------------------
-# Соответствие героев ролям (позициям 1-5).
+# Соответствие героев ролям (позициям 1-5) — ручная курация.
 #
 # OpenDota не отдаёт готовые данные "герой играет на позиции 1-5" — это
-# игровая мета, которой нет в их API как отдельного поля. Поэтому таблица
-# ниже курируется вручную на основе актуальной меты. Список охватывает
-# практически весь ростер героев; если герой не найден в таблице —
-# считаем его подходящим для любой позиции (чтобы не ломать выдачу на
-# только что вышедших героях, которых мы не успели вписать).
+# игровая мета, которой нет в их API как отдельного поля. Поэтому эта
+# таблица курируется вручную на основе актуальной меты и служит "базовым"
+# списком допустимых позиций для героя. Дальше этот список ещё раз
+# сужается объективными данными о линии (см. LANE_FOR_POSITION и
+# filter_positions_by_lane_data ниже) — так мы не полагаемся только на
+# ручную разметку, а проверяем её реальной статистикой по матчам.
 # ---------------------------------------------------------------------------
 
 HERO_POSITIONS: Dict[str, List[int]] = {
-    "Abaddon": [1, 3, 4, 5],
-    "Alchemist": [1, 3, 4, 5],
+    "Abaddon": [3, 4, 5],
+    "Alchemist": [1, 3],
     "Ancient Apparition": [4, 5],
     "Anti-Mage": [1],
     "Arc Warden": [1, 2],
     "Axe": [3],
     "Bane": [4, 5],
     "Batrider": [2, 3],
-    "Beastmaster": [2, 3],
+    "Beastmaster": [3],
     "Bloodseeker": [1, 2],
     "Bounty Hunter": [4],
     "Brewmaster": [3],
@@ -167,11 +174,58 @@ HERO_POSITIONS: Dict[str, List[int]] = {
     "Zeus": [2, 4],
 }
 
+# ---------------------------------------------------------------------------
+# Проверка позиций реальными данными о линии (OpenDota /scenarios/laneRoles).
+#
+# lane_role в данных OpenDota: 1 = safe lane, 2 = mid lane, 3 = off lane,
+# 4 = jungle (устаревшее, почти не встречается). Это данные про ЛИНИЮ,
+# а не про итоговую позицию 1-5 — например, и керри, и хард-саппорт стоят
+# на одной safe lane. Поэтому лейн-данные используются как дополнительная
+# проверка поверх ручной таблицы HERO_POSITIONS, а не вместо неё: они
+# отсекают случаи, когда герой формально вписан в позицию, но по факту
+# почти никогда не стоит на нужной линии.
+# ---------------------------------------------------------------------------
 
-def positions_for_hero(hero_name: str) -> List[int]:
-    """Позиции, для которых подходит герой. Если героя нет в таблице —
-    считаем подходящим для любой позиции, чтобы не терять новых героев."""
-    return HERO_POSITIONS.get(hero_name, [1, 2, 3, 4, 5])
+LANE_SAFE = 1
+LANE_MID = 2
+LANE_OFF = 3
+
+LANE_FOR_POSITION: Dict[int, set] = {
+    1: {LANE_SAFE},
+    2: {LANE_MID},
+    3: {LANE_OFF},
+    4: {LANE_SAFE, LANE_OFF},  # поз. 4 может стартовать и на софтлейне, и роумить с оффа
+    5: {LANE_SAFE},
+}
+
+
+def positions_for_hero(hero_name: str, hero_id: int, lane_stats: Dict[int, Dict[int, int]]) -> List[int]:
+    """Итоговый список позиций для героя: пересечение ручной таблицы меты
+    и объективных данных о том, на какой линии герой реально играется."""
+
+    base_positions = HERO_POSITIONS.get(hero_name, [1, 2, 3, 4, 5])
+
+    hero_lane_games = lane_stats.get(hero_id)
+    if not hero_lane_games:
+        # Нет данных по линии для этого героя (например, сбой запроса или
+        # совсем новый герой) — не блокируем выдачу, используем только
+        # ручную таблицу.
+        return base_positions
+
+    total_games = sum(hero_lane_games.values())
+    if total_games == 0:
+        return base_positions
+
+    result = []
+    for pos in base_positions:
+        allowed_lanes = LANE_FOR_POSITION.get(pos, {LANE_SAFE, LANE_MID, LANE_OFF})
+        games_on_allowed_lanes = sum(hero_lane_games.get(l, 0) for l in allowed_lanes)
+        if (games_on_allowed_lanes / total_games) >= MIN_LANE_SHARE:
+            result.append(pos)
+
+    # Если пересечение неожиданно вырезало все позиции (аномалия в данных)
+    # — не оставляем героя вообще без позиций, откатываемся к ручной таблице.
+    return result if result else base_positions
 
 
 # ---------------------------------------------------------------------------
@@ -214,6 +268,35 @@ async def get_hero_stats_cache() -> List[dict]:
     except Exception as e:
         print(f"Ошибка при запросе heroStats к OpenDota: {e}")
     return []
+
+
+async def get_lane_roles_cache() -> Dict[int, Dict[int, int]]:
+    """Агрегированная статистика игр по линиям для каждого героя:
+    {hero_id: {lane_role: total_games}}. Данные разбиты OpenDota по
+    временным отрезкам лейнинг-фазы — здесь мы суммируем их в одно число
+    игр на линию, нам не нужна разбивка по времени."""
+    global LANE_ROLES_CACHE
+    if LANE_ROLES_CACHE:
+        return LANE_ROLES_CACHE
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get("https://api.opendota.com/api/scenarios/laneRoles")
+            if response.status_code == 200:
+                raw_rows = response.json()
+                aggregated: Dict[int, Dict[int, int]] = {}
+                for row in raw_rows:
+                    hero_id = row.get("hero_id")
+                    lane_role = row.get("lane_role")
+                    games = row.get("games", 0) or 0
+                    if hero_id is None or lane_role is None:
+                        continue
+                    aggregated.setdefault(hero_id, {})
+                    aggregated[hero_id][lane_role] = aggregated[hero_id].get(lane_role, 0) + games
+                LANE_ROLES_CACHE = aggregated
+                return LANE_ROLES_CACHE
+    except Exception as e:
+        print(f"Ошибка при запросе laneRoles к OpenDota: {e}")
+    return {}
 
 
 async def get_matchups(hero_id: int) -> List[dict]:
@@ -279,11 +362,16 @@ def build_recommendation_pool_for_position(
     all_candidates: List[dict],
     pos_num: int,
     favorite_ids: List[int],
+    lane_stats: Dict[int, Dict[int, int]],
 ) -> dict:
     """Строит рекомендации (пул/винрейт/остальные) для конкретной позиции,
-    отфильтровав кандидатов заранее по тому, подходят ли они на эту роль."""
+    отфильтровав кандидатов заранее по тому, подходят ли они на эту роль
+    (ручная таблица меты + проверка реальными данными о линии)."""
 
-    eligible = [c for c in all_candidates if pos_num in positions_for_hero(c["name"])]
+    eligible = [
+        c for c in all_candidates
+        if pos_num in positions_for_hero(c["name"], c["id"], lane_stats)
+    ]
     # На случай если фильтр по позиции внезапно вырезал всех кандидатов
     # (не должно происходить при полной таблице позиций) — не оставляем
     # пользователя без рекомендаций вообще.
@@ -327,6 +415,7 @@ def build_recommendation_pool_for_position(
 async def analyze_draft(payload: DraftRequest):
     heroes_list = await get_heroes_cache()
     hero_stats = await get_hero_stats_cache()
+    lane_stats = await get_lane_roles_cache()
 
     name_to_id = {h["name"].lower(): h["id"] for h in heroes_list}
     id_to_name = {h["id"]: h["name"] for h in heroes_list}
@@ -405,7 +494,7 @@ async def analyze_draft(payload: DraftRequest):
             continue
         pos_num = int(role_key[-1])
         recommendation_pool = build_recommendation_pool_for_position(
-            all_candidates, pos_num, favorite_ids
+            all_candidates, pos_num, favorite_ids, lane_stats
         )
         results.append({"role": role_title, "data": recommendation_pool})
 
