@@ -88,7 +88,6 @@ async def login(data: AuthModel):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка БД: {str(e)}")
 
-# Поддержка загрузки избранного как через Query (/favorites?user_id=X), так и через Path (/favorites/X)
 @router.get("/favorites")
 @router.get("/favorites/{user_id_path}")
 async def get_favorites(user_id: Optional[str] = Query(None), user_id_path: Optional[str] = None):
