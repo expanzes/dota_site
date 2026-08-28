@@ -57,4 +57,61 @@ function renderFavGrid(searchQuery = '') {
     const card = document.createElement('div');
     const heroId = Number(hero.id);
     const isSelected = selectedFavoriteIds.has(heroId);
-    card.className =
+    card.className = `fav-hero-card ${isSelected ? 'selected' : ''}`;
+    card.dataset.id = heroId;
+
+    card.innerHTML = `
+      <img src="${hero.img}" alt="${hero.name}">
+      <span>${hero.name}</span>
+    `;
+
+    card.onclick = () => {
+      if (selectedFavoriteIds.has(heroId)) {
+        selectedFavoriteIds.delete(heroId);
+        card.classList.remove('selected');
+      } else {
+        selectedFavoriteIds.add(heroId);
+        card.classList.add('selected');
+      }
+    };
+
+    container.appendChild(card);
+  });
+}
+
+function filterFavHeroes() {
+  const input = document.getElementById('fav-search-input');
+  const query = input ? input.value : '';
+  renderFavGrid(query);
+}
+
+async function saveFavorites() {
+  if (typeof currentUser === 'undefined' || !currentUser || !currentUser.user_id) {
+    alert('Пожалуйста, авторизуйтесь для сохранения любимых героев.');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/favorites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: String(currentUser.user_id),
+        favorite_ids: Array.from(selectedFavoriteIds).map(Number)
+      })
+    });
+
+    if (response.ok) {
+      closeFavModal();
+      if (typeof loadUserProfile === 'function') {
+        loadUserProfile();
+      }
+    } else {
+      const errDetails = await response.json().catch(() => ({}));
+      console.error('Ошибка от сервера:', errDetails);
+      alert('Не удалось сохранить изменения.');
+    }
+  } catch (err) {
+    console.error('Ошибка сохранения любимых героев:', err);
+  }
+}
