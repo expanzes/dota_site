@@ -39,23 +39,38 @@
           <div class="inputs-grid">
             <div class="input-field-group">
               <label>Поз 1 — Керри</label>
-              <div class="autocomplete-wrapper"><input type="text" id="my-pos1" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="my-pos1" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos1')">&times;</button>
+              </div>
             </div>
             <div class="input-field-group">
               <label>Поз 2 — Мид</label>
-              <div class="autocomplete-wrapper"><input type="text" id="my-pos2" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="my-pos2" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos2')">&times;</button>
+              </div>
             </div>
             <div class="input-field-group">
               <label>Поз 3 — Тройка</label>
-              <div class="autocomplete-wrapper"><input type="text" id="my-pos3" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="my-pos3" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos3')">&times;</button>
+              </div>
             </div>
             <div class="input-field-group">
               <label>Поз 4 — Четверка</label>
-              <div class="autocomplete-wrapper"><input type="text" id="my-pos4" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="my-pos4" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos4')">&times;</button>
+              </div>
             </div>
             <div class="input-field-group">
               <label>Поз 5 — Пятерка</label>
-              <div class="autocomplete-wrapper"><input type="text" id="my-pos5" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="my-pos5" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos5')">&times;</button>
+              </div>
             </div>
           </div>
         </div>
@@ -66,23 +81,38 @@
           <div class="inputs-grid">
             <div class="input-field-group">
               <label>Враг 1</label>
-              <div class="autocomplete-wrapper"><input type="text" id="enemy-1" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="enemy-1" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-1')">&times;</button>
+              </div>
             </div>
             <div class="input-field-group">
               <label>Враг 2</label>
-              <div class="autocomplete-wrapper"><input type="text" id="enemy-2" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="enemy-2" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-2')">&times;</button>
+              </div>
             </div>
             <div class="input-field-group">
               <label>Враг 3</label>
-              <div class="autocomplete-wrapper"><input type="text" id="enemy-3" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="enemy-3" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-3')">&times;</button>
+              </div>
             </div>
             <div class="input-field-group">
               <label>Враг 4</label>
-              <div class="autocomplete-wrapper"><input type="text" id="enemy-4" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="enemy-4" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-4')">&times;</button>
+              </div>
             </div>
             <div class="input-field-group">
               <label>Враг 5</label>
-              <div class="autocomplete-wrapper"><input type="text" id="enemy-5" placeholder="Выберите героя..." autocomplete="off"></div>
+              <div class="autocomplete-wrapper">
+                <input type="text" id="enemy-5" placeholder="Выберите героя..." autocomplete="off">
+                <button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-5')">&times;</button>
+              </div>
             </div>
           </div>
         </div>
@@ -90,7 +120,7 @@
 
       <div class="actions-row">
         <button class="btn-analyze" onclick="analyzeDraft()">Проанализировать драфт</button>
-        <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+        <button class="btn-clear" onclick="clearInputs()">Очистить все</button>
       </div>
 
       <!-- Результаты анализа -->
