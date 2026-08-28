@@ -30,9 +30,8 @@ async function loadFavoritesModalData() {
       const favRes = await fetch(`/api/favorites?user_id=${currentUser.user_id}`);
       if (favRes.ok) {
         const favData = await favRes.json();
-        // Сервер может возвращать массив в поле heroes или favorite_ids
         const list = favData.heroes || favData.favorite_ids || (Array.isArray(favData) ? favData : []);
-        selectedFavoriteIds = new Set(list);
+        selectedFavoriteIds = new Set(list.map(String));
       }
     }
 
@@ -56,9 +55,10 @@ function renderFavGrid(searchQuery = '') {
 
   filtered.forEach(hero => {
     const card = document.createElement('div');
-    const isSelected = selectedFavoriteIds.has(hero.id);
+    const heroIdStr = String(hero.id);
+    const isSelected = selectedFavoriteIds.has(heroIdStr);
     card.className = `fav-hero-card ${isSelected ? 'selected' : ''}`;
-    card.dataset.id = hero.id;
+    card.dataset.id = heroIdStr;
 
     card.innerHTML = `
       <img src="${hero.img}" alt="${hero.name}">
@@ -66,11 +66,11 @@ function renderFavGrid(searchQuery = '') {
     `;
 
     card.onclick = () => {
-      if (selectedFavoriteIds.has(hero.id)) {
-        selectedFavoriteIds.delete(hero.id);
+      if (selectedFavoriteIds.has(heroIdStr)) {
+        selectedFavoriteIds.delete(heroIdStr);
         card.classList.remove('selected');
       } else {
-        selectedFavoriteIds.add(hero.id);
+        selectedFavoriteIds.add(heroIdStr);
         card.classList.add('selected');
       }
     };
@@ -97,7 +97,7 @@ async function saveFavorites() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         user_id: String(currentUser.user_id),
-        heroes: Array.from(selectedFavoriteIds) // Исправлено: передаем 'heroes' вместо 'favorite_ids'
+        heroes: Array.from(selectedFavoriteIds).map(String)
       })
     });
 
