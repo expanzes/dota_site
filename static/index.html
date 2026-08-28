@@ -1,78 +1,416 @@
-<!-- 1. Экран приветствия (Превью) -->
-<div id="welcome-screen" class="screen">
-  <div class="welcome-card">
-    <h1>Dota 2 Helper</h1>
-    <p>Выбери режим входа для доступа к аналитике драфтов</p>
-    <div class="welcome-buttons">
-      <button onclick="showAuthModal()" class="btn-primary">Войти / Зарегистрироваться</button>
-      <button onclick="enterAsGuest()" class="btn-secondary">Продолжить без входа</button>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dota 2 Helper</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #121214;
+      color: #e1e1e6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* --- Экран приветствия (Превью) --- */
+    #welcome-screen {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at center, #1f232d 0%, #0d0e12 100%);
+      padding: 20px;
+    }
+
+    .welcome-card {
+      background: #181a20;
+      border: 1px solid #2a2e3d;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .welcome-card h1 {
+      color: #ff4655;
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .welcome-card p {
+      color: #a0a5b5;
+      margin-bottom: 30px;
+      font-size: 1rem;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn-primary {
+      background: #ff4655;
+      color: #fff;
+      border: none;
+      padding: 14px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #e03e4c;
+    }
+
+    .btn-secondary {
+      background: #252836;
+      color: #e1e1e6;
+      border: 1px solid #3b3f54;
+      padding: 14px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #2f3446;
+    }
+
+    /* --- Модальное окно авторизации --- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-card {
+      background: #181a20;
+      border: 1px solid #2a2e3d;
+      border-radius: 12px;
+      padding: 30px;
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .modal-card h2 {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 5px;
+    }
+
+    .modal-card input {
+      background: #121214;
+      border: 1px solid #2a2e3d;
+      color: #fff;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .modal-card input:focus {
+      outline: none;
+      border-color: #ff4655;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 8px;
+      background: transparent;
+      border: none;
+      color: #a0a5b5;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .auth-tab.active {
+      color: #ff4655;
+      border-color: #ff4655;
+    }
+
+    .btn-close {
+      background: transparent;
+      border: none;
+      color: #a0a5b5;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 5px;
+    }
+
+    /* --- Главный интерфейс --- */
+    #main-app {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #181a20;
+      border-bottom: 1px solid #2a2e3d;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 1.4rem;
+      color: #ff4655;
+    }
+
+    .user-panel {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .user-badge {
+      background: #252836;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      color: #a0a5b5;
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: 1px solid #ff4655;
+      color: #ff4655;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-logout:hover {
+      background: #ff4655;
+      color: #fff;
+    }
+
+    main {
+      padding: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .alert-error {
+      background: #3d1a1d;
+      border: 1px solid #ff4655;
+      color: #ff808b;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Экран приветствия (Превью) -->
+  <div id="welcome-screen">
+    <div class="welcome-card">
+      <h1>Dota 2 Helper</h1>
+      <p>Аналитика драфтов, персональные рекомендации и статистика матчей</p>
+      <div class="btn-group">
+        <button onclick="openAuthModal()" class="btn-primary">Войти / Зарегистрироваться</button>
+        <button onclick="enterAsGuest()" class="btn-secondary">Продолжить без входа</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- 2. Модальное окно авторизации -->
-<div id="auth-modal" class="modal hidden">
-  <div class="modal-content">
-    <h2 id="auth-title">Вход в аккаунт</h2>
-    <input type="text" id="username-input" placeholder="Логин">
-    <input type="password" id="password-input" placeholder="Пароль">
-    <button onclick="handleAuthSubmit()" class="btn-primary">Подтвердить</button>
-    <button onclick="closeAuthModal()" class="btn-link">Назад</button>
+  <!-- 2. Модальное окно авторизации -->
+  <div id="auth-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab active" onclick="switchAuthMode('login')">Вход</button>
+        <button id="tab-register" class="auth-tab" onclick="switchAuthMode('register')">Регистрация</button>
+      </div>
+
+      <div id="auth-error" class="alert-error hidden"></div>
+
+      <input type="text" id="auth-username" placeholder="Имя пользователя">
+      <input type="password" id="auth-password" placeholder="Пароль">
+
+      <button id="auth-submit-btn" onclick="submitAuth()" class="btn-primary">Войти</button>
+      <button onclick="closeAuthModal()" class="btn-close">Отмена</button>
+    </div>
   </div>
-</div>
 
-<!-- 3. Главный интерфейс приложения -->
-<div id="main-app" class="screen hidden">
-  <header class="app-header">
-    <div id="user-info">Режим: Гость</div>
-    <button id="auth-btn" onclick="logout()" class="btn-logout">Выйти</button>
-  </header>
-  
-  <!-- Основной контент (Драфты, Герои и т.д.) -->
-  <main>
-    <h2>Анализ драфтов</h2>
-    <!-- Твой существующий код драфтов и интерфейса -->
-  </main>
-</div>
+  <!-- 3. Главный интерфейс приложения -->
+  <div id="main-app" class="hidden">
+    <header>
+      <div class="logo">Dota 2 Helper</div>
+      <div class="user-panel">
+        <span id="user-display-name" class="user-badge">Гость</span>
+        <button onclick="logout()" class="btn-logout">Выйти</button>
+      </div>
+    </header>
 
-<script>
-  // Проверка состояния при загрузке страницы
-  document.addEventListener('DOMContentLoaded', () => {
-    const savedUser = localStorage.getItem('dota_user');
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
-      showMainApp(user.username);
-    } else {
+    <main>
+      <h2 style="margin-bottom: 20px;">Анализ драфта</h2>
+      <p style="color: #a0a5b5;">Выбери героев союзников и врагов для расчета наилучших пиков...</p>
+      <!-- Сюда помещается блок с выбором героев и аналитикой -->
+    </main>
+  </div>
+
+  <script>
+    let authMode = 'login'; // 'login' или 'register'
+    let currentUser = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedUser = localStorage.getItem('dota_helper_user');
+      if (savedUser) {
+        try {
+          currentUser = JSON.parse(savedUser);
+          showMainApp();
+        } catch (e) {
+          showWelcomeScreen();
+        }
+      } else {
+        showWelcomeScreen();
+      }
+    });
+
+    function showWelcomeScreen() {
+      document.getElementById('welcome-screen').classList.remove('hidden');
+      document.getElementById('main-app').classList.add('hidden');
+      closeAuthModal();
+    }
+
+    function showMainApp() {
+      document.getElementById('welcome-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+
+      const nameLabel = document.getElementById('user-display-name');
+      if (currentUser && currentUser.username) {
+        nameLabel.innerText = currentUser.username;
+      } else {
+        nameLabel.innerText = 'Режим: Гость';
+      }
+    }
+
+    function enterAsGuest() {
+      currentUser = null;
+      localStorage.removeItem('dota_helper_user');
+      showMainApp();
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('dota_helper_user');
       showWelcomeScreen();
     }
-  });
 
-  function showWelcomeScreen() {
-    document.getElementById('welcome-screen').classList.remove('hidden');
-    document.getElementById('main-app').classList.add('hidden');
-  }
+    function openAuthModal() {
+      document.getElementById('auth-modal').classList.remove('hidden');
+      document.getElementById('auth-error').classList.add('hidden');
+      document.getElementById('auth-username').value = '';
+      document.getElementById('auth-password').value = '';
+    }
 
-  function enterAsGuest() {
-    localStorage.removeItem('dota_user');
-    showMainApp('Гость');
-  }
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+    }
 
-  function showMainApp(username) {
-    document.getElementById('welcome-screen').classList.add('hidden');
-    document.getElementById('main-app').classList.remove('hidden');
-    document.getElementById('user-info').innerText = `Пользователь: ${username}`;
-  }
+    function switchAuthMode(mode) {
+      authMode = mode;
+      document.getElementById('auth-error').classList.add('hidden');
+      
+      const tabLogin = document.getElementById('tab-login');
+      const tabRegister = document.getElementById('tab-register');
+      const submitBtn = document.getElementById('auth-submit-btn');
 
-  function logout() {
-    localStorage.removeItem('dota_user');
-    showWelcomeScreen();
-  }
+      if (mode === 'login') {
+        tabLogin.classList.add('active');
+        tabRegister.classList.remove('active');
+        submitBtn.innerText = 'Войти';
+      } else {
+        tabRegister.classList.add('active');
+        tabLogin.classList.remove('active');
+        submitBtn.innerText = 'Зарегистрироваться';
+      }
+    }
 
-  function showAuthModal() {
-    document.getElementById('auth-modal').classList.remove('hidden');
-  }
+    async function submitAuth() {
+      const usernameInput = document.getElementById('auth-username').value.trim();
+      const passwordInput = document.getElementById('auth-password').value.trim();
+      const errorBox = document.getElementById('auth-error');
 
-  function closeAuthModal() {
-    document.getElementById('auth-modal').classList.add('hidden');
-  }
-</script>
+      if (!usernameInput || !passwordInput) {
+        errorBox.innerText = 'Заполните все поля';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+
+      const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usernameInput, password: passwordInput })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Ошибка авторизации');
+        }
+
+        currentUser = {
+          user_id: data.user_id,
+          username: data.username
+        };
+
+        localStorage.setItem('dota_helper_user', JSON.stringify(currentUser));
+        closeAuthModal();
+        showMainApp();
+
+      } catch (err) {
+        errorBox.innerText = err.message;
+        errorBox.classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
