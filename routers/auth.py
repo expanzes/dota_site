@@ -13,9 +13,8 @@ def get_db_connection():
         raise RuntimeError("Переменная окружения DATABASE_URL не задана")
     return psycopg2.connect(DATABASE_URL)
 
-def init_db():
-    if not DATABASE_URL:
-        return
+def ensure_tables_exist():
+    """Гарантирует, что таблицы созданы перед выполнением запросов"""
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -34,10 +33,7 @@ def init_db():
         cur.close()
         conn.close()
     except Exception as e:
-        print(f"Ошибка инициализации БД: {e}")
-
-# Создаем таблицы при запуске модуля
-init_db()
+        print(f"Ошибка создания таблиц: {e}")
 
 class AuthModel(BaseModel):
     username: str
@@ -49,6 +45,7 @@ class FavoriteModel(BaseModel):
 
 @router.post("/register")
 async def register(data: AuthModel):
+    ensure_tables_exist()
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -72,6 +69,7 @@ async def register(data: AuthModel):
 
 @router.post("/login")
 async def login(data: AuthModel):
+    ensure_tables_exist()
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -92,6 +90,7 @@ async def login(data: AuthModel):
 
 @router.get("/favorites/{user_id}")
 async def get_favorites(user_id: str):
+    ensure_tables_exist()
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -106,6 +105,7 @@ async def get_favorites(user_id: str):
 
 @router.post("/favorites")
 async def save_favorites(data: FavoriteModel):
+    ensure_tables_exist()
     try:
         conn = get_db_connection()
         cur = conn.cursor()
