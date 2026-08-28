@@ -9,10 +9,29 @@ router = APIRouter()
 
 HEROES_CACHE: List[dict] = []
 HERO_STATS_CACHE: List[dict] = []
+MATCHUP_CACHE: Dict[int, List[dict]] = {}
 
-MIN_GAMES_FOR_RANK = 50      # мин. игр, чтобы попасть в основной топ по общему винрейту
-MIN_GAMES_FOR_MATCHUP = 30   # мин. игр в конкретном матчапе, иначе выборка ненадёжна
+MIN_GAMES_FOR_RANK = 50      # минимум игр героя в паблике, чтобы считать его винрейт надёжным
+MIN_GAMES_FOR_MATCHUP = 30   # минимум игр в конкретном противостоянии, иначе выборка ненадёжна
 
+ROLES = {
+    "pos1": "Поз 1 (Керри)",
+    "pos2": "Поз 2 (Мид)",
+    "pos3": "Поз 3 (Тройка)",
+    "pos4": "Поз 4 (Четверка)",
+    "pos5": "Поз 5 (Пятерка)",
+}
+
+FALLBACK_HEROES = [
+    {"id": 1, "name": "Anti-Mage", "img": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/antimage.png"},
+    {"id": 14, "name": "Pudge", "img": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png"},
+    {"id": 74, "name": "Invoker", "img": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/invoker.png"},
+]
+
+
+# ---------------------------------------------------------------------------
+# Загрузка и кэширование данных с OpenDota
+# ---------------------------------------------------------------------------
 
 async def get_heroes_cache() -> List[dict]:
     global HEROES_CACHE
@@ -34,17 +53,7 @@ async def get_heroes_cache() -> List[dict]:
                 return HEROES_CACHE
     except Exception as e:
         print(f"Ошибка при запросе списка героев к OpenDota: {e}")
-
-    return [
-        {"id": 1, "name": "Anti-Mage", "img": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/antimage.png"},
-        {"id": 14, "name": "Pudge", "img": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png"},
-        {"id": 74, "name": "Invoker", "img": "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/invoker.png"},
-    ]
-
-
-@router.get("/heroes")
-async def get_heroes():
-    return await get_heroes_cache()
+    return FALLBACK_HEROES
 
 
 async def get_hero_stats_cache() -> List[dict]:
@@ -62,12 +71,17 @@ async def get_hero_stats_cache() -> List[dict]:
     return []
 
 
-async def fetch_matchups(hero_id: int) -> List[dict]:
+async def get_matchups(hero_id: int) -> List[dict]:
+    """Матчапы конкретного героя против всех остальных (кэшируется по ID)."""
+    if hero_id in MATCHUP_CACHE:
+        return MATCHUP_CACHE[hero_id]
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.get(f"https://api.opendota.com/api/heroes/{hero_id}/matchups")
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                MATCHUP_CACHE[hero_id] = data
+                return data
     except Exception as e:
         print(f"Ошибка при запросе matchups для героя {hero_id}: {e}")
     return []
@@ -90,6 +104,15 @@ def get_user_favorite_ids(user_id: Optional[str]) -> List[int]:
         return []
 
 
+@router.get("/heroes")
+async def get_heroes():
+    return await get_heroes_cache()
+
+
+# ---------------------------------------------------------------------------
+# Модели запроса/кандидата
+# ---------------------------------------------------------------------------
+
 class DraftRequest(BaseModel):
     my_team: Dict[str, str]
     enemy_team: List[str]
@@ -107,6 +130,10 @@ def format_hero(candidate: Optional[dict]) -> Optional[dict]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Основной алгоритм подбора
+# ---------------------------------------------------------------------------
+
 @router.post("/analyze")
 async def analyze_draft(payload: DraftRequest):
     heroes_list = await get_heroes_cache()
@@ -115,10 +142,12 @@ async def analyze_draft(payload: DraftRequest):
     name_to_id = {h["name"].lower(): h["id"] for h in heroes_list}
     id_to_name = {h["id"]: h["name"] for h in heroes_list}
 
-    picked_names_lower = {v.lower() for v in payload.my_team.values() if v}
-    picked_names_lower |= {n.lower() for n in payload.enemy_team}
+    # Уже выбранные герои (своя команда + враги) — исключаем из кандидатов.
+    ally_names_lower = {v.lower() for v in payload.my_team.values() if v}
+    enemy_names_lower = {n.lower() for n in payload.enemy_team}
+    picked_names_lower = ally_names_lower | enemy_names_lower
 
-    # --- Базовый (общий) винрейт по паблик-статистике OpenDota ---
+    # --- Базовый (общий паблик) винрейт и число игр по каждому герою ---
     base_winrate: Dict[str, float] = {}
     base_games: Dict[str, int] = {}
     for hs in hero_stats:
@@ -130,26 +159,28 @@ async def analyze_draft(payload: DraftRequest):
         base_winrate[name] = (total_win / total_pick * 100) if total_pick else 0
         base_games[name] = total_pick
 
-    # --- Контрпики против выбранных героев врага ---
+    # --- Контрпик-очки против выбранных героев врага ---
     enemy_ids = [name_to_id[n.lower()] for n in payload.enemy_team if n.lower() in name_to_id]
-    matchup_results = await asyncio.gather(*(fetch_matchups(eid) for eid in enemy_ids))
+    matchup_results = await asyncio.gather(*(get_matchups(eid) for eid in enemy_ids))
 
-    counter_score: Dict[str, List[float]] = {}  # name -> [weighted_sum, weight]
+    counter_score: Dict[str, List[float]] = {}  # candidate_name -> [взвеш. сумма винрейта, суммарный вес]
     for matchups in matchup_results:
         for m in matchups:
             games = m.get("games_played", 0)
             if games < MIN_GAMES_FOR_MATCHUP:
                 continue
-            opp_name = id_to_name.get(m.get("hero_id"))
-            if not opp_name:
+            candidate_name = id_to_name.get(m.get("hero_id"))
+            if not candidate_name:
                 continue
             enemy_wins = m.get("wins", 0)
-            counter_wr = 100 - (enemy_wins / games * 100)  # винрейт opp_name против этого врага
-            entry = counter_score.setdefault(opp_name, [0.0, 0.0])
-            entry[0] += counter_wr * games
+            # m["wins"] — победы ВРАГА в этом противостоянии, поэтому винрейт
+            # кандидата против конкретного врага — это обратная величина.
+            candidate_wr_vs_this_enemy = 100 - (enemy_wins / games * 100)
+            entry = counter_score.setdefault(candidate_name, [0.0, 0.0])
+            entry[0] += candidate_wr_vs_this_enemy * games
             entry[1] += games
 
-    # --- Финальный скоринг кандидатов ---
+    # --- Итоговая оценка кандидатов ---
     candidates = []
     for h in heroes_list:
         name = h["name"]
@@ -161,45 +192,48 @@ async def analyze_draft(payload: DraftRequest):
 
         if name in counter_score and counter_score[name][1] > 0:
             counter_wr = counter_score[name][0] / counter_score[name][1]
-            score = counter_wr * 0.7 + base * 0.3  # с врагами в приоритете контрпик
+            # Чем больше выбрано вражеских героев, тем больше вес контрпика
+            # в итоговой оценке — против пустого драфта врага контрпик не считаем.
+            enemy_weight = min(len(enemy_ids) / 5, 1.0) * 0.7
+            draft_winrate = counter_wr * enemy_weight + base * (1 - enemy_weight)
         else:
-            score = base
+            draft_winrate = base
 
         candidates.append({
             "id": h["id"],
             "name": name,
             "img": h["img"],
-            "winrate": round(base, 1),
+            "winrate": round(draft_winrate, 1),
             "games": games,
-            "score": score,
         })
 
-    ranked = sorted(
-        [c for c in candidates if c["games"] >= MIN_GAMES_FOR_RANK],
-        key=lambda c: -c["score"],
-    )
-    if not ranked:
-        ranked = sorted(candidates, key=lambda c: -c["score"])
+    # Отсекаем шумные данные с маленькой выборкой, если после отсечения
+    # кандидатов достаточно; иначе используем весь список как запасной вариант.
+    reliable = [c for c in candidates if c["games"] >= MIN_GAMES_FOR_RANK]
+    pool = reliable if reliable else candidates
+
+    ranked_by_winrate = sorted(pool, key=lambda c: -c["winrate"])
+    ranked_by_games = sorted(pool, key=lambda c: -c["games"])
 
     used_ids = set()
 
-    def take(cands, key=lambda c: -c["score"]):
-        pool = sorted((c for c in cands if c["id"] not in used_ids), key=key)
-        if not pool:
-            return None
-        chosen = pool[0]
-        used_ids.add(chosen["id"])
-        return chosen
+    def take_first(sorted_list):
+        for c in sorted_list:
+            if c["id"] not in used_ids:
+                used_ids.add(c["id"])
+                return c
+        return None
 
-    top_winrate = take(ranked)
-    top_games = take(ranked, key=lambda c: -c["games"])
+    top_winrate = take_first(ranked_by_winrate)
+    top_games = take_first(ranked_by_games)
 
     favorite_ids = get_user_favorite_ids(payload.user_id)
     top_favorite = None
     if favorite_ids:
-        top_favorite = take([c for c in ranked if c["id"] in favorite_ids])
+        favorite_candidates = [c for c in ranked_by_winrate if c["id"] in favorite_ids]
+        top_favorite = take_first(favorite_candidates)
 
-    others = [c for c in ranked if c["id"] not in used_ids][:6]
+    others = [c for c in ranked_by_winrate if c["id"] not in used_ids][:6]
 
     recommendation_pool = {
         "top_favorite": format_hero(top_favorite),
@@ -208,17 +242,9 @@ async def analyze_draft(payload: DraftRequest):
         "others": [format_hero(c) for c in others],
     }
 
-    roles = {
-        "pos1": "Поз 1 (Керри)",
-        "pos2": "Поз 2 (Мид)",
-        "pos3": "Поз 3 (Тройка)",
-        "pos4": "Поз 4 (Четверка)",
-        "pos5": "Поз 5 (Пятерка)",
-    }
-
     results = [
         {"role": role_title, "data": recommendation_pool}
-        for role_key, role_title in roles.items()
+        for role_key, role_title in ROLES.items()
         if not payload.my_team.get(role_key)
     ]
 
