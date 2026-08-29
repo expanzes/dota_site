@@ -83,6 +83,8 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('main-app').classList.remove('hidden');
     document.getElementById('user-display-name').innerText = currentUser.username;
     document.getElementById('fav-btn').classList.remove('hidden');
+    
     loadHeroes();
+    updateGlobalBanList(); // <-- ДОБАВЬ ЭТУ СТРОЧКУ
   }
 });
