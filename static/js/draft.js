@@ -67,9 +67,7 @@ function setupCustomAutocomplete() {
   inputIds.forEach(id => {
     const input = document.getElementById(id);
     if (!input) return;
-
     const wrapper = input.parentElement;
-
     input.addEventListener('focus', () => renderDropdown(input, wrapper));
     input.addEventListener('input', () => renderDropdown(input, wrapper));
     input.addEventListener('click', () => renderDropdown(input, wrapper));
@@ -86,9 +84,7 @@ function matchHero(hero, query) {
   if (!query) return true;
   const q = query.toLowerCase().trim();
   const name = hero.name.toLowerCase();
-
   if (name.includes(q)) return true;
-
   const aliases = HERO_ALIASES[hero.name] || [];
   return aliases.some(alias => alias.toLowerCase().includes(q));
 }
@@ -110,7 +106,6 @@ function renderDropdown(input, wrapper) {
   filtered.slice(0, 15).forEach(hero => {
     const item = document.createElement('div');
     item.className = 'autocomplete-item';
-
     const aliases = HERO_ALIASES[hero.name] ? HERO_ALIASES[hero.name][0].toUpperCase() : '';
 
     item.innerHTML = `
@@ -124,10 +119,8 @@ function renderDropdown(input, wrapper) {
       input.value = hero.name;
       dropdown.remove();
     };
-
     dropdown.appendChild(item);
   });
-
   wrapper.appendChild(dropdown);
 }
 
@@ -166,19 +159,19 @@ async function analyzeDraft() {
       body: JSON.stringify({
         my_team: myTeam,
         enemy_team: enemyTeam,
-        user_id: typeof currentUser !== 'undefined' && currentUser ? currentUser.user_id : null
+        user_id: (typeof currentUser !== 'undefined' && currentUser) ? currentUser.user_id : null
       })
     });
 
     if (!response.ok) {
-      resultsContainer.innerHTML = '<p style="color: var(--accent-red); text-align: center;">Ошибка при анализе драфта</p>';
+      resultsContainer.innerHTML = '<p style="color: var(--accent-red); text-align: center;">Ошибка при анализе</p>';
       return;
     }
 
     const data = await response.json();
     renderResults(data.results);
   } catch (err) {
-    resultsContainer.innerHTML = '<p style="color: var(--accent-red); text-align: center;">Ошибка соединения с сервером</p>';
+    resultsContainer.innerHTML = '<p style="color: var(--accent-red); text-align: center;">Ошибка соединения</p>';
   }
 }
 
@@ -187,7 +180,7 @@ function renderResults(results) {
   resultsContainer.innerHTML = '';
 
   if (!results || results.length === 0) {
-    resultsContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Все роли заполнены или нет данных для анализа.</p>';
+    resultsContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Все роли заполнены или нет данных.</p>';
     return;
   }
 
@@ -200,30 +193,18 @@ function renderResults(results) {
     title.innerText = item.role;
     groupDiv.appendChild(title);
 
-    // --- Топ-плашки: из пула игрока / самый высокий винрейт ---
-    // Позиционная фильтрация уже сделана на бэкенде, поэтому здесь просто отображаем то, что пришло.
     const topRow = document.createElement('div');
     topRow.className = 'top-picks-row';
 
-    let topCardsAdded = 0;
-
     if (item.data.top_favorite) {
       topRow.appendChild(createTopPickCardHTML(item.data.top_favorite, 'favorite', 'Из вашего пула'));
-      topCardsAdded++;
     }
-
     if (item.data.top_winrate) {
       topRow.appendChild(createTopPickCardHTML(item.data.top_winrate, 'winrate', 'Самый высокий винрейт'));
-      topCardsAdded++;
     }
+    groupDiv.appendChild(topRow);
 
-    if (topCardsAdded > 0) {
-      groupDiv.appendChild(topRow);
-    }
-
-    // --- Ещё подходящие герои ---
     const others = item.data.others || [];
-
     if (others.length > 0) {
       const othersTitle = document.createElement('div');
       othersTitle.className = 'other-picks-title';
@@ -232,14 +213,11 @@ function renderResults(results) {
 
       const grid = document.createElement('div');
       grid.className = 'hero-cards-grid';
-
-      others.forEach(hero => {
+      others.filter(h => h !== null).forEach(hero => {
         grid.appendChild(createHeroCardHTML(hero));
       });
-
       groupDiv.appendChild(grid);
     }
-
     resultsContainer.appendChild(groupDiv);
   });
 }
@@ -247,8 +225,6 @@ function renderResults(results) {
 function createTopPickCardHTML(hero, type, label) {
   const card = document.createElement('div');
   card.className = `top-pick-card ${type}`;
-
-  // Определяем цвет и знак для преимущества (Advantage)
   const advClass = hero.advantage >= 0 ? 'val-green' : 'accent-red';
   const advSign = hero.advantage >= 0 ? '+' : '';
 
@@ -261,15 +237,12 @@ function createTopPickCardHTML(hero, type, label) {
       Контрпик: <span class="${advClass}" style="font-weight: bold;">${advSign}${hero.advantage}%</span>
     </div>
   `;
-
   return card;
 }
 
 function createHeroCardHTML(hero) {
   const card = document.createElement('div');
   card.className = 'result-hero-card';
-
-  // Цвет для Advantage: зеленый если +, красный если -
   const advClass = hero.advantage >= 0 ? 'val-green' : 'accent-red';
   const advSign = hero.advantage >= 0 ? '+' : '';
 
@@ -288,15 +261,7 @@ function clearInputs() {
     'my-pos1', 'my-pos2', 'my-pos3', 'my-pos4', 'my-pos5',
     'enemy-1', 'enemy-2', 'enemy-3', 'enemy-4', 'enemy-5'
   ];
-  
-  inputIds.forEach(id => {
-    const input = document.getElementById(id);
-    if (input) {
-      input.value = '';
-      input.dispatchEvent(new Event('input'));
-    }
-  });
-  
+  inputIds.forEach(id => clearSingleInput(id));
   document.getElementById('results-container').innerHTML = '';
 }
 
