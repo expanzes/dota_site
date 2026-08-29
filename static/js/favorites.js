@@ -103,6 +103,7 @@ async function saveFavorites() {
 
     if (response.ok) {
       closeFavModal();
+      updateGlobalBanList(); // <-- ДОБАВЬ ЭТУ СТРОЧКУ
       if (typeof loadUserProfile === 'function') {
         loadUserProfile();
       }
