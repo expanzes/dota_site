@@ -248,11 +248,18 @@ function createTopPickCardHTML(hero, type, label) {
   const card = document.createElement('div');
   card.className = `top-pick-card ${type}`;
 
+  // Определяем цвет и знак для преимущества (Advantage)
+  const advClass = hero.advantage >= 0 ? 'val-green' : 'accent-red';
+  const advSign = hero.advantage >= 0 ? '+' : '';
+
   card.innerHTML = `
     <div class="top-pick-label">${label}</div>
     <img src="${hero.img}" alt="${hero.name}">
     <div class="top-pick-hero-name">${hero.name}</div>
-    <div class="top-pick-hero-stats">Винрейт: <span class="val-green">${hero.winrate}%</span> (${hero.games} игр)</div>
+    <div class="top-pick-hero-stats">
+      Винрейт: <span class="val-green">${hero.winrate}%</span><br>
+      Контрпик: <span class="${advClass}" style="font-weight: bold;">${advSign}${hero.advantage}%</span>
+    </div>
   `;
 
   return card;
@@ -262,16 +269,17 @@ function createHeroCardHTML(hero) {
   const card = document.createElement('div');
   card.className = 'result-hero-card';
 
-  const statsMarkup = `Винрейт: <span class="val-green">${hero.winrate}%</span> (${hero.games} игр)`;
+  // Цвет для Advantage: зеленый если +, красный если -
+  const advClass = hero.advantage >= 0 ? 'val-green' : 'accent-red';
+  const advSign = hero.advantage >= 0 ? '+' : '';
 
   card.innerHTML = `
     <img src="${hero.img}" alt="${hero.name}">
     <div class="hero-info">
-      <span class="hero-name">${hero.name}</span>
-      <span class="hero-stats">${statsMarkup}</span>
+      <span class="hero-name">${hero.name} <span class="${advClass}" style="font-size: 0.75rem;">${advSign}${hero.advantage}%</span></span>
+      <span class="hero-stats">Итоговый WR: <span class="val-green">${hero.winrate}%</span></span>
     </div>
   `;
-
   return card;
 }
 
