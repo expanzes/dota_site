@@ -10,7 +10,7 @@ MATCHUP_CACHE = {}
 ROLES = {"pos1": "Поз 1 (Керри)", "pos2": "Поз 2 (Мид)", "pos3": "Поз 3 (Тройка)", "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"}
 
 # Герои, зависящие от иллюзий/клонов
-ILLUSION_HEROES = ["Naga Siren", "Phantom Lancer", "Terrorblade", "Chaos Knight", "Meepo"]
+ILLUSION_HEROES = ["Naga Siren", "Phantom Lancer", "Terrorblade", "Chaos Knight", "Meepo", "Broodmother"]
 # Герои, которые уничтожают иллюзии "в салат"
 ILLUSION_KILLERS = ["Axe", "Earthshaker", "Sven", "Leshrac", "Legion Commander", "Sand King"]
 
