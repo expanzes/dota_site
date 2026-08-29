@@ -1,62 +1,95 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dota 2 Helper</title><link rel="stylesheet" href="/static/css/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dota 2 Helper</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-    <div id="welcome-screen">
-        <div class="welcome-card">
-            <h1>Dota 2 Helper</h1><p>Анализ и персональные рекомендации</p>
-            <div class="btn-group">
-                <button class="btn-primary" onclick="openAuthModal()">Войти</button>
-                <button class="btn-secondary" onclick="enterAsGuest()">Гость</button>
-            </div>
+  <div id="welcome-screen">
+    <div class="welcome-card">
+      <h1>Dota 2 Helper</h1>
+      <p>Анализ пиков, контрпиков и персональные рекомендации</p>
+      <div class="btn-group">
+        <button class="btn-primary" onclick="openAuthModal()">Войти / Зарегистрироваться</button>
+        <button class="btn-secondary" onclick="enterAsGuest()">Войти как гость</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-app" class="hidden">
+    <header>
+      <div class="logo">Dota 2 Helper</div>
+      <div class="user-panel">
+        <button id="fav-btn" class="btn-fav hidden" onclick="openFavModal()">★ Любимые герои</button>
+        <span id="user-display-name" class="user-badge">Гость</span>
+        <button class="btn-logout" onclick="logout()">Выйти</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="draft-container">
+        <div class="team-box">
+          <h3 class="allies-title">Моя команда</h3>
+          <div class="inputs-grid">
+            <div class="input-field-group"><label>Поз 1 — Керри</label><div class="autocomplete-wrapper"><input type="text" id="my-pos1" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('my-pos1')">&times;</button></div></div>
+            <div class="input-field-group"><label>Поз 2 — Мид</label><div class="autocomplete-wrapper"><input type="text" id="my-pos2" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('my-pos2')">&times;</button></div></div>
+            <div class="input-field-group"><label>Поз 3 — Тройка</label><div class="autocomplete-wrapper"><input type="text" id="my-pos3" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('my-pos3')">&times;</button></div></div>
+            <div class="input-field-group"><label>Поз 4 — Четверка</label><div class="autocomplete-wrapper"><input type="text" id="my-pos4" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('my-pos4')">&times;</button></div></div>
+            <div class="input-field-group"><label>Поз 5 — Пятерка</label><div class="autocomplete-wrapper"><input type="text" id="my-pos5" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('my-pos5')">&times;</button></div></div>
+          </div>
         </div>
-    </div>
-    <div id="main-app" class="hidden">
-        <header>
-            <div class="logo">Dota 2 Helper</div>
-            <div class="user-panel">
-                <button id="fav-btn" class="btn-fav hidden" onclick="openFavModal()">★ Любимые герои</button>
-                <span id="user-display-name" class="user-badge">Гость</span>
-                <button class="btn-logout" onclick="logout()">Выйти</button>
-            </div>
-        </header>
-        <main>
-            <div id="personal-ban-section" class="personal-ban-config hidden">
-                <div style="text-align: center;">
-                    <h3>Ваш оптимальный бан-лист</h3><p>На основе любимых героев</p>
-                </div>
-                <div class="ban-slots-wrapper" id="global-ban-slots"></div>
-            </div>
-            <div class="draft-container">
-                <div class="team-box"><h3 class="allies-title">Моя команда</h3><div class="inputs-grid" id="allies-inputs"></div></div>
-                <div class="team-box"><h3 class="enemies-title">Враги</h3><div class="inputs-grid" id="enemies-inputs"></div></div>
-            </div>
-            <div class="actions-row">
-                <button class="btn-analyze" onclick="analyzeDraft()">Анализировать</button>
-                <button class="btn-clear" onclick="clearInputs()">Очистить</button>
-            </div>
-            <div id="results-container"></div>
-        </main>
-    </div>
-    <!-- Модалки -->
-    <div id="auth-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div class="auth-tabs"><button id="tab-login" class="active" onclick="switchAuthMode('login')">Вход</button><button id="tab-register" onclick="switchAuthMode('register')">Регистрация</button></div>
-            <div id="auth-error" class="alert-error hidden"></div>
-            <input type="text" id="auth-username" placeholder="Логин"><input type="password" id="auth-password" placeholder="Пароль">
-            <button class="btn-primary" onclick="submitAuth()">Ок</button><button onclick="closeAuthModal()">Отмена</button>
+
+        <div class="team-box">
+          <h3 class="enemies-title">Команда противника</h3>
+          <div class="inputs-grid">
+            <div class="input-field-group"><label>Враг 1</label><div class="autocomplete-wrapper"><input type="text" id="enemy-1" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('enemy-1')">&times;</button></div></div>
+            <div class="input-field-group"><label>Враг 2</label><div class="autocomplete-wrapper"><input type="text" id="enemy-2" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('enemy-2')">&times;</button></div></div>
+            <div class="input-field-group"><label>Враг 3</label><div class="autocomplete-wrapper"><input type="text" id="enemy-3" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('enemy-3')">&times;</button></div></div>
+            <div class="input-field-group"><label>Враг 4</label><div class="autocomplete-wrapper"><input type="text" id="enemy-4" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('enemy-4')">&times;</button></div></div>
+            <div class="input-field-group"><label>Враг 5</label><div class="autocomplete-wrapper"><input type="text" id="enemy-5" placeholder="Герой..."><button class="clear-input-btn" onclick="clearSingleInput('enemy-5')">&times;</button></div></div>
+          </div>
         </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn-analyze" onclick="analyzeDraft()">Проанализировать драфт</button>
+        <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+      </div>
+      <div id="results-container"></div>
+    </main>
+  </div>
+
+  <!-- Модалки -->
+  <div id="auth-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab active" onclick="switchAuthMode('login')">Вход</button>
+        <button id="tab-register" class="auth-tab" onclick="switchAuthMode('register')">Регистрация</button>
+      </div>
+      <div id="auth-error" class="alert-error hidden"></div>
+      <input type="text" id="auth-username" placeholder="Логин">
+      <input type="password" id="auth-password" placeholder="Пароль">
+      <button class="btn-primary" onclick="submitAuth()" style="width:100%; margin-top:10px;">Подтвердить</button>
+      <button class="btn-secondary" onclick="closeAuthModal()" style="width:100%; margin-top:5px;">Отмена</button>
     </div>
-    <div id="fav-modal" class="modal-overlay hidden">
-        <div class="modal-card modal-large">
-            <h3>Выберите любимых героев</h3><input type="text" id="fav-search-input" placeholder="Поиск..." oninput="filterFavHeroes()">
-            <div id="fav-heroes-container" class="fav-heroes-grid"></div>
-            <button class="btn-primary" onclick="saveFavorites()">Сохранить</button><button onclick="closeFavModal()">Закрыть</button>
-        </div>
+  </div>
+
+  <div id="fav-modal" class="modal-overlay hidden">
+    <div class="modal-card modal-large">
+      <h3>Ваши любимые герои</h3>
+      <input type="text" id="fav-search-input" placeholder="Поиск героя..." oninput="filterFavHeroes()">
+      <div id="fav-heroes-container" class="fav-heroes-grid"></div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+        <button class="btn-secondary" onclick="closeFavModal()">Отмена</button>
+        <button class="btn-primary" onclick="saveFavorites()">Сохранить</button>
+      </div>
     </div>
-    <script src="/static/js/auth.js"></script><script src="/static/js/favorites.js"></script><script src="/static/js/draft.js"></script>
+  </div>
+
+  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/favorites.js"></script>
+  <script src="/static/js/draft.js"></script>
 </body>
 </html>
