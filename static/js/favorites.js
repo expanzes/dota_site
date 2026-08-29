@@ -115,3 +115,50 @@ async function saveFavorites() {
     console.error('Ошибка сохранения любимых героев:', err);
   }
 }
+
+async function updateGlobalBanList() {
+    const section = document.getElementById('personal-ban-section');
+    const slotsContainer = document.getElementById('global-ban-slots');
+
+    if (!currentUser || selectedFavoriteIds.size === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+
+    try {
+        // Мы используем тот же эндпоинт analyze, но с пустым драфтом врага, 
+        // чтобы получить баны чисто под наш пул.
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                my_team: {},
+                enemy_team: [],
+                user_id: currentUser.user_id
+            })
+        });
+
+        const data = await response.json();
+        const bans = data.bans || [];
+
+        section.classList.remove('hidden');
+        slotsContainer.innerHTML = '';
+
+        // Рисуем 4 слота
+        for (let i = 0; i < 4; i++) {
+            const hero = bans[i];
+            const slot = document.createElement('div');
+            slot.className = `ban-slot ${hero ? 'active' : ''}`;
+            
+            if (hero) {
+                slot.innerHTML = `
+                    <img src="${hero.img}" title="${hero.name}">
+                    <div class="ban-slot-label">BAN</div>
+                `;
+            }
+            slotsContainer.appendChild(slot);
+        }
+    } catch (err) {
+        console.error("Ошибка при обновлении бан-листа:", err);
+    }
+}
