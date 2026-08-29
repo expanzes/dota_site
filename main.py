@@ -6,7 +6,6 @@ from routers import auth, draft
 
 app = FastAPI()
 
-# Запускаем проверку таблиц ОДИН РАЗ при старте приложения
 @app.on_event("startup")
 async def startup_event():
     auth.ensure_tables_exist()
@@ -21,9 +20,7 @@ STATIC_VERSION = os.getenv("RENDER_GIT_COMMIT", "dev")[:8]
 async def read_index():
     with open("static/index.html", "r", encoding="utf-8") as f:
         html = f.read()
-
     html = html.replace('/static/css/styles.css"', f'/static/css/styles.css?v={STATIC_VERSION}"')
-    for js_file in ["auth.js", "favorites.js", "draft.js"]:
-        html = html.replace(f'/static/js/{js_file}"', f'/static/js/{js_file}?v={STATIC_VERSION}"')
-    
+    for js in ["auth.js", "favorites.js", "draft.js"]:
+        html = html.replace(f'/static/js/{js}"', f'/static/js/{js}?v={STATIC_VERSION}"')
     return HTMLResponse(content=html)
