@@ -72,84 +72,69 @@ HERO_POSITIONS: Dict[str, List[int]] = {
     "Witch Doctor": [4, 5], "Wraith King": [1, 3], "Zeus": [2, 4],
 }
 
-LANE_SAFE = 1
-LANE_MID = 2
-LANE_OFF = 3
-
-LANE_FOR_POSITION: Dict[int, set] = {
-    1: {LANE_SAFE}, 2: {LANE_MID}, 3: {LANE_OFF},
-    4: {LANE_SAFE, LANE_OFF}, 5: {LANE_SAFE},
-}
+LANE_SAFE, LANE_MID, LANE_OFF = 1, 2, 3
+LANE_FOR_POSITION = {1: {LANE_SAFE}, 2: {LANE_MID}, 3: {LANE_OFF}, 4: {LANE_SAFE, LANE_OFF}, 5: {LANE_SAFE}}
 
 def positions_for_hero(hero_name: str, hero_id: int, lane_stats: Dict[int, Dict[int, int]]) -> List[int]:
-    base_positions = HERO_POSITIONS.get(hero_name, [1, 2, 3, 4, 5])
-    hero_lane_games = lane_stats.get(hero_id)
-    if not hero_lane_games: return base_positions
-    total_games = sum(hero_lane_games.values())
-    if total_games == 0: return base_positions
-    result = []
-    for pos in base_positions:
-        allowed_lanes = LANE_FOR_POSITION.get(pos, {LANE_SAFE, LANE_MID, LANE_OFF})
-        games_on_allowed_lanes = sum(hero_lane_games.get(l, 0) for l in allowed_lanes)
-        if (games_on_allowed_lanes / total_games) >= MIN_LANE_SHARE:
-            result.append(pos)
-    return result if result else base_positions
+    base = HERO_POSITIONS.get(hero_name, [1, 2, 3, 4, 5])
+    stats = lane_stats.get(hero_id)
+    if not stats or sum(stats.values()) == 0: return base
+    total = sum(stats.values())
+    res = [p for p in base if sum(stats.get(l, 0) for l in LANE_FOR_POSITION.get(p, {1, 2, 3})) / total >= MIN_LANE_SHARE]
+    return res if res else base
 
-async def get_heroes_cache() -> List[dict]:
+async def get_heroes_cache():
     global HEROES_CACHE
     if HEROES_CACHE: return HEROES_CACHE
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get("https://api.opendota.com/api/heroes")
-            if response.status_code == 200:
-                data = response.json()
-                HEROES_CACHE = [{"id": h["id"], "name": h["localized_name"], "img": f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png"} for h in data]
+            r = await client.get("https://api.opendota.com/api/heroes")
+            if r.status_code == 200:
+                HEROES_CACHE = [{"id": h["id"], "name": h["localized_name"], "img": f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png"} for h in r.json()]
                 return HEROES_CACHE
     except: pass
     return FALLBACK_HEROES
 
-async def get_hero_stats_cache() -> List[dict]:
+async def get_hero_stats_cache():
     global HERO_STATS_CACHE
     if HERO_STATS_CACHE: return HERO_STATS_CACHE
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get("https://api.opendota.com/api/heroStats")
-            if response.status_code == 200:
-                HERO_STATS_CACHE = response.json()
+            r = await client.get("https://api.opendota.com/api/heroStats")
+            if r.status_code == 200:
+                HERO_STATS_CACHE = r.json()
                 return HERO_STATS_CACHE
     except: pass
     return []
 
-async def get_lane_roles_cache() -> Dict[int, Dict[int, int]]:
+async def get_lane_roles_cache():
     global LANE_ROLES_CACHE
     if LANE_ROLES_CACHE: return LANE_ROLES_CACHE
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            response = await client.get("https://api.opendota.com/api/scenarios/laneRoles")
-            if response.status_code == 200:
-                raw_rows = response.json()
-                aggregated: Dict[int, Dict[int, int]] = {}
-                for row in raw_rows:
-                    hero_id, lane_role, games = row.get("hero_id"), row.get("lane_role"), row.get("games", 0) or 0
-                    if hero_id is None or lane_role is None: continue
-                    aggregated.setdefault(hero_id, {})[lane_role] = aggregated[hero_id].get(lane_role, 0) + games
-                LANE_ROLES_CACHE = aggregated
-                return LANE_ROLES_CACHE
+            r = await client.get("https://api.opendota.com/api/scenarios/laneRoles")
+            if r.status_code == 200:
+                agg = {}
+                for row in r.json():
+                    h_id, l_r, g = row.get("hero_id"), row.get("lane_role"), row.get("games", 0) or 0
+                    if h_id and l_r: agg.setdefault(h_id, {})[l_r] = agg[h_id].get(l_r, 0) + g
+                LANE_ROLES_CACHE = agg
+                return agg
     except: pass
     return {}
 
-async def get_matchups(hero_id: int) -> List[dict]:
+async def get_matchups(hero_id: int):
     if hero_id in MATCHUP_CACHE: return MATCHUP_CACHE[hero_id]
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get(f"https://api.opendota.com/api/heroes/{hero_id}/matchups")
-            if response.status_code == 200:
-                MATCHUP_CACHE[hero_id] = response.json()
+            r = await client.get(f"https://api.opendota.com/api/heroes/{hero_id}/matchups")
+            if r.status_code == 200:
+                MATCHUP_CACHE[hero_id] = r.json()
                 return MATCHUP_CACHE[hero_id]
     except: pass
     return []
 
-def get_user_favorite_ids(user_id: Optional[str]) -> List[int]:
+def get_user_favorite_ids(user_id: Optional[str]):
     if not user_id: return []
     try:
         with get_db_connection() as conn:
@@ -160,78 +145,108 @@ def get_user_favorite_ids(user_id: Optional[str]) -> List[int]:
     except: return []
 
 @router.get("/heroes")
-async def get_heroes():
-    return await get_heroes_cache()
+async def get_heroes(): return await get_heroes_cache()
 
 class DraftRequest(BaseModel):
     my_team: Dict[str, str]
     enemy_team: List[str]
     user_id: Optional[str] = None
 
-def format_hero(candidate: Optional[dict]) -> Optional[dict]:
-    if not candidate: return None
-    return {"name": candidate["name"], "winrate": candidate["winrate"], "games": candidate["games"], "img": candidate["img"]}
-
-def build_recommendation_pool_for_position(all_candidates: List[dict], pos_num: int, favorite_ids: List[int], lane_stats: Dict[int, Dict[int, int]]) -> dict:
-    eligible = [c for c in all_candidates if pos_num in positions_for_hero(c["name"], c["id"], lane_stats)]
-    pool_source = eligible if eligible else all_candidates
-    reliable = [c for c in pool_source if c["games"] >= MIN_GAMES_FOR_RANK]
-    pool = reliable if reliable else pool_source
-    ranked = sorted(pool, key=lambda c: -c["winrate"])
-    used_ids = set()
-    def take_first(lst):
-        for c in lst:
-            if c["id"] not in used_ids:
-                used_ids.add(c["id"])
-                return c
-        return None
-    top_winrate = take_first(ranked)
-    top_fav = take_first([c for c in ranked if c["id"] in favorite_ids]) if favorite_ids else None
-    others = [c for c in ranked if c["id"] not in used_ids][:OTHERS_COUNT]
-    return {"top_favorite": format_hero(top_fav), "top_winrate": format_hero(top_winrate), "others": [format_hero(c) for c in others]}
+def format_hero(candidate: dict):
+    return {
+        "name": candidate["name"],
+        "winrate": candidate["winrate"],
+        "advantage": candidate["advantage"], # Добавили поле преимущества
+        "games": candidate["games"],
+        "img": candidate["img"]
+    }
 
 @router.post("/analyze")
 async def analyze_draft(payload: DraftRequest):
     heroes_list = await get_heroes_cache()
     hero_stats = await get_hero_stats_cache()
     lane_stats = await get_lane_roles_cache()
+    
     name_to_id = {h["name"].lower(): h["id"] for h in heroes_list}
     id_to_name = {h["id"]: h["name"] for h in heroes_list}
-    picked_names = {v.lower() for v in payload.my_team.values() if v} | {n.lower() for n in payload.enemy_team}
+    picked = {v.lower() for v in payload.my_team.values() if v} | {n.lower() for n in payload.enemy_team}
+    
     base_wr, base_gm = {}, {}
     for hs in hero_stats:
         name = hs.get("localized_name")
         if not name: continue
         tp = sum(hs.get(f"{i}_pick", 0) or 0 for i in range(1, 9))
         tw = sum(hs.get(f"{i}_win", 0) or 0 for i in range(1, 9))
-        base_wr[name], base_gm[name] = (tw/tp*100 if tp else 0), tp
+        base_wr[name] = (tw / tp * 100) if tp else 50
+        base_gm[name] = tp
+
     enemy_ids = [name_to_id[n.lower()] for n in payload.enemy_team if n.lower() in name_to_id]
     matchups_data = await asyncio.gather(*(get_matchups(eid) for eid in enemy_ids))
-    counters = {}
+    
+    # Считаем суммарный Advantage для каждого возможного героя
+    hero_advantages = {} # name -> sum_advantage
     for matchups in matchups_data:
         for m in matchups:
             games = m.get("games_played", 0)
             if games < MIN_GAMES_FOR_MATCHUP: continue
             c_name = id_to_name.get(m.get("hero_id"))
-            if not c_name: continue
-            c_wr = 100 - (m.get("wins", 0) / games * 100)
-            entry = counters.setdefault(c_name, [0.0, 0.0])
-            entry[0] += c_wr * games
-            entry[1] += games
+            if not c_name or c_name.lower() in picked: continue
+            
+            # Винрейт кандидата конкретно в этом матчапе
+            wr_vs_enemy = 100 - (m.get("wins", 0) / games * 100)
+            # Advantage = (Винрейт в матчапе) - (Средний винрейт)
+            adv = wr_vs_enemy - base_wr.get(c_name, 50)
+            
+            hero_advantages.setdefault(c_name, []).append(adv)
+
     all_candidates = []
     for h in heroes_list:
         name = h["name"]
-        if name.lower() in picked_names: continue
-        base, games = base_wr.get(name, 50), base_gm.get(name, 0)
-        if name in counters and counters[name][1] > 0:
-            c_wr = counters[name][0] / counters[name][1]
-            w = min(len(enemy_ids)/5, 1.0) * 0.7
-            final_wr = c_wr * w + base * (1-w)
-        else: final_wr = base
-        all_candidates.append({"id": h["id"], "name": name, "img": h["img"], "winrate": round(final_wr, 1), "games": games})
+        if name.lower() in picked: continue
+        
+        avg_wr = base_wr.get(name, 50)
+        # Итоговый бонус — это среднее арифметическое преимуществ против всех врагов
+        adv_list = hero_advantages.get(name, [0])
+        total_adv = sum(adv_list) / len(adv_list) if adv_list else 0
+        
+        # Итоговый "драфт-винрейт" для сортировки
+        final_score = avg_wr + total_adv
+
+        all_candidates.append({
+            "id": h["id"],
+            "name": name,
+            "img": h["img"],
+            "winrate": round(final_score, 1),
+            "advantage": round(total_adv, 1), # Сохраняем чистое преимущество
+            "games": base_gm.get(name, 0)
+        })
+
     fav_ids = get_user_favorite_ids(payload.user_id)
     results = []
     for r_k, r_t in ROLES.items():
         if payload.my_team.get(r_k): continue
-        results.append({"role": r_t, "data": build_recommendation_pool_for_position(all_candidates, int(r_k[-1]), fav_ids, lane_stats)})
+        
+        # Фильтруем кандидатов по позиции
+        eligible = [c for c in all_candidates if int(r_k[-1]) in positions_for_hero(c["name"], c["id"], lane_stats)]
+        pool = [c for c in eligible if c["games"] >= MIN_GAMES_FOR_RANK] or eligible
+        
+        # Сортируем по итоговому скору (винрейт + преимущество)
+        ranked = sorted(pool, key=lambda c: -c["winrate"])
+        
+        used = set()
+        def pick(lst):
+            for c in lst:
+                if c["id"] not in used: 
+                    used.add(c["id"])
+                    return format_hero(c)
+            return None
+
+        results.append({
+            "role": r_t,
+            "data": {
+                "top_favorite": pick([c for c in ranked if c["id"] in fav_ids]),
+                "top_winrate": pick(ranked),
+                "others": [pick(ranked) for _ in range(OTHERS_COUNT)]
+            }
+        })
     return {"results": results}
