@@ -31,18 +31,3 @@ async function saveFavorites() {
     closeFavModal();
     updateGlobalBanList();
 }
-async function updateGlobalBanList() {
-    const res = await fetch(`/api/global-bans?user_id=${currentUser.user_id}`);
-    const data = await res.json();
-    const container = document.getElementById('global-ban-slots');
-    const section = document.getElementById('personal-ban-section');
-    if (!data.bans.length) return section.classList.add('hidden');
-    section.classList.remove('hidden');
-    container.innerHTML = "";
-    data.bans.forEach(h => {
-        const div = document.createElement('div');
-        div.className = 'ban-slot active';
-        div.innerHTML = `<img src="${h.img}"><div class="ban-slot-label">BAN</div>`;
-        container.appendChild(div);
-    });
-}
