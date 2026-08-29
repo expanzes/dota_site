@@ -6,9 +6,7 @@ from routers.auth import get_db_connection
 
 router = APIRouter()
 
-# Кэш для ускорения работы
-HEROES_CACHE = []
-HERO_STATS_CACHE = []
+# Кэш матчапов
 MATCHUP_CACHE = {}
 
 ROLES = {
@@ -16,36 +14,16 @@ ROLES = {
     "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"
 }
 
-# Расширенная карта позиций (Актуальная мета)
+# Актуальная мета позиций (включая Largo и Slardar как разных героев)
 HERO_POSITIONS = {
-    "Abaddon": [3, 4, 5], "Alchemist": [1, 2], "Ancient Apparition": [4, 5], "Anti-Mage": [1],
-    "Arc Warden": [1, 2], "Axe": [3], "Bane": [5], "Batrider": [2, 3, 4], "Beastmaster": [3],
-    "Bloodseeker": [1, 2], "Bounty Hunter": [4], "Brewmaster": [3], "Bristleback": [3],
-    "Broodmother": [1, 2, 3], "Centaur Warrunner": [3], "Chaos Knight": [1, 3], "Chen": [5],
-    "Clinkz": [1, 2, 4], "Clockwerk": [4], "Crystal Maiden": [5], "Dark Seer": [3],
-    "Dark Willow": [4, 5], "Dawnbreaker": [3, 4], "Dazzle": [5], "Death Prophet": [2, 3],
-    "Disruptor": [5], "Doom": [3], "Dragon Knight": [2, 3], "Drow Ranger": [1], "Earth Spirit": [4],
-    "Earthshaker": [4], "Elder Titan": [4, 5], "Ember Spirit": [2], "Enchantress": [4, 5],
-    "Enigma": [3, 4], "Faceless Void": [1], "Grimstroke": [4, 5], "Gyrocopter": [1, 4],
-    "Hoodwink": [4], "Huskar": [2], "Invoker": [2], "Io": [5], "Jakiro": [5],
-    "Juggernaut": [1], "Keeper of the Light": [2, 4], "Kez": [1, 2], "Kunkka": [2, 3],
-    "Legion Commander": [3], "Leshrac": [2], "Lich": [5], "Lifestealer": [1], "Lina": [2, 4],
-    "Lion": [4, 5], "Luna": [1], "Lycan": [3], "Magnus": [2, 3], "Marci": [4],
-    "Mars": [3], "Medusa": [1], "Meepo": [1, 2], "Mirana": [4], "Monkey King": [1, 2],
-    "Morphling": [1], "Muerta": [1], "Naga Siren": [1], "Nature's Prophet": [2, 3, 4],
-    "Necrophos": [2, 3], "Night Stalker": [3], "Nyx Assassin": [4], "Ogre Magi": [5],
-    "Omniknight": [3, 5], "Oracle": [5], "Outworld Destroyer": [2], "Pangolier": [2, 3],
-    "Phantom Assassin": [1], "Phantom Lancer": [1], "Primal Beast": [2, 3], "Puck": [2],
-    "Pudge": [1, 3, 4], "Pugna": [2, 4, 5], "Queen of Pain": [2], "Razor": [1, 3],
-    "Riki": [1], "Ringmaster": [4, 5], "Rubick": [4], "Sand King": [3], "Shadow Demon": [5],
-    "Shadow Fiend": [1, 2], "Shadow Shaman": [5], "Silencer": [4, 5], "Skywrath Mage": [4, 5],
-    "Slardar": [3], "Slark": [1], "Snapfire": [2, 4], "Sniper": [1, 2], "Spectre": [1],
-    "Spirit Breaker": [4], "Storm Spirit": [2], "Sven": [1], "Techies": [4], "Templar Assassin": [1, 2],
-    "Terrorblade": [1], "Tidehunter": [3], "Timbersaw": [2, 3], "Tinker": [2, 4], "Tiny": [2, 4],
-    "Treant Protector": [5], "Troll Warlord": [1], "Tusk": [4], "Underlord": [3], "Undying": [5],
-    "Ursa": [1], "Vengeful Spirit": [4, 5], "Venomancer": [3, 4, 5], "Viper": [2, 3],
-    "Visage": [2, 3], "Void Spirit": [2], "Warlock": [5], "Weaver": [1, 4], "Windranger": [2, 4],
-    "Winter Wyvern": [5], "Witch Doctor": [5], "Wraith King": [1, 3], "Zeus": [2, 4]
+    "Largo": [3, 4, 5], "Slardar": [3], "Anti-Mage": [1], "Axe": [3], 
+    "Invoker": [2], "Pudge": [1, 3, 4, 5], "Naga Siren": [1], "Monkey King": [1, 2],
+    "Ember Spirit": [2], "Juggernaut": [1], "Slark": [1], "Tidehunter": [3],
+    "Ancient Apparition": [4, 5], "Bloodseeker": [1, 2], "Bane": [5], "Crystal Maiden": [5],
+    "Shadow Fiend": [1, 2], "Lone Druid": [1, 2, 3], "Dark Willow": [4, 5], "Disruptor": [5],
+    "Ember Spirit": [2], "Io": [4, 5], "Hoodwink": [4], "Mirana": [4],
+    # Если героя нет в списке, система позволит ему быть на любой позиции, 
+    # но для точности лучше расширять этот список.
 }
 
 async def get_matchups_data(hero_id: int):
@@ -85,78 +63,85 @@ async def heroes_endpoint():
 async def analyze_perfect(payload: DraftRequest):
     try:
         async with httpx.AsyncClient() as c:
-            h_res, s_res = await asyncio.gather(c.get("https://api.opendota.com/api/heroes"), c.get("https://api.opendota.com/api/heroStats"))
+            h_res, s_res = await asyncio.gather(
+                c.get("https://api.opendota.com/api/heroes"), 
+                c.get("https://api.opendota.com/api/heroStats")
+            )
         
         h_list = h_res.json()
         h_stats = s_res.json()
         
+        # Словари для поиска по Localized Name (гарантия разделения Largo и Slardar)
         id_to_name = {h["id"]: h["localized_name"] for h in h_list}
         name_to_id = {h["localized_name"].lower(): h["id"] for h in h_list}
         img_map = {h["localized_name"]: f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png" for h in h_list}
         
         picked = {v.lower() for v in payload.my_team.values() if v} | {n.lower() for n in payload.enemy_team}
         
-        # 1. Immortal Winrate
+        # 1. Определение базового винрейта (Divine/Immortal)
         base_wr = {}
         for hs in h_stats:
-            p = hs.get("8_pick", 0) # 8 rank = Immortal
+            name = hs.get("localized_name")
+            p = hs.get("8_pick", 0) # Immortal rank
             w = hs.get("8_win", 0)
-            base_wr[hs["localized_name"]] = (w/p*100) if p > 30 else (hs.get("7_win", 1)/hs.get("7_pick", 1)*100)
+            if name:
+                base_wr[name] = (w/p*100) if p > 30 else (hs.get("7_win", 1)/hs.get("7_pick", 1)*100)
 
-        # 2. Matchup Data
+        # 2. Сбор данных о матчапах
         enemy_ids = [name_to_id[n.lower()] for n in payload.enemy_team if n.lower() in name_to_id]
-        ally_ids = [name_to_id[n.lower()] for n in payload.my_team.values() if n and n.lower() in name_to_id]
+        enemies_matchups = await asyncio.gather(*(get_matchups_data(eid) for eid in enemy_ids))
 
-        enemies_results = await asyncio.gather(*(get_matchups_data(eid) for eid in enemy_ids))
-        allies_results = await asyncio.gather(*(get_matchups_data(aid) for aid in ally_ids))
-
-        # 3. Processing
-        hero_scores = []
+        hero_final_stats = []
         for h in h_list:
             name = h["localized_name"]
             if name.lower() in picked: continue
             
-            # Counter Score
-            c_score = 0
+            # Считаем преимущество (Advantage) против каждого врага
+            enemy_advs = []
             is_hard_countered = False
-            for m_list in enemies_results:
+            
+            for m_list in enemies_matchups:
                 for m in m_list:
                     if m["hero_id"] == h["id"] and m["games_played"] > 10:
+                        # Advantage = (WR в матчапе) - (Средний WR)
                         adv = (100 - (m["wins"]/m["games_played"]*100)) - base_wr.get(name, 50)
-                        if adv < -5.5: 
-                            c_score += adv * 3.0 # Критический штраф
-                            is_hard_countered = True
-                        else: c_score += adv
+                        
+                        # Детектор хард-контрпика
+                        if adv < -6.5: is_hard_countered = True
+                        
+                        # Взвешиваем преимущество (отрицательное важнее для выживаемости)
+                        enemy_advs.append(adv if adv > 0 else adv * 2.0)
 
-            # Synergy Score
-            s_score = 0
-            for m_list in allies_results:
-                for m in m_list:
-                    if m["hero_id"] == h["id"] and m["games_played"] > 10:
-                        adv = (100 - (m["wins"]/m["games_played"]*100)) - base_wr.get(name, 50)
-                        s_score += adv * 0.7 # Синергия важна, но вторична
+            # МАТЕМАТИЧЕСКИЙ ФИКС: Берем СРЕДНЕЕ преимущество, а не сумму
+            avg_adv = sum(enemy_advs) / len(enemy_advs) if enemy_advs else 0
+            
+            final_wr = base_wr.get(name, 50) + avg_adv
+            
+            # Штраф за "неиграбельность" против хард-контрпика
+            if is_hard_countered: final_wr -= 10.0
+            
+            # Жесткий программный лимит винрейта
+            final_wr = max(5.0, min(95.0, final_wr))
 
-            final_wr = base_wr.get(name, 50) + c_score + s_score
-            if is_hard_countered: final_wr -= 12 # Доп штраф за "неиграбельность"
-
-            hero_scores.append({
+            hero_final_stats.append({
                 "id": h["id"], "name": name, "img": img_map.get(name),
                 "winrate": round(final_wr, 1),
-                "advantage": round(c_score + s_score, 1)
+                "advantage": round(avg_adv, 1)
             })
 
-        # 4. Results by Position
+        # 3. Подбор по ролям
         fav_ids = get_db_favs(payload.user_id) if payload.user_id else []
         final_results = []
         for r_k, r_t in ROLES.items():
             if payload.my_team.get(r_k): continue
             
             pos = int(r_k[-1])
-            eligible = [c for c in hero_scores if pos in HERO_POSITIONS.get(c["name"], [1,2,3,4,5])]
+            # Фильтрация по мете позиций
+            eligible = [c for c in hero_final_stats if pos in HERO_POSITIONS.get(c["name"], [1,2,3,4,5])]
             ranked = sorted(eligible, key=lambda x: -x["winrate"])
             
             used = set()
-            def pick(lst):
+            def pick_hero(lst):
                 for c in lst:
                     if c["id"] not in used:
                         used.add(c["id"])
@@ -166,9 +151,9 @@ async def analyze_perfect(payload: DraftRequest):
             final_results.append({
                 "role": r_t,
                 "data": {
-                    "top_favorite": pick([c for c in ranked if c["id"] in fav_ids]),
-                    "top_winrate": pick(ranked),
-                    "others": [pick(ranked) for _ in range(3)]
+                    "top_favorite": pick_hero([c for c in ranked if c["id"] in fav_ids]),
+                    "top_winrate": pick_hero(ranked),
+                    "others": [pick_hero(ranked) for _ in range(3)]
                 }
             })
         return {"results": final_results}
