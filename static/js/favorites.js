@@ -121,45 +121,33 @@ async function updateGlobalBanList() {
     const section = document.getElementById('personal-ban-section');
     const slotsContainer = document.getElementById('global-ban-slots');
 
-    if (!currentUser || selectedFavoriteIds.size === 0) {
+    const user = currentUser || JSON.parse(localStorage.getItem('dota_user'));
+    if (!user || !user.user_id) {
         section.classList.add('hidden');
         return;
     }
 
     try {
-        // Мы используем тот же эндпоинт analyze, но с пустым драфтом врага, 
-        // чтобы получить баны чисто под наш пул.
-        const response = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                my_team: {},
-                enemy_team: [],
-                user_id: currentUser.user_id
-            })
-        });
+        const response = await fetch(`/api/global-bans?user_id=${user.user_id}`);
+        if (!response.ok) return;
 
         const data = await response.json();
         const bans = data.bans || [];
 
-        section.classList.remove('hidden');
-        slotsContainer.innerHTML = '';
-
-        // Рисуем 4 слота
-        for (let i = 0; i < 4; i++) {
-            const hero = bans[i];
-            const slot = document.createElement('div');
-            slot.className = `ban-slot ${hero ? 'active' : ''}`;
-            
-            if (hero) {
-                slot.innerHTML = `
-                    <img src="${hero.img}" title="${hero.name}">
-                    <div class="ban-slot-label">BAN</div>
-                `;
+        if (bans.length > 0) {
+            section.classList.remove('hidden');
+            slotsContainer.innerHTML = '';
+            bans.forEach(hero => {
+                const slot = document.createElement('div');
+                slot.className = 'ban-slot active';
+                slot.innerHTML = `<img src="${hero.img}" title="${hero.name}"><div class="ban-slot-label">BAN</div>`;
+                slotsContainer.appendChild(slot);
+            });
+            for (let i = bans.length; i < 4; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'ban-slot';
+                slotsContainer.appendChild(empty);
             }
-            slotsContainer.appendChild(slot);
         }
-    } catch (err) {
-        console.error("Ошибка при обновлении бан-листа:", err);
-    }
+    } catch (err) { console.error(err); }
 }
