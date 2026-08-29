@@ -141,8 +141,9 @@ function renderResults(results) {
     const topRow = document.createElement('div');
     topRow.className = 'top-picks-row';
     
-    if (item.data.top_favorite) topRow.appendChild(createCard(item.data.top_favorite, 'favorite', 'Твой выбор'));
-    if (item.data.top_winrate) topRow.appendChild(createCard(item.data.top_winrate, 'winrate', 'Лучший шанс'));
+    // ОБНОВЛЕННЫЕ ЗАГОЛОВКИ ПЛАШЕК
+    if (item.data.top_favorite) topRow.appendChild(createCard(item.data.top_favorite, 'favorite', 'ИЗ ВАШЕГО ПУЛА'));
+    if (item.data.top_winrate) topRow.appendChild(createCard(item.data.top_winrate, 'winrate', 'ЛУЧШИЙ ВАРИАНТ'));
     section.appendChild(topRow);
 
     const grid = document.createElement('div');
