@@ -512,5 +512,63 @@ input[type="text"]:focus, input[type="password"]:focus {
   z-index: 5;
 }
 
+/* Персональный бан-лист в стиле Dota 2 */
+.personal-ban-config {
+  background: linear-gradient(180deg, #1b1e26 0%, #12151e 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.ban-slots-wrapper {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.ban-slot {
+  width: 100px;
+  height: 60px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px dashed #444;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.ban-slot.active {
+  border: 2px solid var(--accent-red);
+  box-shadow: 0 0 15px rgba(244, 63, 94, 0.2);
+}
+
+.ban-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(0.5) sepia(0.5) hue-rotate(-50deg); /* Эффект красного бана */
+}
+
+.ban-slot-label {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: rgba(244, 63, 94, 0.8);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: bold;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 2px 0;
+}
+
 .clear-input-btn:hover { color: var(--accent-red); }
 .autocomplete-wrapper input:not(:placeholder-shown) ~ .clear-input-btn { display: block; }
