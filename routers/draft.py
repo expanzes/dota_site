@@ -7,13 +7,13 @@ from routers.auth import get_db_connection
 router = APIRouter()
 MATCHUP_CACHE = {}
 
-ROLES = {
-    "pos1": "Поз 1 (Керри)", "pos2": "Поз 2 (Мид)", "pos3": "Поз 3 (Тройка)", 
-    "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"
-}
+ROLES = {"pos1": "Поз 1 (Керри)", "pos2": "Поз 2 (Мид)", "pos3": "Поз 3 (Тройка)", "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"}
 
-# --- ПОЛНАЯ БАЗА ТЕГОВ (127 ГЕРОЕВ) ---
-# [Контроль, Стойкость, Инициация, Урон, Осада, Побег] (0-3)
+# Герои, зависящие от иллюзий/клонов
+ILLUSION_HEROES = ["Naga Siren", "Phantom Lancer", "Terrorblade", "Chaos Knight", "Meepo"]
+# Герои, которые уничтожают иллюзии "в салат"
+ILLUSION_KILLERS = ["Axe", "Earthshaker", "Sven", "Leshrac", "Legion Commander", "Sand King"]
+
 HERO_TAGS = {
     "Abaddon": [1,3,1,1,1,1], "Alchemist": [1,2,1,2,3,1], "Ancient Apparition": [1,0,0,3,0,0], "Anti-Mage": [0,1,0,2,2,3],
     "Arc Warden": [1,1,0,3,3,1], "Axe": [3,3,3,1,0,0], "Bane": [3,1,0,2,0,1], "Batrider": [3,1,3,2,0,2],
@@ -49,9 +49,8 @@ HERO_TAGS = {
     "Wraith King": [2,3,1,2,2,1], "Zeus": [1,0,0,3,0,0], "Largo": [1,3,2,1,0,1]
 }
 
-# --- ПОЛНАЯ КАРТА ПОЗИЦИЙ (127 ГЕРОЕВ) ---
 HERO_POSITIONS = {
-    "Anti-Mage": [1], "Alchemist": [1, 2], "Arc Warden": [1, 2], "Bloodseeker": [1, 2], "Chaos Knight": [1],
+    "Anti-Mage": [1], "Arc Warden": [1, 2], "Bloodseeker": [1, 2], "Chaos Knight": [1],
     "Clinkz": [1, 2], "Drow Ranger": [1], "Faceless Void": [1], "Gyrocopter": [1], "Juggernaut": [1],
     "Kez": [1, 2], "Lifestealer": [1], "Lone Druid": [1, 2, 3], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
     "Morphling": [1, 2], "Muerta": [1], "Naga Siren": [1], "Nature's Prophet": [1, 2, 3, 4], "Phantom Assassin": [1],
@@ -123,19 +122,25 @@ async def analyze_perfect(payload: DraftRequest):
         img_map = {h["localized_name"]: f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png" for h in h_list}
         picked = {v.lower() for v in payload.my_team.values() if v} | {n.lower() for n in payload.enemy_team}
 
+        # 1. Анализ баланса текущей команды
         team_tags = [0, 0, 0, 0, 0, 0]
         for ally in payload.my_team.values():
             if ally and ally in HERO_TAGS:
                 for i in range(6): team_tags[i] += HERO_TAGS[ally][i]
 
+        # 2. Immortal Winrate
         base_wr = {}
         for hs in h_stats:
             p, w = hs.get("8_pick", 0), hs.get("8_win", 0)
             name = hs.get("localized_name")
             if name: base_wr[name] = (w/p*100) if p > 35 else (hs.get("7_win", 1)/hs.get("7_pick", 1)*100)
 
+        # 3. Анализ контрпиков врага
         enemy_ids = [name_to_id[n.lower()] for n in payload.enemy_team if n.lower() in name_to_id]
         enemies_results = await asyncio.gather(*(get_matchups_data(eid) for eid in enemy_ids))
+
+        # Составляем список убийц иллюзий в текущем пике врага
+        enemy_has_illusion_killer = any(en_name.title() in ILLUSION_KILLERS for en_name in payload.enemy_team)
 
         hero_final_stats = []
         for h in h_list:
@@ -143,16 +148,28 @@ async def analyze_perfect(payload: DraftRequest):
             if name.lower() in picked: continue
             
             enemy_advs = []
-            is_hard_countered = False
+            worst_matchup = 0
+            
             for m_list in enemies_results:
                 for m in m_list:
                     if m["hero_id"] == h["id"] and m["games_played"] > 10:
                         adv = (100 - (m["wins"]/m["games_played"]*100)) - base_wr.get(name, 50)
-                        if adv < -6.5: is_hard_countered = True
-                        enemy_advs.append(adv if adv > 0 else adv * 2.5)
+                        penalty_multiplier = 3.5 if adv < 0 else 1.0
+                        score = adv * penalty_multiplier
+                        enemy_advs.append(score)
+                        if score < worst_matchup: worst_matchup = score
 
+            # ГЛАВНЫЙ ФИКС: Если враг контрит нас, это весит 50% всего рейтинга
             avg_adv = sum(enemy_advs) / len(enemy_advs) if enemy_advs else 0
+            # Мы смешиваем среднее значение и самое худшее, чтобы один Axe мог "убить" рейтинг Наги
+            counter_rating = (avg_adv * 0.4) + (worst_matchup * 0.6)
             
+            # Дополнительный "механический" штраф за иллюзии против Axe/ES/Sven
+            illusion_penalty = 0
+            if name in ILLUSION_HEROES and enemy_has_illusion_killer:
+                illusion_penalty = -25.0 # Это гарантированно выкинет Нагу из топа
+
+            # 4. Бонус за баланс состава
             role_bonus = 0
             if name in HERO_TAGS:
                 h_t = HERO_TAGS[name]
@@ -161,20 +178,18 @@ async def analyze_perfect(payload: DraftRequest):
                 if team_tags[2] < 4: role_bonus += h_t[2] * 2.0 
                 if team_tags[4] < 3: role_bonus += h_t[4] * 1.5 
 
-            final_wr = base_wr.get(name, 50) + avg_adv + role_bonus
-            if is_hard_countered: final_wr -= 12.0
+            final_wr = base_wr.get(name, 50) + counter_rating + role_bonus + illusion_penalty
             
+            # Клэмп 5-95%
             final_wr = max(5.0, min(95.0, final_wr))
-            hero_final_stats.append({"id": h["id"], "name": name, "img": img_map.get(name), "winrate": round(final_wr, 1), "advantage": round(avg_adv, 1)})
+            hero_final_stats.append({"id": h["id"], "name": name, "img": img_map.get(name), "winrate": round(final_wr, 1), "advantage": round(counter_rating, 1)})
 
         fav_ids = get_db_favs(payload.user_id) if payload.user_id else []
         final_results = []
         for r_k, r_t in ROLES.items():
             if payload.my_team.get(r_k): continue
-            
             pos = int(r_k[-1])
             eligible = [c for c in hero_final_stats if pos in HERO_POSITIONS.get(c["name"], [])]
-            # СОРТИРОВКА: теперь мы берем АБСОЛЮТНО ЛУЧШЕГО героя для "Лучший шанс"
             ranked = sorted(eligible, key=lambda x: -x["winrate"])
             
             used = set()
@@ -185,11 +200,6 @@ async def analyze_perfect(payload: DraftRequest):
                         return c
                 return None
 
-            # ЛОГИКА: 
-            # 1. top_winrate - самый сильный герой вообще.
-            # 2. top_favorite - самый сильный из твоих любимых.
-            # 3. Если они совпадают - top_favorite забирает этого героя, а winrate берет второго по силе.
-            
             best_fav = pick_hero([c for c in ranked if c["id"] in fav_ids])
             best_overall = pick_hero(ranked)
 
