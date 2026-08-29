@@ -7,7 +7,10 @@ from routers.auth import get_db_connection
 router = APIRouter()
 MATCHUP_CACHE = {}
 
-ROLES = {"pos1": "Поз 1 (Керри)", "pos2": "Поз 2 (Мид)", "pos3": "Поз 3 (Тройка)", "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"}
+ROLES = {
+    "pos1": "Поз 1 (Керри)", "pos2": "Поз 2 (Мид)", "pos3": "Поз 3 (Тройка)", 
+    "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"
+}
 
 # --- ПОЛНАЯ БАЗА ТЕГОВ (127 ГЕРОЕВ) ---
 # [Контроль, Стойкость, Инициация, Урон, Осада, Побег] (0-3)
@@ -46,33 +49,32 @@ HERO_TAGS = {
     "Wraith King": [2,3,1,2,2,1], "Zeus": [1,0,0,3,0,0], "Largo": [1,3,2,1,0,1]
 }
 
-# --- ПОЛНАЯ КАРТА ПОЗИЦИЙ ---
+# --- ПОЛНАЯ КАРТА ПОЗИЦИЙ (127 ГЕРОЕВ) ---
 HERO_POSITIONS = {
-    "Anti-Mage": [1], "Arc Warden": [1, 2], "Bloodseeker": [1, 2], "Chaos Knight": [1],
-    "Clinkz": [1, 2], "Drow Ranger": [1], "Faceless Void": [1], "Gyrocopter": [1],
-    "Juggernaut": [1], "Lifestealer": [1], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
-    "Morphling": [1, 2], "Muerta": [1], "Naga Siren": [1], "Phantom Assassin": [1],
-    "Phantom Lancer": [1], "Razor": [1, 2, 3], "Riki": [1], "Slark": [1], "Spectre": [1],
-    "Sven": [1], "Templar Assassin": [1, 2], "Terrorblade": [1], "Troll Warlord": [1],
-    "Ursa": [1], "Weaver": [1], "Wraith King": [1, 3], "Lone Druid": [1, 2, 3], "Monkey King": [1, 2],
-    "Ember Spirit": [2], "Invoker": [2], "Kunkka": [2, 3], "Leshrac": [2], "Lina": [2],
-    "Necrophos": [2, 3], "Outworld Destroyer": [2], "Pangolier": [2, 3], "Puck": [2],
-    "Queen of Pain": [2], "Shadow Fiend": [1, 2], "Storm Spirit": [2], "Tinker": [2],
-    "Void Spirit": [2], "Zeus": [2], "Sniper": [1, 2], "Batrider": [2, 3], "Primal Beast": [2, 3],
-    "Axe": [3], "Beastmaster": [3], "Brewmaster": [3], "Bristleback": [3], "Centaur Warrunner": [3],
-    "Dark Seer": [3], "Dawnbreaker": [3, 4], "Doom": [3], "Dragon Knight": [2, 3], "Enigma": [3, 4],
-    "Legion Commander": [3], "Lycan": [3], "Magnus": [2, 3], "Mars": [3], "Night Stalker": [3],
-    "Slardar": [3], "Tidehunter": [3], "Timbersaw": [2, 3], "Underlord": [3], "Viper": [2, 3],
-    "Visage": [2, 3], "Sand King": [3], "Largo": [3, 4, 5],
+    "Anti-Mage": [1], "Alchemist": [1, 2], "Arc Warden": [1, 2], "Bloodseeker": [1, 2], "Chaos Knight": [1],
+    "Clinkz": [1, 2], "Drow Ranger": [1], "Faceless Void": [1], "Gyrocopter": [1], "Juggernaut": [1],
+    "Kez": [1, 2], "Lifestealer": [1], "Lone Druid": [1, 2, 3], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
+    "Morphling": [1, 2], "Muerta": [1], "Naga Siren": [1], "Nature's Prophet": [1, 2, 3, 4], "Phantom Assassin": [1],
+    "Phantom Lancer": [1], "Razor": [1, 2, 3], "Riki": [1], "Slark": [1], "Sniper": [1, 2], "Spectre": [1],
+    "Sven": [1], "Templar Assassin": [1, 2], "Terrorblade": [1], "Tiny": [2, 4], "Troll Warlord": [1],
+    "Ursa": [1], "Weaver": [1, 4], "Wraith King": [1, 3], "Ember Spirit": [2], "Invoker": [2], 
+    "Kunkka": [2, 3], "Leshrac": [2], "Lina": [2], "Necrophos": [2, 3], "Outworld Destroyer": [2],
+    "Pangolier": [2, 3], "Puck": [2], "Queen of Pain": [2], "Shadow Fiend": [1, 2], "Storm Spirit": [2],
+    "Tinker": [2], "Void Spirit": [2], "Zeus": [2, 4], "Batrider": [2, 3, 4], "Primal Beast": [2, 3],
+    "Abaddon": [3, 4, 5], "Axe": [3], "Beastmaster": [3], "Brewmaster": [3], "Bristleback": [3],
+    "Centaur Warrunner": [3], "Dark Seer": [3], "Dawnbreaker": [3, 4], "Doom": [3], "Dragon Knight": [2, 3],
+    "Earthshaker": [3, 4], "Elder Titan": [3, 4, 5], "Enigma": [3, 4], "Largo": [3, 4, 5], "Legion Commander": [3],
+    "Lycan": [3], "Magnus": [2, 3], "Marci": [3, 4], "Mars": [3], "Night Stalker": [3], "Omniknight": [3, 5],
+    "Pudge": [3, 4], "Sand King": [3], "Slardar": [3], "Spirit Breaker": [3, 4], "Tidehunter": [3],
+    "Timbersaw": [2, 3], "Underlord": [3], "Venomancer": [3, 4, 5], "Viper": [2, 3], "Visage": [2, 3],
     "Ancient Apparition": [4, 5], "Bane": [5], "Bounty Hunter": [4], "Chen": [5], "Clockwerk": [4],
     "Crystal Maiden": [5], "Dark Willow": [4, 5], "Dazzle": [5], "Disruptor": [5], "Earth Spirit": [4],
-    "Earthshaker": [4], "Elder Titan": [4, 5], "Enchantress": [4, 5], "Grimstroke": [4, 5],
-    "Hoodwink": [4], "Io": [4, 5], "Jakiro": [5], "Keeper of the Light": [4], "Lich": [5],
-    "Lion": [4, 5], "Mirana": [4], "Nyx Assassin": [4], "Ogre Magi": [5], "Omniknight": [5],
-    "Oracle": [5], "Pugna": [4, 5], "Rubick": [4], "Shadow Demon": [5], "Shadow Shaman": [5],
-    "Silencer": [5], "Skywrath Mage": [4, 5], "Snapfire": [4], "Spirit Breaker": [4],
-    "Techies": [4], "Treant Protector": [4, 5], "Tusk": [4], "Undying": [5], "Vengeful Spirit": [4, 5],
-    "Venomancer": [4, 5], "Warlock": [5], "Winter Wyvern": [5], "Witch Doctor": [5], "Pudge": [4, 5]
+    "Enchantress": [4, 5], "Grimstroke": [4, 5], "Hoodwink": [4], "Io": [4, 5], "Jakiro": [5],
+    "Keeper of the Light": [4], "Lich": [5], "Lion": [4, 5], "Mirana": [4], "Nyx Assassin": [4],
+    "Ogre Magi": [5], "Oracle": [5], "Phoenix": [4, 5], "Pugna": [4, 5], "Ringmaster": [4, 5],
+    "Rubick": [4], "Shadow Demon": [5], "Shadow Shaman": [5], "Silencer": [5], "Skywrath Mage": [4, 5],
+    "Snapfire": [4, 5], "Techies": [4], "Treant Protector": [4, 5], "Tusk": [4], "Undying": [5],
+    "Vengeful Spirit": [4, 5], "Warlock": [5], "Windranger": [4], "Winter Wyvern": [4, 5], "Witch Doctor": [5]
 }
 
 async def get_matchups_data(hero_id: int):
@@ -121,20 +123,17 @@ async def analyze_perfect(payload: DraftRequest):
         img_map = {h["localized_name"]: f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png" for h in h_list}
         picked = {v.lower() for v in payload.my_team.values() if v} | {n.lower() for n in payload.enemy_team}
 
-        # 1. Анализ баланса команды
         team_tags = [0, 0, 0, 0, 0, 0]
         for ally in payload.my_team.values():
             if ally and ally in HERO_TAGS:
                 for i in range(6): team_tags[i] += HERO_TAGS[ally][i]
 
-        # 2. Immortal Winrate
         base_wr = {}
         for hs in h_stats:
             p, w = hs.get("8_pick", 0), hs.get("8_win", 0)
             name = hs.get("localized_name")
             if name: base_wr[name] = (w/p*100) if p > 35 else (hs.get("7_win", 1)/hs.get("7_pick", 1)*100)
 
-        # 3. Анализ контрпиков
         enemy_ids = [name_to_id[n.lower()] for n in payload.enemy_team if n.lower() in name_to_id]
         enemies_results = await asyncio.gather(*(get_matchups_data(eid) for eid in enemy_ids))
 
@@ -154,7 +153,6 @@ async def analyze_perfect(payload: DraftRequest):
 
             avg_adv = sum(enemy_advs) / len(enemy_advs) if enemy_advs else 0
             
-            # 4. Бонус за баланс состава
             role_bonus = 0
             if name in HERO_TAGS:
                 h_t = HERO_TAGS[name]
@@ -169,29 +167,38 @@ async def analyze_perfect(payload: DraftRequest):
             final_wr = max(5.0, min(95.0, final_wr))
             hero_final_stats.append({"id": h["id"], "name": name, "img": img_map.get(name), "winrate": round(final_wr, 1), "advantage": round(avg_adv, 1)})
 
-        # 5. Результаты
         fav_ids = get_db_favs(payload.user_id) if payload.user_id else []
         final_results = []
         for r_k, r_t in ROLES.items():
             if payload.my_team.get(r_k): continue
+            
             pos = int(r_k[-1])
             eligible = [c for c in hero_final_stats if pos in HERO_POSITIONS.get(c["name"], [])]
+            # СОРТИРОВКА: теперь мы берем АБСОЛЮТНО ЛУЧШЕГО героя для "Лучший шанс"
             ranked = sorted(eligible, key=lambda x: -x["winrate"])
             
             used = set()
-            def pick(lst):
+            def pick_hero(lst):
                 for c in lst:
                     if c["id"] not in used:
                         used.add(c["id"])
                         return c
                 return None
 
+            # ЛОГИКА: 
+            # 1. top_winrate - самый сильный герой вообще.
+            # 2. top_favorite - самый сильный из твоих любимых.
+            # 3. Если они совпадают - top_favorite забирает этого героя, а winrate берет второго по силе.
+            
+            best_fav = pick_hero([c for c in ranked if c["id"] in fav_ids])
+            best_overall = pick_hero(ranked)
+
             final_results.append({
                 "role": r_t,
                 "data": {
-                    "top_favorite": pick([c for c in ranked if c["id"] in fav_ids]),
-                    "top_winrate": pick(ranked),
-                    "others": [pick(ranked) for _ in range(3)]
+                    "top_favorite": best_fav,
+                    "top_winrate": best_overall,
+                    "others": [pick_hero(ranked) for _ in range(3)]
                 }
             })
         return {"results": final_results}
