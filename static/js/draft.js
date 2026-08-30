@@ -1,11 +1,52 @@
 let heroesList = [];
 
 const HERO_ALIASES = {
-  "Anti-Mage": ["am", "антимаг"], "Shadow Fiend": ["sf", "сф", "невермор"],
-  "Phantom Assassin": ["pa", "па", "фантомка"], "Phantom Lancer": ["pl", "пл"],
-  "Wraith King": ["wk", "вк", "папич"], "Pudge": ["пудж", "мясо"], "Slardar": ["селедка"],
-  "Largo": ["лягушка"], "Spirit Breaker": ["бара"], "Faceless Void": ["воид", "купол"],
-  "Lone Druid": ["мишка", "друид", "лд"], "Kez": ["птица", "кез"]
+  "Anti-Mage": ["am", "ам", "антимаг"],
+  "Shadow Fiend": ["sf", "сф", "невермор", "nevermore"],
+  "Phantom Assassin": ["pa", "па", "фантомка"],
+  "Phantom Lancer": ["pl", "пл", "лансер"],
+  "Crystal Maiden": ["cm", "цм", "рилай"],
+  "Queen of Pain": ["qop", "квопа"],
+  "Wraith King": ["wk", "вк", "папич", "leoric"],
+  "Nature's Prophet": ["np", "фурион"],
+  "Outworld Destroyer": ["od", "од"],
+  "Dragon Knight": ["dk", "дк"],
+  "Chaos Knight": ["ck", "цк"],
+  "Terrorblade": ["tb", "тб"],
+  "Templar Assassin": ["ta", "та"],
+  "Spirit Breaker": ["sb", "бара"],
+  "Earthshaker": ["es", "шейкер"],
+  "Earth Spirit": ["земеля"],
+  "Ember Spirit": ["эмбер"],
+  "Storm Spirit": ["шторм"],
+  "Faceless Void": ["fv", "воид", "купол"],
+  "Bloodseeker": ["bs", "бс"],
+  "Bounty Hunter": ["bh", "бх"],
+  "Windranger": ["wr", "вр"],
+  "Witch Doctor": ["wd", "вд"],
+  "Sand King": ["sk", "ск"],
+  "Centaur Warrunner": ["кентавр"],
+  "Bristleback": ["bb", "брист"],
+  "Pudge": ["пудж", "мясо"],
+  "Invoker": ["инвокер", "вокер"],
+  "Mirana": ["потма"],
+  "Clockwerk": ["клок"],
+  "Timbersaw": ["тимбер"],
+  "Tinker": ["тинкер"],
+  "Sniper": ["снайпер", "дед"],
+  "Zeus": ["зевс", "zuus"],
+  "Lifestealer": ["ls", "гуля"],
+  "Slark": ["сларк", "рыба"],
+  "Juggernaut": ["джаггер"],
+  "Morphling": ["морф"],
+  "Sven": ["свен"],
+  "Tiny": ["тини"],
+  "Axe": ["акс"],
+  "Viper": ["вайпер"],
+  "Slardar": ["селедка"],
+  "Largo": ["лягушка", "ларго"],
+  "Lone Druid": ["мишка", "лд"],
+  "Kez": ["кез", "птица"]
 };
 
 const ALLY_LABELS = ["Поз 1 — Керри", "Поз 2 — Мид", "Поз 3 — Тройка", "Поз 4 — Четверка", "Поз 5 — Пятерка"];
@@ -15,16 +56,34 @@ const initDraftInputs = () => {
     const enemies = document.getElementById('enemies-inputs');
     if (!allies || !enemies) return;
     allies.innerHTML = ''; enemies.innerHTML = '';
+
     for(let i=1; i<=5; i++) {
-        allies.innerHTML += `<div class="input-field-group"><label>${ALLY_LABELS[i-1]}</label><div class="autocomplete-wrapper"><input type="text" id="my-pos${i}" placeholder="Выберите героя..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos${i}')">&times;</button></div></div>`;
-        enemies.innerHTML += `<div class="input-field-group"><label>Враг ${i}</label><div class="autocomplete-wrapper"><input type="text" id="enemy-${i}" placeholder="Выберите героя..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-${i}')">&times;</button></div></div>`;
+        allies.innerHTML += `
+            <div class="input-field-group">
+                <label>${ALLY_LABELS[i-1]}</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="my-pos${i}" placeholder="Выберите героя..." autocomplete="off">
+                    <button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos${i}')">&times;</button>
+                </div>
+            </div>`;
+        enemies.innerHTML += `
+            <div class="input-field-group">
+                <label>Враг ${i}</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="enemy-${i}" placeholder="Выберите героя..." autocomplete="off">
+                    <button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-${i}')">&times;</button>
+                </div>
+            </div>`;
     }
     setupCustomAutocomplete();
 };
 
 async function loadHeroes() {
     const response = await fetch('/api/heroes');
-    if (response.ok) { heroesList = await response.json(); initDraftInputs(); }
+    if (response.ok) {
+        heroesList = await response.json();
+        initDraftInputs();
+    }
 }
 
 function setupCustomAutocomplete() {
@@ -40,16 +99,24 @@ function setupCustomAutocomplete() {
 function renderDropdown(input, wrapper) {
     const old = wrapper.querySelector('.autocomplete-dropdown');
     if (old) old.remove();
+
     const q = input.value.toLowerCase().trim();
     const filtered = heroesList.filter(h => h.name.toLowerCase().includes(q) || (HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.includes(q))));
     if (filtered.length === 0) return;
+
     const dropdown = document.createElement('div');
     dropdown.className = 'autocomplete-dropdown';
+
     filtered.slice(0, 12).forEach(hero => {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
         item.innerHTML = `<img src="${hero.img}"><span>${hero.name}</span>`;
-        item.onmousedown = (e) => { e.preventDefault(); input.value = hero.name; dropdown.remove(); input.dispatchEvent(new Event('input')); };
+        item.onmousedown = (e) => {
+            e.preventDefault();
+            input.value = hero.name;
+            dropdown.remove();
+            input.dispatchEvent(new Event('input'));
+        };
         dropdown.appendChild(item);
     });
     wrapper.appendChild(dropdown);
@@ -60,8 +127,16 @@ async function analyzeDraft() {
     const enemyTeam = [1,2,3,4,5].map(i => document.getElementById(`enemy-${i}`).value).filter(v => v.trim() !== "");
     const resContainer = document.getElementById('results-container');
     resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px;">Анализируем...</p>';
-    const response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ my_team: myTeam, enemy_team: enemyTeam, user_id: currentUser ? currentUser.user_id : null }) });
-    if (response.ok) { const data = await response.json(); renderResults(data.results); }
+
+    const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ my_team: myTeam, enemy_team: enemyTeam, user_id: currentUser ? currentUser.user_id : null })
+    });
+    if (response.ok) {
+        const data = await response.json();
+        renderResults(data.results);
+    }
 }
 
 function renderResults(results) {
@@ -88,7 +163,7 @@ function createCard(h, type, label) {
     const div = document.createElement('div');
     div.className = `top-pick-card ${type}`;
     const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-    div.innerHTML = `<div class="top-pick-label" style="font-size:0.7rem; font-weight:800; margin-bottom:12px;">${label}</div><img src="${h.img}"><div style="font-weight:bold;">${h.name}</div><div style="font-size:0.85rem; color:var(--text-muted);">WR: <span class="val-green">${h.winrate}%</span><br>Контрпик: <span style="color:${cl}">${h.advantage >= 0 ? '+':''}${h.advantage}%</span></div>`;
+    div.innerHTML = `<div class="top-pick-label">${label}</div><img src="${h.img}"><div style="font-weight:bold;">${h.name}</div><div style="font-size:0.85rem; color:var(--text-muted);">WR: <span class="val-green">${h.winrate}%</span><br>Контрпик: <span style="color:${cl}">${h.advantage >= 0 ? '+':''}${h.advantage}%</span></div>`;
     return div;
 }
 
