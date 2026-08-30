@@ -13,7 +13,6 @@ main { max-width: 1300px; margin: 0 auto; padding: 20px 40px; }
     border: 1px solid var(--border-color); 
     border-radius: 15px; 
     padding: 25px;
-    z-index: 1;
 }
 
 .team-box.allies { border-top: 4px solid var(--accent-green); }
@@ -49,7 +48,6 @@ main { max-width: 1300px; margin: 0 auto; padding: 20px 40px; }
     object-fit: cover;
     border-radius: 7px 0 0 7px;
     display: none;
-    background: #000;
 }
 .hero-slot.filled .slot-hero-img { display: block; }
 
@@ -71,44 +69,74 @@ main { max-width: 1300px; margin: 0 auto; padding: 20px 40px; }
 }
 .hero-slot input:not(:placeholder-shown) ~ .clear-input-btn { display: block; }
 
-/* АВТОКОМПЛИТ (ФИКС ВЫБОРА) */
-.autocomplete-dropdown { 
-    position: absolute; 
-    top: 100%; 
-    left: 0; 
-    right: 0; 
-    background: #1c212e; 
-    border: 1px solid var(--border-color); 
-    border-radius: 0 0 10px 10px; 
-    z-index: 9999; 
-    max-height: 250px; 
-    overflow-y: auto; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-}
-.autocomplete-item { 
-    display: flex; 
-    align-items: center; 
-    gap: 12px; 
-    padding: 10px 15px; 
-    cursor: pointer; 
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-.autocomplete-item:hover { background: #2a3245; }
-.autocomplete-item img { width: 40px; height: 22px; object-fit: cover; border-radius: 3px; }
-.autocomplete-item span { color: white; font-size: 0.9rem; }
-
-/* КНОПКИ */
+/* КНОПКИ ДЕЙСТВИЙ */
 .actions-row { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 30px; }
 .btn-analyze { background: var(--accent-red); color: white; padding: 18px; font-size: 1.1rem; border-radius: 12px; border: none; cursor: pointer; font-weight: 900; text-transform: uppercase; }
 .btn-clear { background: var(--bg-input); color: white; border: 1px solid var(--border-color); padding: 18px; font-size: 1.1rem; border-radius: 12px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
 
-/* КАРТОЧКИ РЕЗУЛЬТАТОВ */
+/* --- РЕЗУЛЬТАТЫ --- */
 .results-section { margin-top: 40px; }
 .role-group-title { font-size: 1.4rem; font-weight: 900; color: #fff; margin-bottom: 20px; border-left: 5px solid var(--accent-red); padding-left: 20px; text-transform: uppercase; }
+
 .top-picks-row { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
-.top-pick-card { background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 18px; padding: 25px 20px; text-align: center; }
+
+.top-pick-card {
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 18px;
+    padding: 25px 20px;
+    text-align: center;
+}
 .top-pick-card.favorite { border-color: #a855f7; }
 .top-pick-card.winrate { border-color: var(--accent-yellow); }
 .top-pick-card img { width: 160px; border-radius: 12px; margin-bottom: 15px; }
-.result-hero-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; }
-.result-hero-card img { width: 56px; border-radius: 5px; }
+.top-pick-label { font-size: 0.75rem; font-weight: 900; margin-bottom: 10px; letter-spacing: 1px; }
+
+/* ИСПРАВЛЕННАЯ СЕТКА ДЛЯ НИЖНИХ ГЕРОЕВ */
+.hero-cards-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+    gap: 15px; 
+    margin-top: 20px;
+}
+
+.result-hero-card { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-color); 
+    border-radius: 12px; 
+    padding: 15px; 
+    display: flex; 
+    flex-direction: column; /* Картинка сверху, текст снизу */
+    align-items: center; 
+    text-align: center;
+    gap: 10px;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.result-hero-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.2);
+}
+
+.result-hero-card img { 
+    width: 100%; 
+    max-width: 120px; 
+    aspect-ratio: 16/9;
+    object-fit: cover; 
+    border-radius: 6px; 
+}
+
+.hero-info { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px;
+}
+
+.hero-name { font-weight: 700; color: white; font-size: 0.95rem; }
+.hero-stats { font-size: 0.8rem; color: var(--text-muted); }
+
+/* Автокомплит */
+.autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #1c212e; border: 1px solid var(--border-color); border-radius: 0 0 10px 10px; z-index: 10000; max-height: 250px; overflow-y: auto; }
+.autocomplete-item { display: flex; align-items: center; gap: 12px; padding: 10px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.autocomplete-item:hover { background: #2a3245; }
+.autocomplete-item img { width: 40px; height: 22px; object-fit: cover; border-radius: 3px; }
