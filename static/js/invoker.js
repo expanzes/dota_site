@@ -13,105 +13,112 @@ const INVOKER_SPELLS = [
 
 let currentOrbs = [];
 let targetSpell = null;
-let lastSpellName = ""; // Храним имя предыдущего скилла
+let lastSpellName = "";
 let score = 0;
+let timeLeft = 30;
+let timerId = null;
+let isGameActive = false;
+
+function initApp() {
+    document.getElementById('start-screen').classList.remove('hidden');
+    document.getElementById('game-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.add('hidden');
+}
 
 function startGame() {
-    console.log("Инвокер: Тренировка запущена!");
+    isGameActive = true;
     score = 0;
-    const scoreEl = document.getElementById('score');
-    if (scoreEl) scoreEl.innerText = score;
+    timeLeft = 30;
+    currentOrbs = [];
+    
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+    
+    document.getElementById('score-display').innerText = score;
+    updateTimerUI();
+    updateOrbsUI();
     nextSpell();
+
+    timerId = setInterval(() => {
+        timeLeft--;
+        updateTimerUI();
+        if (timeLeft <= 0) endGame();
+    }, 1000);
+}
+
+function updateTimerUI() {
+    const el = document.getElementById('timer');
+    el.innerText = timeLeft;
+    if (timeLeft <= 5) el.classList.add('timer-low');
+    else el.classList.remove('timer-low');
 }
 
 function nextSpell() {
     let next;
-    // Цикл выбирает новый скилл, пока он совпадает с предыдущим
     do {
         next = INVOKER_SPELLS[Math.floor(Math.random() * INVOKER_SPELLS.length)];
     } while (next.name === lastSpellName);
-
+    
     targetSpell = next;
     lastSpellName = next.name;
+    document.getElementById('target-spell-img').src = targetSpell.img;
+    document.getElementById('target-spell-name').innerText = targetSpell.name;
+}
 
-    const imgEl = document.getElementById('target-spell-img');
-    const nameEl = document.getElementById('target-spell-name');
-    
-    if (imgEl) imgEl.src = targetSpell.img;
-    if (nameEl) nameEl.innerText = targetSpell.name;
+function addOrb(type) {
+    if (!isGameActive) return;
+    currentOrbs.push(type);
+    if (currentOrbs.length > 3) currentOrbs.shift();
+    updateOrbsUI();
 }
 
 function updateOrbsUI() {
     for (let i = 0; i < 3; i++) {
         const orbEl = document.getElementById(`orb-${i}`);
-        if (!orbEl) continue;
-        
-        orbEl.className = 'orb'; // Сброс
-        const orbType = currentOrbs[i];
-        
-        if (orbType === 'Q') orbEl.classList.add('quas');
-        else if (orbType === 'W') orbEl.classList.add('wex');
-        else if (orbType === 'E') orbEl.classList.add('exort');
+        orbEl.className = 'orb';
+        if (currentOrbs[i] === 'Q') orbEl.classList.add('quas');
+        if (currentOrbs[i] === 'W') orbEl.classList.add('wex');
+        if (currentOrbs[i] === 'E') orbEl.classList.add('exort');
     }
-}
-
-function addOrb(type) {
-    currentOrbs.push(type);
-    if (currentOrbs.length > 3) {
-        currentOrbs.shift();
-    }
-    updateOrbsUI();
 }
 
 function invoke() {
-    if (!targetSpell) return;
+    if (!isGameActive || !targetSpell) return;
     
-    const currentCombo = [...currentOrbs].sort().join('');
-    const targetCombo = targetSpell.keys.split('').sort().join('');
+    const cur = [...currentOrbs].sort().join('');
+    const tar = targetSpell.keys.split('').sort().join('');
+    const cont = document.querySelector('.game-container');
 
-    const container = document.querySelector('.game-container');
-
-    if (currentCombo === targetCombo) {
+    if (cur === tar) {
         score++;
-        const scoreEl = document.getElementById('score');
-        if (scoreEl) scoreEl.innerText = score;
-        
-        if (container) {
-            container.style.boxShadow = "0 0 30px var(--accent-green)";
-            setTimeout(() => container.style.boxShadow = "", 300);
-        }
+        document.getElementById('score-display').innerText = score;
+        cont.style.boxShadow = "0 0 40px var(--accent-green)";
+        setTimeout(() => cont.style.boxShadow = "", 200);
         nextSpell();
     } else {
-        if (container) {
-            container.style.boxShadow = "0 0 30px var(--accent-red)";
-            setTimeout(() => container.style.boxShadow = "", 300);
-        }
+        cont.style.boxShadow = "0 0 40px var(--accent-red)";
+        setTimeout(() => cont.style.boxShadow = "", 200);
     }
 }
 
-// ОБРАБОТКА КЛАВИШ ЧЕРЕЗ e.code (физическое нажатие)
-function handleKeyDown(e) {
+function endGame() {
+    isGameActive = false;
+    clearInterval(timerId);
+    document.getElementById('game-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.remove('hidden');
+    document.getElementById('final-score').innerText = score;
+}
+
+document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT') return;
+    const code = e.code;
+    if (code === 'KeyQ') addOrb('Q');
+    else if (code === 'KeyW') addOrb('W');
+    else if (code === 'KeyE') addOrb('E');
+    else if (code === 'KeyR') invoke();
+    // Позволяем начать игру на Enter, если она не активна
+    else if (code === 'Enter' && !isGameActive) startGame();
+});
 
-    const code = e.code; // KeyQ, KeyW, KeyE, KeyR и т.д.
-
-    if (code === 'KeyQ') {
-        addOrb('Q');
-    } else if (code === 'KeyW') {
-        addOrb('W');
-    } else if (code === 'KeyE') {
-        addOrb('E');
-    } else if (code === 'KeyR') {
-        invoke();
-    }
-}
-
-// Принудительно вешаем слушатель
-document.addEventListener('keydown', handleKeyDown);
-
-// Инициализация
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startGame);
-} else {
-    startGame();
-}
+window.onload = initApp;
