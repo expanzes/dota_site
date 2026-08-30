@@ -1,26 +1,52 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head><meta charset="UTF-8"><link rel="stylesheet" href="/static/css/styles.css"></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой Профиль — Dota 2 Helper</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
 <body>
     <header>
-        <div class="header-left"><div class="logo" onclick="window.location.href='/'">Dota 2 Helper</div></div>
-        <div class="user-panel"><span id="user-display-name" class="user-badge">...</span><button class="btn-logout" onclick="logout()">Выйти</button></div>
+        <div class="header-left">
+            <div class="logo" onclick="window.location.href='/'">Dota 2 Helper</div>
+            <nav class="main-nav">
+                <button class="nav-link" onclick="window.location.href='/drafts'">АНАЛИЗ ДРАФТОВ</button>
+                <button class="nav-link" onclick="window.location.href='/fantasy'">ФЕНТАЗИ ПОМОЩНИК</button>
+                <button class="nav-link" onclick="window.location.href='/invoker'">ТРЕНАЖЁР ИНВОКЕР</button>
+            </nav>
+        </div>
+        <div class="user-panel">
+            <span id="user-display-name" class="user-badge">Загрузка...</span>
+            <button class="btn-logout" onclick="logout()">Выйти</button>
+        </div>
     </header>
-    <main style="text-align:center;">
-        <div style="background: var(--bg-card); padding: 40px; border-radius: 20px; border: 1px solid var(--border-color); max-width: 500px; margin: 50px auto;">
-            <h2 id="profile-user-name">Загрузка...</h2>
-            <button class="btn-primary" onclick="openFavModal()" style="margin-top: 20px; width: 100%;">★ ВЫБРАТЬ ЛЮБИМЫХ ГЕРОЕВ</button>
+
+    <main>
+        <div class="profile-container">
+            <p style="color: var(--accent-red); font-weight: 800; text-transform: uppercase; font-size: 0.8rem;">Личный кабинет</p>
+            <h2 id="profile-user-name">...</h2>
+            <button class="btn-yellow" onclick="openFavModal()">★ Выбрать любимых героев</button>
         </div>
     </main>
+
+    <!-- Красивая модалка выбора героев -->
     <div id="fav-modal" class="modal-overlay hidden">
-        <div class="modal-card modal-large">
-            <h3>Ваши любимые герои</h3>
-            <input type="text" id="fav-search-input" placeholder="Поиск..." oninput="filterFavHeroes()">
-            <div id="fav-heroes-container" class="fav-heroes-grid"></div>
-            <button class="btn-primary" onclick="saveFavorites()" style="margin-top:15px;">СОХРАНИТЬ</button>
-            <button onclick="closeFavModal()">Закрыть</button>
+        <div class="modal-card">
+            <h3 style="margin-bottom: 20px;">Ваши любимые герои</h3>
+            <input type="text" id="fav-search-input" class="fav-search" placeholder="Поиск по имени или алиасу..." oninput="filterFavHeroes()">
+            
+            <div id="fav-heroes-container" class="fav-heroes-grid">
+                <!-- Герои вставляются сюда через JS -->
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeFavModal()">Отмена</button>
+                <button class="btn-save" onclick="saveFavorites()">Сохранить изменения</button>
+            </div>
         </div>
     </div>
+
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/favorites.js"></script>
 </body>
