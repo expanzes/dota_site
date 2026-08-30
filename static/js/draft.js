@@ -1,6 +1,6 @@
 let heroesList = [];
 
-// Самый полный список алиасов
+// САМЫЙ ПОЛНЫЙ СПИСОК АЛИАСОВ
 const HERO_ALIASES = {
   "Anti-Mage": ["am", "ам", "антимаг"],
   "Shadow Fiend": ["sf", "сф", "невермор", "nevermore"],
@@ -53,7 +53,15 @@ const HERO_ALIASES = {
   "Kez": ["кез", "птица", "петух"]
 };
 
-// Инициализация полей ввода (чтобы не писать их 10 раз в HTML)
+const ALLY_LABELS = [
+    "Поз 1 — Керри",
+    "Поз 2 — Мид",
+    "Поз 3 — Тройка",
+    "Поз 4 — Четверка",
+    "Поз 5 — Пятерка"
+];
+
+// Генерация инпутов при загрузке
 const initDraftInputs = () => {
     const allies = document.getElementById('allies-inputs');
     const enemies = document.getElementById('enemies-inputs');
@@ -65,7 +73,7 @@ const initDraftInputs = () => {
     for(let i=1; i<=5; i++) {
         allies.innerHTML += `
             <div class="input-field-group">
-                <label>Поз ${i}</label>
+                <label>${ALLY_LABELS[i-1]}</label>
                 <div class="autocomplete-wrapper">
                     <input type="text" id="my-pos${i}" placeholder="Выберите героя..." autocomplete="off">
                     <button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos${i}')">&times;</button>
@@ -88,11 +96,9 @@ async function loadHeroes() {
         const response = await fetch('/api/heroes');
         if (response.ok) {
             heroesList = await response.json();
-            initDraftInputs(); // Создаем инпуты только после загрузки героев
+            initDraftInputs();
         }
-    } catch (err) {
-        console.error('Ошибка загрузки героев:', err);
-    }
+    } catch (err) { console.error(err); }
 }
 
 function setupCustomAutocomplete() {
@@ -101,7 +107,6 @@ function setupCustomAutocomplete() {
         input.addEventListener('focus', () => renderDropdown(input, input.parentElement));
         input.addEventListener('input', () => renderDropdown(input, input.parentElement));
     });
-
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.autocomplete-wrapper')) {
             document.querySelectorAll('.autocomplete-dropdown').forEach(el => el.remove());
@@ -116,7 +121,7 @@ function renderDropdown(input, wrapper) {
     const q = input.value.toLowerCase().trim();
     const filtered = heroesList.filter(h => {
         const nameMatch = h.name.toLowerCase().includes(q);
-        const aliasMatch = HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.includes(q));
+        const aliasMatch = HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.toLowerCase().includes(q));
         return nameMatch || aliasMatch;
     });
 
@@ -124,16 +129,10 @@ function renderDropdown(input, wrapper) {
 
     const dropdown = document.createElement('div');
     dropdown.className = 'autocomplete-dropdown';
-    
-    // Стилизуем выпадающий список прямо здесь для надежности
-    dropdown.style = "position:absolute; top:100%; left:0; right:0; background:#171b26; border:1px solid #202636; z-index:1000; border-radius:8px; max-height:250px; overflow-y:auto; margin-top:5px;";
-
     filtered.slice(0, 12).forEach(hero => {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
-        item.style = "display:flex; align-items:center; gap:12px; padding:10px; cursor:pointer; border-bottom:1px solid #202636;";
-        item.innerHTML = `<img src="${hero.img}" width="40" style="border-radius:4px;"><span>${hero.name}</span>`;
-        
+        item.innerHTML = `<img src="${hero.img}" width="35" style="border-radius:3px;"><span>${hero.name}</span>`;
         item.onmousedown = (e) => {
             e.preventDefault();
             input.value = hero.name;
@@ -152,64 +151,39 @@ async function analyzeDraft() {
         pos4: document.getElementById('my-pos4').value,
         pos5: document.getElementById('my-pos5').value
     };
-
-    const enemyTeam = [1,2,3,4,5]
-        .map(i => document.getElementById(`enemy-${i}`).value)
-        .filter(v => v.trim() !== "");
-
+    const enemyTeam = [1,2,3,4,5].map(i => document.getElementById(`enemy-${i}`).value).filter(v => v.trim() !== "");
     const resContainer = document.getElementById('results-container');
-    resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px;">Анализируем драфт...</p>';
+    resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px;">Анализируем матчапы и баланс команды...</p>';
 
     try {
         const response = await fetch('/api/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                my_team: myTeam,
-                enemy_team: enemyTeam,
-                user_id: currentUser ? currentUser.user_id : null
-            })
+            body: JSON.stringify({ my_team: myTeam, enemy_team: enemyTeam, user_id: currentUser ? currentUser.user_id : null })
         });
-
         if (response.ok) {
             const data = await response.json();
             renderResults(data.results);
-        } else {
-            resContainer.innerHTML = '<p style="color:var(--accent-red); text-align:center;">Ошибка сервера</p>';
         }
-    } catch (err) {
-        resContainer.innerHTML = '<p style="color:var(--accent-red); text-align:center;">Ошибка соединения</p>';
-    }
+    } catch (err) { resContainer.innerHTML = '<p style="color:var(--accent-red); text-align:center;">Ошибка соединения</p>'; }
 }
 
 function renderResults(results) {
     const container = document.getElementById('results-container');
     container.innerHTML = '';
-
     results.forEach(item => {
         const section = document.createElement('div');
         section.className = 'results-section';
-        section.style = "margin-bottom: 40px;";
-        section.innerHTML = `<h3 class="role-group-title" style="margin-bottom:15px; border-left:4px solid var(--accent-red); padding-left:15px;">${item.role}</h3>`;
-
+        section.innerHTML = `<h3 class="role-group-title">${item.role}</h3>`;
         const topRow = document.createElement('div');
         topRow.className = 'top-picks-row';
-
-        if (item.data.top_favorite) {
-            topRow.appendChild(createCard(item.data.top_favorite, 'favorite', 'ИЗ ВАШЕГО ПУЛА'));
-        }
-        if (item.data.top_winrate) {
-            topRow.appendChild(createCard(item.data.top_winrate, 'winrate', 'ЛУЧШИЙ ВАРИАНТ'));
-        }
+        if (item.data.top_favorite) topRow.appendChild(createCard(item.data.top_favorite, 'favorite', 'ИЗ ВАШЕГО ПУЛА'));
+        if (item.data.top_winrate) topRow.appendChild(createCard(item.data.top_winrate, 'winrate', 'ЛУЧШИЙ ВАРИАНТ'));
         section.appendChild(topRow);
-
         const grid = document.createElement('div');
         grid.className = 'hero-cards-grid';
-        item.data.others.forEach(h => {
-            if (h) grid.appendChild(createHeroSmallCard(h));
-        });
+        item.data.others.forEach(h => { if (h) grid.appendChild(createHeroSmallCard(h)); });
         section.appendChild(grid);
-        
         container.appendChild(section);
     });
 }
@@ -217,43 +191,22 @@ function renderResults(results) {
 function createCard(h, type, label) {
     const div = document.createElement('div');
     div.className = `top-pick-card ${type}`;
-    const advColor = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-    const sign = h.advantage >= 0 ? '+' : '';
-    
-    div.innerHTML = `
-        <div class="top-pick-label" style="font-size:0.7rem; font-weight:800; margin-bottom:12px; letter-spacing:1px;">${label}</div>
-        <img src="${h.img}" alt="${h.name}" style="width:130px; border-radius:8px; margin-bottom:10px;">
-        <div class="top-pick-hero-name" style="font-weight:bold; font-size:1.1rem;">${h.name}</div>
-        <div class="top-pick-hero-stats" style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">
-            Прогноз WR: <span class="val-green">${h.winrate}%</span><br>
-            Контрпик: <span style="color:${advColor}; font-weight:bold;">${sign}${h.advantage}%</span>
-        </div>`;
+    const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    div.innerHTML = `<div class="top-pick-label">${label}</div><img src="${h.img}"><div style="font-weight:bold;">${h.name}</div><div style="font-size:0.85rem; color:var(--text-muted);">Прогноз WR: <span class="val-green">${h.winrate}%</span><br>Контрпик: <span style="color:${cl}">${h.advantage >= 0 ? '+':''}${h.advantage}%</span></div>`;
     return div;
 }
 
 function createHeroSmallCard(h) {
     const div = document.createElement('div');
     div.className = 'result-hero-card';
-    const advColor = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-    const sign = h.advantage >= 0 ? '+' : '';
-    
-    div.innerHTML = `
-        <img src="${h.img}" alt="${h.name}" width="50" style="border-radius:4px;">
-        <div class="hero-info">
-            <div class="hero-name" style="font-size:0.95rem; font-weight:bold;">
-                ${h.name} <span style="color:${advColor}; font-size:0.7rem;">${sign}${h.advantage}%</span>
-            </div>
-            <div class="hero-stats" style="font-size:0.8rem; color:var(--text-muted);">Итоговый WR: ${h.winrate}%</div>
-        </div>`;
+    const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    div.innerHTML = `<img src="${h.img}"><div class="hero-info"><div style="font-size:0.95rem; font-weight:bold;">${h.name} <span style="color:${cl}; font-size:0.7rem;">${h.advantage >= 0 ? '+':''}${h.advantage}%</span></div><div style="font-size:0.8rem; color:var(--text-muted);">Итоговый WR: ${h.winrate}%</div></div>`;
     return div;
 }
 
 function clearSingleInput(id) {
     const el = document.getElementById(id);
-    if (el) {
-        el.value = '';
-        el.focus();
-    }
+    if (el) { el.value = ''; el.dispatchEvent(new Event('input')); el.focus(); }
 }
 
 function clearInputs() {
@@ -264,7 +217,4 @@ function clearInputs() {
     document.getElementById('results-container').innerHTML = '';
 }
 
-// Запуск
-document.addEventListener('DOMContentLoaded', () => {
-    loadHeroes();
-});
+document.addEventListener('DOMContentLoaded', () => { loadHeroes(); });
