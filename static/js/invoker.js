@@ -49,6 +49,7 @@ function startGame() {
 
 function updateTimerUI() {
     const el = document.getElementById('timer');
+    if (!el) return;
     el.innerText = timeLeft;
     if (timeLeft <= 5) el.classList.add('timer-low');
     else el.classList.remove('timer-low');
@@ -76,6 +77,7 @@ function addOrb(type) {
 function updateOrbsUI() {
     for (let i = 0; i < 3; i++) {
         const orbEl = document.getElementById(`orb-${i}`);
+        if (!orbEl) continue;
         orbEl.className = 'orb';
         if (currentOrbs[i] === 'Q') orbEl.classList.add('quas');
         if (currentOrbs[i] === 'W') orbEl.classList.add('wex');
@@ -102,12 +104,23 @@ function invoke() {
     }
 }
 
-function endGame() {
+async function endGame() {
     isGameActive = false;
     clearInterval(timerId);
     document.getElementById('game-screen').classList.add('hidden');
     document.getElementById('result-screen').classList.remove('hidden');
     document.getElementById('final-score').innerText = score;
+
+    // Сохранение рекорда, если пользователь залогинен
+    const savedUser = localStorage.getItem('dota_user');
+    if (savedUser) {
+        const user = JSON.parse(savedUser);
+        await fetch('/api/save-invoker-score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username, score: score })
+        });
+    }
 }
 
 document.addEventListener('keydown', (e) => {
@@ -117,7 +130,6 @@ document.addEventListener('keydown', (e) => {
     else if (code === 'KeyW') addOrb('W');
     else if (code === 'KeyE') addOrb('E');
     else if (code === 'KeyR') invoke();
-    // Позволяем начать игру на Enter, если она не активна
     else if (code === 'Enter' && !isGameActive) startGame();
 });
 
