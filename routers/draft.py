@@ -87,8 +87,10 @@ async def analyze_perfect(payload: DraftRequest):
 
         fav_ids = []
         if payload.user_id:
-            fav_data = await get_favorites(payload.user_id)
-            fav_ids = fav_data["favorite_ids"]
+            try:
+                fav_data = await get_favorites(payload.user_id)
+                fav_ids = fav_data["favorite_ids"]
+            except: pass
             
         final_results = []
         for r_k, r_t in ROLES.items():
@@ -103,14 +105,6 @@ async def analyze_perfect(payload: DraftRequest):
                         used.add(c["id"]); return c
                 return None
 
-            final_results.append({
-                "role": r_t, 
-                "data": {
-                    "top_favorite": pick([c for c in eligible if c["id"] in fav_ids]), 
-                    "top_winrate": pick(eligible), 
-                    "others": [pick(eligible) for _ in range(3)]
-                }
-            })
+            final_results.append({"role": r_t, "data": {"top_favorite": pick([c for c in eligible if c["id"] in fav_ids]), "top_winrate": pick(eligible), "others": [pick(eligible) for _ in range(3)]}})
         return {"results": final_results}
-    except Exception as e:
-        raise HTTPException(500, str(e))
+    except Exception as e: raise HTTPException(500, str(e))
