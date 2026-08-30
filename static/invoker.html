@@ -1,16 +1,56 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head><meta charset="UTF-8"><link rel="stylesheet" href="/static/css/styles.css"></head>
-<body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажёр Инвокера — Dota 2 Helper</title>
+    <link rel="stylesheet" href="/static/css/global.css">
+    <link rel="stylesheet" href="/static/css/header.css">
+    <link rel="stylesheet" href="/static/css/invoker.css">
+</head>
+<body id="body-invoker">
     <header>
-        <div class="header-left"><div class="logo" onclick="window.location.href='/'">Dota 2 Helper</div>
-        <nav class="main-nav">
-            <button class="nav-link" onclick="window.location.href='/drafts'">АНАЛИЗ ДРАФТОВ</button>
-            <button class="nav-link" onclick="window.location.href='/fantasy'">ФЕНТАЗИ ПОМОЩНИК</button>
-            <button class="nav-link active" onclick="window.location.href='/invoker'">ТРЕНАЖЁР ИНВОКЕР</button>
-        </nav></div>
+        <div class="header-left">
+            <div class="logo" onclick="window.location.href='/'">Dota 2 Helper</div>
+            <nav class="main-nav">
+                <button class="nav-link" onclick="window.location.href='/drafts'">АНАЛИЗ ДРАФТОВ</button>
+                <button class="nav-link" onclick="window.location.href='/fantasy'">ФЕНТАЗИ ПОМОЩНИК</button>
+                <button class="nav-link active" onclick="window.location.href='/invoker'">ТРЕНАЖЁР ИНВОКЕР</button>
+            </nav>
+        </div>
+        <div class="user-panel">
+            <span id="user-display-name" class="user-badge" onclick="window.location.href='/profile'">Загрузка...</span>
+            <button class="btn-logout" onclick="logout()">Выйти</button>
+        </div>
     </header>
-    <main style="text-align:center; padding-top:100px;"><h1>ТРЕНАЖЕР ИНВОКЕР</h1><img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/invoker.png" width="200"></main>
+
+    <main>
+        <div class="game-container">
+            <div class="target-spell-area">
+                <img id="target-spell-img" src="" alt="Spell">
+                <div id="target-spell-name">ЗАГРУЗКА...</div>
+            </div>
+
+            <div class="orbs-container">
+                <div id="orb-0" class="orb"></div>
+                <div id="orb-1" class="orb"></div>
+                <div id="orb-2" class="orb"></div>
+            </div>
+
+            <div class="stats-bar">
+                <div>СЧЕТ: <span id="score" class="stat-val">0</span></div>
+            </div>
+
+            <div class="key-hints">
+                <span class="key">Q</span>
+                <span class="key">W</span>
+                <span class="key">E</span>
+                <span class="key">R (INVOKE)</span>
+            </div>
+        </div>
+    </main>
+
     <script src="/static/js/auth.js"></script>
+    <script src="/static/js/invoker.js"></script>
 </body>
 </html>
