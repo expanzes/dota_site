@@ -25,33 +25,25 @@
 
         <main>
             <div class="draft-container">
-                <!-- Моя команда -->
                 <div class="team-box">
                     <h3 class="allies-title">Моя команда</h3>
-                    <div class="inputs-grid" id="allies-inputs">
-                        <!-- Сюда JS вставит инпуты с ролями -->
-                    </div>
+                    <div class="inputs-grid" id="allies-inputs"></div>
                 </div>
 
-                <!-- Команда противника -->
                 <div class="team-box">
                     <h3 class="enemies-title">Команда противника</h3>
-                    <div class="inputs-grid" id="enemies-inputs">
-                        <!-- Сюда JS вставит инпуты -->
-                    </div>
+                    <div class="inputs-grid" id="enemies-inputs"></div>
                 </div>
             </div>
 
-            <!-- Кнопки в один ряд (как на фото 2) -->
             <div class="actions-row">
-                <button class="btn-analyze" onclick="analyzeDraft()">Проанализировать драфт</button>
-                <button class="btn-clear" onclick="clearInputs()">Очистить</button>
+                <button class="btn-analyze" onclick="analyzeDraft()">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
+                <button class="btn-clear" onclick="clearInputs()">ОЧИСТИТЬ</button>
             </div>
 
             <div id="results-container"></div>
         </main>
     </div>
-
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/draft.js"></script>
 </body>
