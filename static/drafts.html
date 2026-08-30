@@ -6,7 +6,7 @@
     <title>Анализ Драфтов — Dota 2 Helper</title>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
-<body>
+<body id="body-drafts">
     <div id="main-app">
         <header>
             <div class="header-left">
@@ -29,18 +29,15 @@
                     <h3 class="allies-title">Моя команда</h3>
                     <div class="inputs-grid" id="allies-inputs"></div>
                 </div>
-
                 <div class="team-box">
                     <h3 class="enemies-title">Команда противника</h3>
                     <div class="inputs-grid" id="enemies-inputs"></div>
                 </div>
             </div>
-
             <div class="actions-row">
                 <button class="btn-analyze" onclick="analyzeDraft()">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
                 <button class="btn-clear" onclick="clearInputs()">ОЧИСТИТЬ</button>
             </div>
-
             <div id="results-container"></div>
         </main>
     </div>
