@@ -37,16 +37,16 @@ HERO_TAGS = {
 }
 
 HERO_POSITIONS = {
-    "Anti-Mage": [1], "Arc Warden": [2], "Bloodseeker": [1], "Chaos Knight": [1, 3],
+    "Anti-Mage": [1], "Arc Warden": [1, 2], "Bloodseeker": [1, 2], "Chaos Knight": [1],
     "Clinkz": [1, 2], "Drow Ranger": [1], "Faceless Void": [1], "Gyrocopter": [1], "Juggernaut": [1],
-    "Kez": [1, 2], "Lifestealer": [1], "Lone Druid": [1, 2], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
+    "Kez": [1, 2], "Lifestealer": [1], "Lone Druid": [1, 2, 3], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
     "Morphling": [1, 2], "Muerta": [1], "Naga Siren": [1], "Nature's Prophet": [1, 2, 3, 4], "Phantom Assassin": [1],
     "Phantom Lancer": [1], "Razor": [1, 2, 3], "Riki": [1], "Slark": [1], "Sniper": [1, 2], "Spectre": [1],
     "Sven": [1], "Templar Assassin": [1, 2], "Terrorblade": [1], "Tiny": [2, 4], "Troll Warlord": [1],
     "Ursa": [1], "Weaver": [1, 4], "Wraith King": [1, 3], "Ember Spirit": [2], "Invoker": [2], 
     "Kunkka": [2, 3], "Leshrac": [2], "Lina": [2], "Necrophos": [2, 3], "Outworld Destroyer": [2],
     "Pangolier": [2, 3], "Puck": [2], "Queen of Pain": [2], "Shadow Fiend": [1, 2], "Storm Spirit": [2],
-    "Tinker": [2], "Void Spirit": [2], "Zeus": [2, 4], "Batrider": [2, 3, 4], "Primal Beast": [2, 3],
+    "Tinker": [2], "Void Spirit": [2], "Zeus": [2], "Batrider": [2, 3, 4], "Primal Beast": [2, 3],
     "Abaddon": [3, 4, 5], "Axe": [3], "Beastmaster": [3], "Brewmaster": [3], "Bristleback": [3],
     "Centaur Warrunner": [3], "Dark Seer": [3], "Dawnbreaker": [3, 4], "Doom": [3], "Dragon Knight": [2, 3],
     "Earthshaker": [3, 4], "Elder Titan": [3, 4, 5], "Enigma": [3, 4], "Largo": [3, 4, 5], "Legion Commander": [3],
@@ -63,5 +63,5 @@ HERO_POSITIONS = {
     "Vengeful Spirit": [4, 5], "Warlock": [5], "Windranger": [4], "Winter Wyvern": [4, 5], "Witch Doctor": [5]
 }
 
-ILLUSION_HEROES = ["Naga Siren", "Phantom Lancer", "Terrorblade", "Chaos Knight", "Meepo"]
+ILLUSION_HERO_NAMES = ["Naga Siren", "Phantom Lancer", "Terrorblade", "Chaos Knight", "Meepo"]
 ILLUSION_KILLERS = ["Axe", "Earthshaker", "Sven", "Leshrac", "Legion Commander", "Sand King"]
