@@ -37,9 +37,9 @@ HERO_TAGS = {
 }
 
 HERO_POSITIONS = {
-    "Anti-Mage": [1], "Arc Warden": [1, 2], "Bloodseeker": [1, 2], "Chaos Knight": [1],
+    "Anti-Mage": [1], "Arc Warden": [2], "Bloodseeker": [1], "Chaos Knight": [1, 3],
     "Clinkz": [1, 2], "Drow Ranger": [1], "Faceless Void": [1], "Gyrocopter": [1], "Juggernaut": [1],
-    "Kez": [1, 2], "Lifestealer": [1], "Lone Druid": [1, 2, 3], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
+    "Kez": [1, 2], "Lifestealer": [1], "Lone Druid": [1, 2], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
     "Morphling": [1, 2], "Muerta": [1], "Naga Siren": [1], "Nature's Prophet": [1, 2, 3, 4], "Phantom Assassin": [1],
     "Phantom Lancer": [1], "Razor": [1, 2, 3], "Riki": [1], "Slark": [1], "Sniper": [1, 2], "Spectre": [1],
     "Sven": [1], "Templar Assassin": [1, 2], "Terrorblade": [1], "Tiny": [2, 4], "Troll Warlord": [1],
