@@ -37,22 +37,22 @@
                 </div>
             </div>
 
-            <!-- ТРИ КНОПКИ В РЯД -->
+            <!-- БЛОК КНОПОК: ТЕПЕРЬ СТРОГО 3 В РЯД -->
             <div class="actions-row">
                 <button class="btn-analyze" onclick="analyzeDraft()">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
                 <button class="btn-clear" onclick="clearInputs()">ОЧИСТИТЬ</button>
                 
-                <div class="info-wrapper">
-                    <button class="btn-info">КАК ЭТО РАБОТАЕТ?</button>
-                    <div class="info-tooltip">
-                        <div class="tooltip-header">ЛОГИКА PRO-LEVEL</div>
-                        <ul class="tooltip-list">
-                            <li><span>Immortal Meta:</span> Анализ только топовых матчей мира.</li>
-                            <li><span>Хард-контрпики:</span> Один Акс против Наги важнее, чем пять мелких плюсов.</li>
-                            <li><span>Детектор иллюзий:</span> ПЛ, Нага и ТБ получают штраф против Акса и Шейкера.</li>
-                            <li><span>Баланс состава:</span> Система видит нехватку станов или танков.</li>
-                            <li><span>Лимит 95%:</span> Учет человеческого фактора в прогнозе.</li>
-                        </ul>
+                <div class="help-container">
+                    <button class="btn-help">КАК ЭТО РАБОТАЕТ?</button>
+                    <div class="help-tooltip">
+                        <div class="tooltip-title">МАТЕМАТИКА PRO-LEVEL</div>
+                        <div class="tooltip-content">
+                            <p><b>Immortal Meta:</b> Анализ на основе матчей высшего ранга.</p>
+                            <p><b>Приоритет угроз:</b> Критические контрпики (напр. Axe против Naga) весят больше мелких плюсов.</p>
+                            <p><b>Детектор иллюзий:</b> ПЛ, Нага и ТБ получают штраф против Акса, Свена и Шейкера.</p>
+                            <p><b>Баланс состава:</b> Система видит нехватку станов и танков, предлагая героев для «закрытия дыр».</p>
+                            <p><b>Лимит 95%:</b> Прогноз учитывает человеческий фактор — 100% побед не бывает.</p>
+                        </div>
                     </div>
                 </div>
             </div>
