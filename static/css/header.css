@@ -1,0 +1,13 @@
+header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 15px 40px; background: var(--bg-dark); border-bottom: 1px solid var(--border-color);
+}
+.header-left { display: flex; align-items: center; gap: 40px; }
+.logo { font-size: 1.35rem; font-weight: 800; color: var(--accent-red); cursor: pointer; text-transform: uppercase; }
+.main-nav { display: flex; gap: 20px; }
+.nav-link { background: transparent; border: none; color: var(--text-muted); font-weight: 700; font-size: 0.85rem; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+.nav-link:hover, .nav-link.active { color: var(--accent-red); }
+
+.user-panel { display: flex; align-items: center; gap: 12px; }
+.user-badge { background: var(--bg-card); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.btn-logout { background: rgba(244, 63, 94, 0.08); color: var(--accent-red); border: 1px solid var(--accent-red); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
