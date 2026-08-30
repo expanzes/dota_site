@@ -6,7 +6,7 @@
     <title>Мой Профиль — Dota 2 Helper</title>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
-<body>
+<body id="body-profile">
     <header>
         <div class="header-left">
             <div class="logo" onclick="window.location.href='/'">Dota 2 Helper</div>
@@ -30,19 +30,15 @@
         </div>
     </main>
 
-    <!-- Красивая модалка выбора героев -->
     <div id="fav-modal" class="modal-overlay hidden">
-        <div class="modal-card">
+        <div class="modal-card" style="max-width: 900px;">
             <h3 style="margin-bottom: 20px;">Ваши любимые герои</h3>
-            <input type="text" id="fav-search-input" class="fav-search" placeholder="Поиск по имени или алиасу..." oninput="filterFavHeroes()">
-            
-            <div id="fav-heroes-container" class="fav-heroes-grid">
-                <!-- Герои вставляются сюда через JS -->
-            </div>
-
-            <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeFavModal()">Отмена</button>
-                <button class="btn-save" onclick="saveFavorites()">Сохранить изменения</button>
+            <input type="text" id="fav-search-input" placeholder="Поиск..." oninput="filterFavHeroes()" 
+                   style="background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px;">
+            <div id="fav-heroes-container" class="fav-heroes-grid"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
+                <button class="btn-secondary" onclick="closeFavModal()">Отмена</button>
+                <button class="btn-primary" onclick="saveFavorites()">Сохранить</button>
             </div>
         </div>
     </div>
