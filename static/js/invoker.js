@@ -13,10 +13,11 @@ const INVOKER_SPELLS = [
 
 let currentOrbs = [];
 let targetSpell = null;
+let lastSpellName = ""; // Храним имя предыдущего скилла
 let score = 0;
 
 function startGame() {
-    console.log("Инвокер: Игра началась!");
+    console.log("Инвокер: Тренировка запущена!");
     score = 0;
     const scoreEl = document.getElementById('score');
     if (scoreEl) scoreEl.innerText = score;
@@ -24,13 +25,20 @@ function startGame() {
 }
 
 function nextSpell() {
-    targetSpell = INVOKER_SPELLS[Math.floor(Math.random() * INVOKER_SPELLS.length)];
+    let next;
+    // Цикл выбирает новый скилл, пока он совпадает с предыдущим
+    do {
+        next = INVOKER_SPELLS[Math.floor(Math.random() * INVOKER_SPELLS.length)];
+    } while (next.name === lastSpellName);
+
+    targetSpell = next;
+    lastSpellName = next.name;
+
     const imgEl = document.getElementById('target-spell-img');
     const nameEl = document.getElementById('target-spell-name');
     
     if (imgEl) imgEl.src = targetSpell.img;
     if (nameEl) nameEl.innerText = targetSpell.name;
-    console.log("Цель:", targetSpell.name, targetSpell.keys);
 }
 
 function updateOrbsUI() {
@@ -38,7 +46,7 @@ function updateOrbsUI() {
         const orbEl = document.getElementById(`orb-${i}`);
         if (!orbEl) continue;
         
-        orbEl.className = 'orb'; // Сброс классов
+        orbEl.className = 'orb'; // Сброс
         const orbType = currentOrbs[i];
         
         if (orbType === 'Q') orbEl.classList.add('quas');
@@ -50,7 +58,7 @@ function updateOrbsUI() {
 function addOrb(type) {
     currentOrbs.push(type);
     if (currentOrbs.length > 3) {
-        currentOrbs.shift(); // Оставляем только последние 3 сферы
+        currentOrbs.shift();
     }
     updateOrbsUI();
 }
@@ -58,7 +66,6 @@ function addOrb(type) {
 function invoke() {
     if (!targetSpell) return;
     
-    // Сортируем нажатые сферы и нужные для заклинания (порядок в Доте не важен)
     const currentCombo = [...currentOrbs].sort().join('');
     const targetCombo = targetSpell.keys.split('').sort().join('');
 
@@ -69,14 +76,12 @@ function invoke() {
         const scoreEl = document.getElementById('score');
         if (scoreEl) scoreEl.innerText = score;
         
-        // Вспышка зеленым при успехе
         if (container) {
             container.style.boxShadow = "0 0 30px var(--accent-green)";
             setTimeout(() => container.style.boxShadow = "", 300);
         }
         nextSpell();
     } else {
-        // Вспышка красным при ошибке
         if (container) {
             container.style.boxShadow = "0 0 30px var(--accent-red)";
             setTimeout(() => container.style.boxShadow = "", 300);
@@ -84,24 +89,27 @@ function invoke() {
     }
 }
 
-// Обработка клавиш
+// ОБРАБОТКА КЛАВИШ ЧЕРЕЗ e.code (физическое нажатие)
 function handleKeyDown(e) {
-    const key = e.key.toUpperCase();
-    
-    // Проверяем, что пользователь не пишет в каком-то поле ввода (если оно появится)
     if (e.target.tagName === 'INPUT') return;
 
-    if (key === 'Q' || key === 'W' || key === 'E') {
-        addOrb(key);
-    } else if (key === 'R') {
+    const code = e.code; // KeyQ, KeyW, KeyE, KeyR и т.д.
+
+    if (code === 'KeyQ') {
+        addOrb('Q');
+    } else if (code === 'KeyW') {
+        addOrb('W');
+    } else if (code === 'KeyE') {
+        addOrb('E');
+    } else if (code === 'KeyR') {
         invoke();
     }
 }
 
-// Принудительная инициализация
+// Принудительно вешаем слушатель
 document.addEventListener('keydown', handleKeyDown);
 
-// Запуск игры после того, как всё дерево DOM построено
+// Инициализация
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', startGame);
 } else {
