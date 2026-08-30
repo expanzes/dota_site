@@ -16,60 +16,23 @@
 body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; }
 .hidden { display: none !important; }
 
-/* --- ЭКРАН ВХОДА (ЦЕНТРИРОВАНИЕ И ГРАДИЕНТ) --- */
+/* --- ЭКРАН ПРИВЕТСТВИЯ --- */
 #welcome-screen {
-  display: flex; 
-  justify-content: center; 
-  align-items: center;
-  min-height: 100vh; 
-  width: 100%;
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh; width: 100%;
   background: radial-gradient(circle at center, #171b26 0%, var(--bg-dark) 100%);
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: fixed; top: 0; left: 0;
 }
 
 .welcome-card {
-  background: var(--bg-card); 
-  padding: 40px; 
-  border-radius: 16px;
-  border: 1px solid var(--border-color); 
-  text-align: center;
-  max-width: 480px; 
-  width: 90%; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  background: var(--bg-card); padding: 40px; border-radius: 16px;
+  border: 1px solid var(--border-color); text-align: center;
+  max-width: 480px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
 .welcome-card h1 { font-size: 2.2rem; margin-bottom: 12px; color: var(--accent-red); font-weight: 900; }
 .welcome-card p { color: var(--text-muted); margin-bottom: 24px; }
-
 .btn-group { display: flex; flex-direction: column; gap: 12px; }
-
-/* --- ОБЩИЕ КНОПКИ --- */
-.btn-primary { 
-    background: var(--accent-red); 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    padding: 12px 20px; 
-    font-weight: 600; 
-    cursor: pointer; 
-    transition: 0.2s; 
-    text-transform: uppercase;
-}
-.btn-primary:hover { background: var(--accent-red-hover); transform: translateY(-1px); }
-
-.btn-secondary { 
-    background: var(--bg-input); 
-    color: var(--text-main); 
-    border: 1px solid var(--border-color); 
-    border-radius: 8px; 
-    padding: 12px 20px; 
-    font-weight: 600; 
-    cursor: pointer; 
-    transition: 0.2s;
-}
-.btn-secondary:hover { background: #202636; }
 
 /* --- МОДАЛКИ (ВХОД / РЕГИСТРАЦИЯ) --- */
 .modal-overlay { 
@@ -77,13 +40,56 @@ body { background-color: var(--bg-dark); color: var(--text-main); min-height: 10
   background: rgba(0,0,0,0.85); display: flex; align-items: center; 
   justify-content: center; z-index: 1000; backdrop-filter: blur(4px);
 }
-.modal-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; }
-.auth-tabs { display: flex; background: var(--bg-input); padding: 5px; border-radius: 10px; margin-bottom: 20px; }
-.auth-tab { flex: 1; border: none; background: transparent; color: var(--text-muted); padding: 10px; cursor: pointer; border-radius: 8px; font-weight: bold; }
+
+/* УВЕЛИЧЕННОЕ ОКНО */
+.modal-card { 
+  background: var(--bg-card); 
+  border: 1px solid var(--border-color); 
+  padding: 40px; 
+  border-radius: 20px; 
+  width: 95%; 
+  max-width: 550px; /* Сделали шире (было 400) */
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+.auth-tabs { display: flex; background: var(--bg-input); padding: 5px; border-radius: 10px; margin-bottom: 25px; }
+.auth-tab { flex: 1; border: none; background: transparent; color: var(--text-muted); padding: 12px; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 1rem; }
 .auth-tab.active { background: var(--accent-red); color: white; }
 
+/* Инпуты в модалке */
 .modal-card input {
     background: var(--bg-input); border: 1px solid var(--border-color);
-    color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 10px; outline: none;
+    color: white; padding: 14px; border-radius: 8px; width: 100%; margin-bottom: 15px; outline: none; font-size: 1rem;
 }
-.alert-error { background: rgba(244, 63, 94, 0.15); border: 1px solid var(--accent-red); color: #fca5a5; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 10px; text-align: center; }
+.modal-card input:focus { border-color: var(--accent-red); }
+
+.alert-error { background: rgba(244, 63, 94, 0.15); border: 1px solid var(--accent-red); color: #fca5a5; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px; text-align: center; }
+
+/* --- КНОПКИ --- */
+.btn-primary { 
+    background: var(--accent-red); 
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    padding: 14px 30px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    text-transform: uppercase;
+    display: block;      /* Делаем блочной */
+    margin: 10px auto 0; /* ЦЕНТРИРУЕМ: 10px сверху, auto по бокам */
+    width: fit-content;  /* Ширина по тексту + отступы */
+    min-width: 220px;    /* Чтобы не была слишком маленькой */
+}
+.btn-primary:hover { background: var(--accent-red-hover); transform: translateY(-1px); box-shadow: 0 5px 15px rgba(244, 63, 94, 0.3); }
+
+.btn-secondary { 
+    background: var(--bg-input); color: var(--text-main); 
+    border: 1px solid var(--border-color); border-radius: 8px; 
+    padding: 12px 20px; font-weight: 600; cursor: pointer; transition: 0.2s;
+    display: block;
+    margin: 15px auto 0;
+    width: fit-content;
+    font-size: 0.9rem;
+}
+.btn-secondary:hover { background: #202636; color: white; }
