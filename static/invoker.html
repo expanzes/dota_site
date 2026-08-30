@@ -26,27 +26,42 @@
 
     <main>
         <div class="game-container">
-            <div class="target-spell-area">
-                <img id="target-spell-img" src="" alt="Spell">
-                <div id="target-spell-name">ЗАГРУЗКА...</div>
+            <!-- ЭКРАН СТАРТА -->
+            <div id="start-screen" class="game-screen">
+                <h1 style="margin-bottom: 20px;">ГОТОВ К ТРЕНИРОВКЕ?</h1>
+                <p style="color: var(--text-muted); margin-bottom: 40px;">У тебя будет 30 секунд, чтобы нажать как можно больше заклинаний.</p>
+                <button class="btn-start" onclick="startGame()">ИГРАТЬ</button>
             </div>
 
-            <div class="orbs-container">
-                <div id="orb-0" class="orb"></div>
-                <div id="orb-1" class="orb"></div>
-                <div id="orb-2" class="orb"></div>
+            <!-- ЭКРАН ИГРЫ -->
+            <div id="game-screen" class="game-screen hidden">
+                <div id="timer" class="timer-display">30</div>
+                
+                <div class="target-spell-area">
+                    <img id="target-spell-img" src="" alt="Spell">
+                    <div id="target-spell-name">...</div>
+                </div>
+
+                <div class="orbs-container">
+                    <div id="orb-0" class="orb"></div>
+                    <div id="orb-1" class="orb"></div>
+                    <div id="orb-2" class="orb"></div>
+                </div>
+
+                <div class="score-text">СЧЕТ: <span id="score-display">0</span></div>
             </div>
 
-            <div class="stats-bar">
-                <div>СЧЕТ: <span id="score" class="stat-val">0</span></div>
+            <!-- ЭКРАН РЕЗУЛЬТАТОВ -->
+            <div id="result-screen" class="game-screen hidden">
+                <h1>ВРЕМЯ ВЫШЛО!</h1>
+                <div class="score-text">ТВОЙ РЕЗУЛЬТАТ:</div>
+                <div id="final-score" class="final-score">0</div>
+                <button class="btn-start" onclick="startGame()">ПОПРОБОВАТЬ СНОВА</button>
             </div>
+        </div>
 
-            <div class="key-hints">
-                <span class="key">Q</span>
-                <span class="key">W</span>
-                <span class="key">E</span>
-                <span class="key">R (INVOKE)</span>
-            </div>
+        <div style="margin-top: 30px; color: var(--text-muted); font-size: 0.8rem;">
+            Используй клавиши <b>Q W E</b> для сфер и <b>R</b> для каста (Invoke)
         </div>
     </main>
 
