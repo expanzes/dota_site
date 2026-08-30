@@ -38,9 +38,24 @@
                 </div>
             </div>
 
+            <!-- Ряд кнопок (Теперь 3 кнопки) -->
             <div class="actions-row">
                 <button class="btn-analyze" onclick="analyzeDraft()">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
                 <button class="btn-clear" onclick="clearInputs()">ОЧИСТИТЬ</button>
+                
+                <div class="help-wrapper">
+                    <button class="btn-help">КАК ЭТО РАБОТАЕТ?</button>
+                    <div class="tooltip-box">
+                        <div class="tooltip-header">PRO-LEVEL МАТЕМАТИКА</div>
+                        <ul class="tooltip-list">
+                            <li><b>Immortal Meta:</b> Анализ только топовых матчей мира.</li>
+                            <li><b>Приоритет угроз:</b> Один хард-контрпик (напр. Axe > Naga) обнуляет все мелкие плюсы героя.</li>
+                            <li><b>Детектор иллюзий:</b> ПЛ, Нага и ТБ получают доп. штраф против Shaker, Axe и Sven.</li>
+                            <li><b>Умный баланс:</b> Сайт видит нехватку станов или танков и предлагает героев для закрытия дыр.</li>
+                            <li><b>Честный винрейт:</b> Прогноз ограничен 95%, учитывая человеческий фактор.</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
 
             <div id="results-container"></div>
