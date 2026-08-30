@@ -1,5 +1,6 @@
 let heroesList = [];
 
+// Самый полный список алиасов
 const HERO_ALIASES = {
   "Anti-Mage": ["am", "ам", "антимаг"],
   "Shadow Fiend": ["sf", "сф", "невермор", "nevermore"],
@@ -52,147 +53,218 @@ const HERO_ALIASES = {
   "Kez": ["кез", "птица", "петух"]
 };
 
+// Инициализация полей ввода (чтобы не писать их 10 раз в HTML)
+const initDraftInputs = () => {
+    const allies = document.getElementById('allies-inputs');
+    const enemies = document.getElementById('enemies-inputs');
+    if (!allies || !enemies) return;
+
+    allies.innerHTML = ''; 
+    enemies.innerHTML = '';
+
+    for(let i=1; i<=5; i++) {
+        allies.innerHTML += `
+            <div class="input-field-group">
+                <label>Поз ${i}</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="my-pos${i}" placeholder="Выберите героя..." autocomplete="off">
+                    <button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos${i}')">&times;</button>
+                </div>
+            </div>`;
+        enemies.innerHTML += `
+            <div class="input-field-group">
+                <label>Враг ${i}</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="enemy-${i}" placeholder="Выберите героя..." autocomplete="off">
+                    <button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-${i}')">&times;</button>
+                </div>
+            </div>`;
+    }
+    setupCustomAutocomplete();
+};
+
 async function loadHeroes() {
-  const res = await fetch('/api/heroes');
-  if (res.ok) heroesList = await res.json();
+    try {
+        const response = await fetch('/api/heroes');
+        if (response.ok) {
+            heroesList = await response.json();
+            initDraftInputs(); // Создаем инпуты только после загрузки героев
+        }
+    } catch (err) {
+        console.error('Ошибка загрузки героев:', err);
+    }
 }
 
 function setupCustomAutocomplete() {
-  const ids = ['my-pos1','my-pos2','my-pos3','my-pos4','my-pos5','enemy-1','enemy-2','enemy-3','enemy-4','enemy-5'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('input', () => renderDropdown(el, el.parentElement));
-      el.addEventListener('focus', () => renderDropdown(el, el.parentElement));
-    }
-  });
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.autocomplete-wrapper')) document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
-  });
+    const inputs = document.querySelectorAll('.autocomplete-wrapper input');
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => renderDropdown(input, input.parentElement));
+        input.addEventListener('input', () => renderDropdown(input, input.parentElement));
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.autocomplete-wrapper')) {
+            document.querySelectorAll('.autocomplete-dropdown').forEach(el => el.remove());
+        }
+    });
 }
 
 function renderDropdown(input, wrapper) {
-  let d = wrapper.querySelector('.autocomplete-dropdown');
-  if (d) d.remove();
-  const q = input.value.toLowerCase().trim();
-  if (!q && input !== document.activeElement) return;
+    const old = wrapper.querySelector('.autocomplete-dropdown');
+    if (old) old.remove();
 
-  const filtered = heroesList.filter(h => {
-    const nameMatch = h.name.toLowerCase().includes(q);
-    const aliasMatch = HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.toLowerCase().includes(q));
-    return nameMatch || aliasMatch;
-  });
+    const q = input.value.toLowerCase().trim();
+    const filtered = heroesList.filter(h => {
+        const nameMatch = h.name.toLowerCase().includes(q);
+        const aliasMatch = HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.includes(q));
+        return nameMatch || aliasMatch;
+    });
 
-  if (filtered.length === 0) return;
+    if (filtered.length === 0) return;
 
-  d = document.createElement('div');
-  d.className = 'autocomplete-dropdown';
-  filtered.slice(0, 12).forEach(h => {
-    const item = document.createElement('div');
-    item.className = 'autocomplete-item';
-    item.innerHTML = `<img src="${h.img}"><span>${h.name}</span>`;
-    item.onmousedown = (e) => {
-      e.preventDefault();
-      input.value = h.name;
-      d.remove();
-    };
-    d.appendChild(item);
-  });
-  wrapper.appendChild(d);
+    const dropdown = document.createElement('div');
+    dropdown.className = 'autocomplete-dropdown';
+    
+    // Стилизуем выпадающий список прямо здесь для надежности
+    dropdown.style = "position:absolute; top:100%; left:0; right:0; background:#171b26; border:1px solid #202636; z-index:1000; border-radius:8px; max-height:250px; overflow-y:auto; margin-top:5px;";
+
+    filtered.slice(0, 12).forEach(hero => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.style = "display:flex; align-items:center; gap:12px; padding:10px; cursor:pointer; border-bottom:1px solid #202636;";
+        item.innerHTML = `<img src="${hero.img}" width="40" style="border-radius:4px;"><span>${hero.name}</span>`;
+        
+        item.onmousedown = (e) => {
+            e.preventDefault();
+            input.value = hero.name;
+            dropdown.remove();
+        };
+        dropdown.appendChild(item);
+    });
+    wrapper.appendChild(dropdown);
 }
 
 async function analyzeDraft() {
-  const my_team = { 
-    pos1: document.getElementById('my-pos1').value, 
-    pos2: document.getElementById('my-pos2').value, 
-    pos3: document.getElementById('my-pos3').value, 
-    pos4: document.getElementById('my-pos4').value, 
-    pos5: document.getElementById('my-pos5').value 
-  };
-  const enemy_team = [1,2,3,4,5].map(i => document.getElementById(`enemy-${i}`).value).filter(v => v);
-  
-  const resContainer = document.getElementById('results-container');
-  resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">Идет глубокий анализ матчапов и синергии...</p>';
+    const myTeam = {
+        pos1: document.getElementById('my-pos1').value,
+        pos2: document.getElementById('my-pos2').value,
+        pos3: document.getElementById('my-pos3').value,
+        pos4: document.getElementById('my-pos4').value,
+        pos5: document.getElementById('my-pos5').value
+    };
 
-  try {
-    const res = await fetch('/api/analyze', {
-      method: 'POST', 
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ my_team, enemy_team, user_id: currentUser?.user_id })
-    });
-    
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    renderResults(data.results);
-  } catch (err) {
-    resContainer.innerHTML = '<p style="text-align:center; color:var(--accent-red);">Ошибка связи с сервером.</p>';
-  }
+    const enemyTeam = [1,2,3,4,5]
+        .map(i => document.getElementById(`enemy-${i}`).value)
+        .filter(v => v.trim() !== "");
+
+    const resContainer = document.getElementById('results-container');
+    resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px;">Анализируем драфт...</p>';
+
+    try {
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                my_team: myTeam,
+                enemy_team: enemyTeam,
+                user_id: currentUser ? currentUser.user_id : null
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            renderResults(data.results);
+        } else {
+            resContainer.innerHTML = '<p style="color:var(--accent-red); text-align:center;">Ошибка сервера</p>';
+        }
+    } catch (err) {
+        resContainer.innerHTML = '<p style="color:var(--accent-red); text-align:center;">Ошибка соединения</p>';
+    }
 }
 
 function renderResults(results) {
-  const container = document.getElementById('results-container');
-  container.innerHTML = '';
-  
-  results.forEach(item => {
-    const section = document.createElement('div');
-    section.className = 'results-section';
-    section.innerHTML = `<h3 class="role-group-title">${item.role}</h3>`;
-    
-    const topRow = document.createElement('div');
-    topRow.className = 'top-picks-row';
-    
-    // ОБНОВЛЕННЫЕ ЗАГОЛОВКИ ПЛАШЕК
-    if (item.data.top_favorite) topRow.appendChild(createCard(item.data.top_favorite, 'favorite', 'ИЗ ВАШЕГО ПУЛА'));
-    if (item.data.top_winrate) topRow.appendChild(createCard(item.data.top_winrate, 'winrate', 'ЛУЧШИЙ ВАРИАНТ'));
-    section.appendChild(topRow);
+    const container = document.getElementById('results-container');
+    container.innerHTML = '';
 
-    const grid = document.createElement('div');
-    grid.className = 'hero-cards-grid';
-    item.data.others.forEach(h => { if(h) grid.appendChild(createHeroSmallCard(h)); });
-    section.appendChild(grid);
-    
-    container.appendChild(section);
-  });
+    results.forEach(item => {
+        const section = document.createElement('div');
+        section.className = 'results-section';
+        section.style = "margin-bottom: 40px;";
+        section.innerHTML = `<h3 class="role-group-title" style="margin-bottom:15px; border-left:4px solid var(--accent-red); padding-left:15px;">${item.role}</h3>`;
+
+        const topRow = document.createElement('div');
+        topRow.className = 'top-picks-row';
+
+        if (item.data.top_favorite) {
+            topRow.appendChild(createCard(item.data.top_favorite, 'favorite', 'ИЗ ВАШЕГО ПУЛА'));
+        }
+        if (item.data.top_winrate) {
+            topRow.appendChild(createCard(item.data.top_winrate, 'winrate', 'ЛУЧШИЙ ВАРИАНТ'));
+        }
+        section.appendChild(topRow);
+
+        const grid = document.createElement('div');
+        grid.className = 'hero-cards-grid';
+        item.data.others.forEach(h => {
+            if (h) grid.appendChild(createHeroSmallCard(h));
+        });
+        section.appendChild(grid);
+        
+        container.appendChild(section);
+    });
 }
 
 function createCard(h, type, label) {
-  const div = document.createElement('div');
-  div.className = `top-pick-card ${type}`;
-  const advColor = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-  div.innerHTML = `
-    <div class="top-pick-label">${label}</div>
-    <img src="${h.img}" alt="${h.name}">
-    <div class="top-pick-hero-name">${h.name}</div>
-    <div class="top-pick-hero-stats">
-        Прогноз WR: <span class="val-green">${h.winrate}%</span><br>
-        Контрпик: <span style="color:${advColor}">${h.advantage >= 0 ? '+':''}${h.advantage}%</span>
-    </div>`;
-  return div;
+    const div = document.createElement('div');
+    div.className = `top-pick-card ${type}`;
+    const advColor = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    const sign = h.advantage >= 0 ? '+' : '';
+    
+    div.innerHTML = `
+        <div class="top-pick-label" style="font-size:0.7rem; font-weight:800; margin-bottom:12px; letter-spacing:1px;">${label}</div>
+        <img src="${h.img}" alt="${h.name}" style="width:130px; border-radius:8px; margin-bottom:10px;">
+        <div class="top-pick-hero-name" style="font-weight:bold; font-size:1.1rem;">${h.name}</div>
+        <div class="top-pick-hero-stats" style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">
+            Прогноз WR: <span class="val-green">${h.winrate}%</span><br>
+            Контрпик: <span style="color:${advColor}; font-weight:bold;">${sign}${h.advantage}%</span>
+        </div>`;
+    return div;
 }
 
 function createHeroSmallCard(h) {
-  const div = document.createElement('div');
-  div.className = 'result-hero-card';
-  const advColor = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-  div.innerHTML = `
-    <img src="${h.img}" alt="${h.name}">
-    <div class="hero-info">
-      <span class="hero-name">${h.name} <span style="color:${advColor}; font-size:0.75rem;">${h.advantage >= 0 ? '+':''}${h.advantage}%</span></span>
-      <span class="hero-stats">Итоговый WR: ${h.winrate}%</span>
-    </div>`;
-  return div;
+    const div = document.createElement('div');
+    div.className = 'result-hero-card';
+    const advColor = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    const sign = h.advantage >= 0 ? '+' : '';
+    
+    div.innerHTML = `
+        <img src="${h.img}" alt="${h.name}" width="50" style="border-radius:4px;">
+        <div class="hero-info">
+            <div class="hero-name" style="font-size:0.95rem; font-weight:bold;">
+                ${h.name} <span style="color:${advColor}; font-size:0.7rem;">${sign}${h.advantage}%</span>
+            </div>
+            <div class="hero-stats" style="font-size:0.8rem; color:var(--text-muted);">Итоговый WR: ${h.winrate}%</div>
+        </div>`;
+    return div;
+}
+
+function clearSingleInput(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.value = '';
+        el.focus();
+    }
 }
 
 function clearInputs() {
-  ['my-pos1','my-pos2','my-pos3','my-pos4','my-pos5','enemy-1','enemy-2','enemy-3','enemy-4','enemy-5'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('results-container').innerHTML = '';
-}
-function clearSingleInput(id) { 
-  const el = document.getElementById(id);
-  if(el) { el.value = ''; el.focus(); }
+    for(let i=1; i<=5; i++) {
+        document.getElementById(`my-pos${i}`).value = '';
+        document.getElementById(`enemy-${i}`).value = '';
+    }
+    document.getElementById('results-container').innerHTML = '';
 }
 
+// Запуск
 document.addEventListener('DOMContentLoaded', () => {
-  setupCustomAutocomplete();
-  loadHeroes();
+    loadHeroes();
 });
