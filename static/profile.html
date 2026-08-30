@@ -24,25 +24,27 @@
 
     <main>
         <div class="profile-container">
-            <!-- Заголовок стал больше -->
             <h1 class="profile-main-title">ЛИЧНЫЙ КАБИНЕТ</h1>
             
-            <!-- Информационное поле -->
             <div class="profile-info-field">
                 <span class="info-label">Никнейм:</span>
                 <span id="profile-user-name" class="info-value">...</span>
             </div>
 
-            <!-- Кнопка ниже -->
+            <!-- БЛОК С РЕКОРДОМ -->
+            <div class="profile-info-field" style="border-color: var(--accent-yellow);">
+                <span class="info-label">Рекорд Инвокера:</span>
+                <span id="invoker-record" class="info-value" style="color: var(--accent-yellow);">0</span>
+            </div>
+
             <button class="btn-yellow" onclick="openFavModal()">★ ВЫБРАТЬ ЛЮБИМЫХ ГЕРОЕВ</button>
         </div>
     </main>
 
-    <!-- Модалка выбора героев -->
     <div id="fav-modal" class="modal-overlay hidden">
         <div class="modal-card" style="max-width: 900px;">
             <h3 style="margin-bottom: 20px;">Ваши любимые герои</h3>
-            <input type="text" id="fav-search-input" placeholder="Поиск по имени или алиасу..." oninput="filterFavHeroes()" 
+            <input type="text" id="fav-search-input" placeholder="Поиск..." oninput="filterFavHeroes()" 
                    style="background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px;">
             <div id="fav-heroes-container" class="fav-heroes-grid"></div>
             <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
@@ -54,5 +56,19 @@
 
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/favorites.js"></script>
+    <script>
+        // Подгружаем рекорд при заходе в профиль
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedUser = localStorage.getItem('dota_user');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                try {
+                    const res = await fetch(`/api/user-stats?username=${user.username}`);
+                    const data = await res.json();
+                    document.getElementById('invoker-record').innerText = data.high_score;
+                } catch (e) { console.error("Ошибка загрузки рекорда"); }
+            }
+        });
+    </script>
 </body>
 </html>
