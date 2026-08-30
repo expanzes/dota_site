@@ -17,7 +17,24 @@ def ensure_tables_exist():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username VARCHAR(100) UNIQUE NOT NULL, password_hash VARCHAR(255) NOT NULL);")
+                # Таблица пользователей с колонкой для рекорда
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id SERIAL PRIMARY KEY, 
+                        username VARCHAR(100) UNIQUE NOT NULL, 
+                        password_hash VARCHAR(255) NOT NULL,
+                        invoker_high_score INTEGER DEFAULT 0
+                    );
+                """)
+                # На случай, если таблица уже была, а колонки нет - добавляем её
+                cur.execute("""
+                    DO $$ 
+                    BEGIN 
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='invoker_high_score') THEN
+                            ALTER TABLE users ADD COLUMN invoker_high_score INTEGER DEFAULT 0;
+                        END IF;
+                    END $$;
+                """)
                 cur.execute("CREATE TABLE IF NOT EXISTS favorites (user_id VARCHAR(100) PRIMARY KEY, favorite_ids INTEGER[]);")
                 conn.commit()
     except Exception as e: print(f"DB Error: {e}")
@@ -26,9 +43,9 @@ class AuthModel(BaseModel):
     username: str
     password: str
 
-class FavoriteModel(BaseModel):
-    user_id: str
-    favorite_ids: List[int]
+class ScoreModel(BaseModel):
+    username: str
+    score: int
 
 @router.post("/register")
 async def register(data: AuthModel):
@@ -61,9 +78,34 @@ async def get_favorites(user_id: str):
     return {"favorite_ids": row[0] if row and row[0] else []}
 
 @router.post("/favorites")
-async def save_favorites(data: FavoriteModel):
+async def save_favorites(data: any): # Для простоты оставил
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("INSERT INTO favorites (user_id, favorite_ids) VALUES (%s, %s) ON CONFLICT (user_id) DO UPDATE SET favorite_ids = EXCLUDED.favorite_ids", (data.user_id, data.favorite_ids))
             conn.commit()
     return {"status": "ok"}
+
+# --- НОВЫЕ ЭНДПОИНТЫ ДЛЯ РЕКОРДОВ ---
+
+@router.post("/save-invoker-score")
+async def save_score(data: ScoreModel):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                # Обновляем только если новый результат больше старого
+                cur.execute("""
+                    UPDATE users 
+                    SET invoker_high_score = GREATEST(invoker_high_score, %s) 
+                    WHERE username = %s
+                """, (data.score, data.username))
+                conn.commit()
+        return {"status": "ok"}
+    except Exception as e: raise HTTPException(500, str(e))
+
+@router.get("/user-stats")
+async def get_stats(username: str):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT invoker_high_score FROM users WHERE username = %s", (username,))
+            row = cur.fetchone()
+    return {"high_score": row[0] if row else 0}
