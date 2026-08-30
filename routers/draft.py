@@ -2,16 +2,13 @@ import asyncio, httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional
-from routers.auth import get_db_connection
-from routers.constants import HERO_TAGS, HERO_POSITIONS, ILLUSION_HEROES, ILLUSION_KILLERS
+from routers.auth import get_db_connection, get_favorites
+from routers.constants import HERO_TAGS, HERO_POSITIONS, ILLUSION_HERO_NAMES, ILLUSION_KILLERS
 
 router = APIRouter()
 MATCHUP_CACHE = {}
 
-ROLES = {
-    "pos1": "Поз 1 (Керри)", "pos2": "Поз 2 (Мид)", "pos3": "Поз 3 (Тройка)", 
-    "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"
-}
+ROLES = {"pos1": "Поз 1 (Керри)", "pos2": "Поз 2 (Мид)", "pos3": "Поз 3 (Тройка)", "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"}
 
 async def get_matchups_data(hero_id: int):
     if hero_id in MATCHUP_CACHE: return MATCHUP_CACHE[hero_id]
@@ -19,19 +16,11 @@ async def get_matchups_data(hero_id: int):
         try:
             r = await client.get(f"https://api.opendota.com/api/heroes/{hero_id}/matchups")
             if r.status_code == 200:
-                MATCHUP_CACHE[hero_id] = r.json()
-                return MATCHUP_CACHE[hero_id]
+                data = r.json()
+                MATCHUP_CACHE[hero_id] = data
+                return data
         except: return []
     return []
-
-def get_db_favs(user_id: str):
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT favorite_ids FROM favorites WHERE user_id = %s", (user_id,))
-                row = cur.fetchone()
-                return row[0] if row and row[0] else []
-    except: return []
 
 class DraftRequest(BaseModel):
     my_team: Dict[str, str]
@@ -53,20 +42,16 @@ async def analyze_perfect(payload: DraftRequest):
         h_list, h_stats = h_res.json(), s_res.json()
         
         name_to_id = {h["localized_name"].lower(): h["id"] for h in h_list}
-        id_to_name = {h["id"]: h["localized_name"] for h in h_list}
         img_map = {h["localized_name"]: f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png" for h in h_list}
         picked = {v.lower() for v in payload.my_team.values() if v} | {n.lower() for n in payload.enemy_team}
 
-        # 1. Баланс тегов команды
         team_tags = [0] * 6
         for ally in payload.my_team.values():
             if ally in HERO_TAGS:
                 for i in range(6): team_tags[i] += HERO_TAGS[ally][i]
 
-        # 2. Immortal Winrate
         base_wr = {hs["localized_name"]: (hs.get("8_win", 0)/hs.get("8_pick", 1)*100) if hs.get("8_pick", 0) > 35 else (hs.get("7_win", 1)/hs.get("7_pick", 1)*100) for hs in h_stats if "localized_name" in hs}
 
-        # 3. Анализ контрпиков
         enemy_ids = [name_to_id[n.lower()] for n in payload.enemy_team if n.lower() in name_to_id]
         enemies_results = await asyncio.gather(*(get_matchups_data(eid) for eid in enemy_ids))
         enemy_has_killer = any(en.title() in ILLUSION_KILLERS for en in payload.enemy_team)
@@ -88,8 +73,7 @@ async def analyze_perfect(payload: DraftRequest):
             avg_adv = sum(advs)/len(advs) if advs else 0
             counter_rating = (avg_adv * 0.4) + (worst * 0.6)
             
-            # Штрафы и бонусы
-            pnlty = -25.0 if name in ILLUSION_HEROES and enemy_has_killer else 0
+            pnlty = -25.0 if name in ILLUSION_HERO_NAMES and enemy_has_killer else 0
             role_bn = 0
             if name in HERO_TAGS:
                 t = HERO_TAGS[name]
@@ -101,8 +85,11 @@ async def analyze_perfect(payload: DraftRequest):
             final_wr = max(5.0, min(95.0, base_wr.get(name, 50) + counter_rating + role_bn + pnlty))
             hero_final_stats.append({"id": h["id"], "name": name, "img": img_map.get(name), "winrate": round(final_wr, 1), "advantage": round(counter_rating, 1)})
 
-        # 4. Сборка результатов
-        fav_ids = get_db_favs(payload.user_id) if payload.user_id else []
+        fav_ids = []
+        if payload.user_id:
+            fav_data = await get_favorites(payload.user_id)
+            fav_ids = fav_data["favorite_ids"]
+            
         final_results = []
         for r_k, r_t in ROLES.items():
             if payload.my_team.get(r_k): continue
@@ -116,6 +103,14 @@ async def analyze_perfect(payload: DraftRequest):
                         used.add(c["id"]); return c
                 return None
 
-            final_results.append({"role": r_t, "data": {"top_favorite": pick([c for c in eligible if c["id"] in fav_ids]), "top_winrate": pick(eligible), "others": [pick(eligible) for _ in range(3)]}})
+            final_results.append({
+                "role": r_t, 
+                "data": {
+                    "top_favorite": pick([c for c in eligible if c["id"] in fav_ids]), 
+                    "top_winrate": pick(eligible), 
+                    "others": [pick(eligible) for _ in range(3)]
+                }
+            })
         return {"results": final_results}
-    except Exception as e: raise HTTPException(500, str(e))
+    except Exception as e:
+        raise HTTPException(500, str(e))
