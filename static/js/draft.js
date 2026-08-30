@@ -51,6 +51,7 @@ const HERO_ALIASES = {
 
 const ALLY_LABELS = ["Керри", "Мид", "Тройка", "Четверка", "Пятерка"];
 
+// Инициализация слотов
 const initDraftInputs = () => {
     const allies = document.getElementById('allies-inputs');
     const enemies = document.getElementById('enemies-inputs');
@@ -84,6 +85,7 @@ async function loadHeroes() {
     }
 }
 
+// Обновление картинки и рамки слота
 function updateHeroSlotUI(inputId) {
     const input = document.getElementById(inputId);
     const container = document.getElementById(`slot-container-${inputId}`);
@@ -103,33 +105,49 @@ function updateHeroSlotUI(inputId) {
 function setupCustomAutocomplete() {
     document.querySelectorAll('.hero-slot input').forEach(input => {
         input.addEventListener('focus', () => renderDropdown(input));
-        input.addEventListener('input', () => { renderDropdown(input); updateHeroSlotUI(input.id); });
+        input.addEventListener('input', () => {
+            renderDropdown(input);
+            updateHeroSlotUI(input.id);
+        });
     });
+
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.hero-slot')) document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
+        if (!e.target.closest('.hero-slot')) {
+            removeAllDropdowns();
+        }
     });
+}
+
+function removeAllDropdowns() {
+    document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
 }
 
 function renderDropdown(input) {
     const wrapper = input.parentElement;
-    let d = wrapper.querySelector('.autocomplete-dropdown');
-    if (d) d.remove();
+    removeAllDropdowns();
+
     const q = input.value.toLowerCase().trim();
-    const filtered = heroesList.filter(h => h.name.toLowerCase().includes(q) || (HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.includes(q))));
+    const filtered = heroesList.filter(h => 
+        h.name.toLowerCase().includes(q) || 
+        (HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.includes(q)))
+    );
+
     if (filtered.length === 0) return;
 
-    d = document.createElement('div');
+    const d = document.createElement('div');
     d.className = 'autocomplete-dropdown';
-    filtered.slice(0, 12).forEach(h => {
+    
+    filtered.slice(0, 10).forEach(h => {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
         item.innerHTML = `<img src="${h.img}"><span>${h.name}</span>`;
+        
+        // Клик по герою
         item.onmousedown = (e) => {
-            e.preventDefault();
+            e.preventDefault(); // Важно!
             input.value = h.name;
             updateHeroSlotUI(input.id);
-            d.remove();
-            input.dispatchEvent(new Event('input'));
+            removeAllDropdowns(); // Скрываем список сразу
         };
         d.appendChild(item);
     });
@@ -137,18 +155,30 @@ function renderDropdown(input) {
 }
 
 async function analyzeDraft() {
-    const myTeam = { pos1: document.getElementById('my-pos1').value, pos2: document.getElementById('my-pos2').value, pos3: document.getElementById('my-pos3').value, pos4: document.getElementById('my-pos4').value, pos5: document.getElementById('my-pos5').value };
+    const myTeam = { 
+        pos1: document.getElementById('my-pos1').value, 
+        pos2: document.getElementById('my-pos2').value, 
+        pos3: document.getElementById('my-pos3').value, 
+        pos4: document.getElementById('my-pos4').value, 
+        pos5: document.getElementById('my-pos5').value 
+    };
     const enemyTeam = [1,2,3,4,5].map(i => document.getElementById(`enemy-${i}`).value).filter(v => v.trim() !== "");
+    
     const resContainer = document.getElementById('results-container');
     resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px;">Анализируем...</p>';
 
-    const response = await fetch('/api/analyze', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ my_team: myTeam, enemy_team: enemyTeam, user_id: currentUser ? currentUser.user_id : null })
-    });
-    if (response.ok) {
-        const data = await response.json();
-        renderResults(data.results);
+    try {
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ my_team: myTeam, enemy_team: enemyTeam, user_id: currentUser ? currentUser.user_id : null })
+        });
+        if (response.ok) {
+            const data = await response.json();
+            renderResults(data.results);
+        }
+    } catch (err) {
+        resContainer.innerHTML = '<p style="text-align:center; color:var(--accent-red);">Ошибка связи.</p>';
     }
 }
 
@@ -168,9 +198,8 @@ function renderResults(results) {
 
         const grid = document.createElement('div');
         grid.className = 'hero-cards-grid';
-        item.data.others.forEach(h => { if (h) grid.appendChild(createHeroSmallCard(h)); });
+        item.data.others.forEach(h => { if(h) grid.appendChild(createHeroSmallCard(h)); });
         section.appendChild(grid);
-        
         container.appendChild(section);
     });
 }
@@ -180,7 +209,7 @@ function createCard(h, type, label) {
     div.className = `top-pick-card ${type}`;
     const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
     const sign = h.advantage >= 0 ? '+' : '';
-    div.innerHTML = `<div class="top-pick-label">${label}</div><img src="${h.img}"><div class="top-pick-hero-name">${h.name}</div><div class="top-pick-hero-stats">Винрейт: <span class="val-green">${h.winrate}%</span><br>Контрпик: <span style="color:${cl}; font-weight:bold;">${sign}${h.advantage}%</span></div>`;
+    div.innerHTML = `<div class="top-pick-label">${label}</div><img src="${h.img}"><div class="top-pick-hero-name">${h.name}</div><div class="top-pick-hero-stats">Винрейт: <span class="val-green">${h.winrate}%</span><br>Контрпик: <span style="color:${cl}">${sign}${h.advantage}%</span></div>`;
     return div;
 }
 
@@ -189,22 +218,13 @@ function createHeroSmallCard(h) {
     div.className = 'result-hero-card';
     const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
     const sign = h.advantage >= 0 ? '+' : '';
-    
-    // Новая структура: картинка сверху, текст снизу
-    div.innerHTML = `
-        <img src="${h.img}" alt="${h.name}">
-        <div class="hero-info">
-            <div class="hero-name">${h.name}</div>
-            <div class="hero-stats">
-                WR: ${h.winrate}% <span style="color:${cl}; font-weight:bold;">${sign}${h.advantage}%</span>
-            </div>
-        </div>`;
+    div.innerHTML = `<img src="${h.img}"><div class="hero-info"><div class="hero-name">${h.name}</div><div class="hero-stats">WR: ${h.winrate}% <span style="color:${cl}">${sign}${h.advantage}%</span></div></div>`;
     return div;
 }
 
 function clearSingleInput(id) { 
     const el = document.getElementById(id); 
-    if (el) { el.value = ''; updateHeroSlotUI(id); el.dispatchEvent(new Event('input')); } 
+    if (el) { el.value = ''; updateHeroSlotUI(id); } 
 }
 
 function clearInputs() { 
