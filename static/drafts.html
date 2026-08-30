@@ -31,28 +31,27 @@
                     <h3 class="allies-title">Моя команда</h3>
                     <div class="inputs-grid" id="allies-inputs"></div>
                 </div>
-
                 <div class="team-box enemies">
                     <h3 class="enemies-title">Команда противника</h3>
                     <div class="inputs-grid" id="enemies-inputs"></div>
                 </div>
             </div>
 
-            <!-- Ряд кнопок (Теперь 3 кнопки) -->
+            <!-- ТРИ КНОПКИ В РЯД -->
             <div class="actions-row">
                 <button class="btn-analyze" onclick="analyzeDraft()">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
                 <button class="btn-clear" onclick="clearInputs()">ОЧИСТИТЬ</button>
                 
-                <div class="help-wrapper">
-                    <button class="btn-help">КАК ЭТО РАБОТАЕТ?</button>
-                    <div class="tooltip-box">
-                        <div class="tooltip-header">PRO-LEVEL МАТЕМАТИКА</div>
+                <div class="info-wrapper">
+                    <button class="btn-info">КАК ЭТО РАБОТАЕТ?</button>
+                    <div class="info-tooltip">
+                        <div class="tooltip-header">ЛОГИКА PRO-LEVEL</div>
                         <ul class="tooltip-list">
-                            <li><b>Immortal Meta:</b> Анализ только топовых матчей мира.</li>
-                            <li><b>Приоритет угроз:</b> Один хард-контрпик (напр. Axe > Naga) обнуляет все мелкие плюсы героя.</li>
-                            <li><b>Детектор иллюзий:</b> ПЛ, Нага и ТБ получают доп. штраф против Shaker, Axe и Sven.</li>
-                            <li><b>Умный баланс:</b> Сайт видит нехватку станов или танков и предлагает героев для закрытия дыр.</li>
-                            <li><b>Честный винрейт:</b> Прогноз ограничен 95%, учитывая человеческий фактор.</li>
+                            <li><span>Immortal Meta:</span> Анализ только топовых матчей мира.</li>
+                            <li><span>Хард-контрпики:</span> Один Акс против Наги важнее, чем пять мелких плюсов.</li>
+                            <li><span>Детектор иллюзий:</span> ПЛ, Нага и ТБ получают штраф против Акса и Шейкера.</li>
+                            <li><span>Баланс состава:</span> Система видит нехватку станов или танков.</li>
+                            <li><span>Лимит 95%:</span> Учет человеческого фактора в прогнозе.</li>
                         </ul>
                     </div>
                 </div>
