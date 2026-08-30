@@ -1,70 +1,68 @@
 /* Модуль: Анализ Драфтов */
-main { max-width: 1400px; margin: 0 auto; padding: 20px 40px; }
+main { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
 .draft-container { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
-    gap: 30px; 
-    margin-bottom: 30px; 
+    gap: 20px; 
+    margin-bottom: 20px; 
 }
 
-/* Стили коробок команд */
+/* Коробки команд */
 .team-box { 
-    background: rgba(18, 21, 30, 0.8); 
+    background: var(--bg-card); 
     border: 1px solid var(--border-color); 
-    border-radius: 20px; 
-    padding: 30px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border-radius: 12px; 
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
 }
 
 .team-box.allies { border-top: 4px solid var(--accent-green); }
 .team-box.enemies { border-top: 4px solid var(--accent-red); }
 
-.allies-title { color: var(--accent-green); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; text-align: center; }
-.enemies-title { color: var(--accent-red); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; text-align: center; }
+.allies-title { color: var(--accent-green); text-transform: uppercase; margin-bottom: 20px; font-size: 1rem; text-align: center; }
+.enemies-title { color: var(--accent-red); text-transform: uppercase; margin-bottom: 20px; font-size: 1rem; text-align: center; }
 
 /* Сетка инпутов */
-.inputs-grid { display: flex; flex-direction: column; gap: 20px; }
+.inputs-grid { display: flex; flex-direction: column; gap: 12px; }
 
 .input-field-group { 
     display: grid;
-    grid-template-columns: 120px 1fr;
+    grid-template-columns: 90px 1fr;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 .input-field-group label { 
-    font-size: 0.75rem; 
+    font-size: 0.7rem; 
     color: var(--text-muted); 
     font-weight: 800; 
-    text-transform: uppercase; 
+    text-transform: uppercase;
+    text-align: right;
 }
 
-/* Слот героя (инпут) */
+/* Слот героя */
 .hero-slot {
-    position: relative;
+    position: relative; /* Чтобы всё внутри было привязано к этому полю */
     background: var(--bg-input);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    height: 50px;
+    border-radius: 8px;
+    height: 45px;
     display: flex;
     align-items: center;
-    transition: all 0.3s ease;
+    overflow: visible; /* Важно для выпадающего списка */
 }
 
-.hero-slot:focus-within {
-    border-color: rgba(255,255,255,0.2);
-    box-shadow: 0 0 15px rgba(255,255,255,0.05);
-}
+.hero-slot.filled { border-color: rgba(255,255,255,0.2); }
 
-/* Картинка внутри инпута (когда герой выбран) */
 .slot-hero-img {
-    width: 60px;
+    width: 50px;
     height: 100%;
     object-fit: cover;
-    border-radius: 9px 0 0 10px;
-    display: none; /* Скрыта пока нет героя */
+    border-radius: 7px 0 0 7px;
+    display: none;
+    flex-shrink: 0;
 }
 
 .hero-slot.filled .slot-hero-img { display: block; }
@@ -73,35 +71,57 @@ main { max-width: 1400px; margin: 0 auto; padding: 20px 40px; }
     background: transparent;
     border: none;
     color: white;
-    padding: 0 15px;
-    font-size: 1rem;
+    padding: 0 35px 0 12px; /* Место под крестик справа */
+    font-size: 0.9rem;
     width: 100%;
     height: 100%;
     outline: none;
 }
 
+/* Крестик очистки строго внутри инпута */
+.clear-input-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 10;
+    display: none;
+}
+.hero-slot input:not(:placeholder-shown) ~ .clear-input-btn { display: block; }
+
+/* ВЫПАДАЮЩИЙ СПИСОК (ФИКС) */
+.autocomplete-dropdown { 
+    position: absolute; 
+    top: 100%; 
+    left: 0; 
+    right: 0; 
+    background: #1c212e; /* Сплошной цвет, чтобы не просвечивало */
+    border: 1px solid var(--border-color); 
+    border-radius: 0 0 8px 8px;
+    z-index: 9999; 
+    max-height: 200px; 
+    overflow-y: auto;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+
+.autocomplete-item { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    padding: 8px 12px; 
+    cursor: pointer; 
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.autocomplete-item:hover { background: #2a3245; }
+.autocomplete-item img { width: 36px; height: 20px; object-fit: cover; border-radius: 2px; }
+.autocomplete-item span { color: white; font-size: 0.85rem; }
+
 /* Кнопки */
-.actions-row { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-
-.btn-analyze { 
-    background: linear-gradient(90deg, #f43f5e, #e11d48);
-    color: white; padding: 20px; font-size: 1.1rem; border-radius: 12px; 
-    font-weight: 900; letter-spacing: 1px; transition: 0.3s;
-}
-.btn-analyze:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(244, 63, 94, 0.4); }
-
-.btn-clear { 
-    background: var(--bg-input); color: white; border: 1px solid var(--border-color);
-    padding: 20px; font-size: 1.1rem; border-radius: 12px; font-weight: 800;
-}
-
-/* Результаты (Топ-карточки) */
-.results-section { animation: fadeIn 0.5s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-.top-pick-card {
-    background: linear-gradient(145deg, #171b26, #12151e);
-    border-radius: 20px;
-    transition: transform 0.3s;
-}
-.top-pick-card:hover { transform: translateY(-5px); }
+.actions-row { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-top: 20px; }
+.btn-analyze { background: var(--accent-red); color: white; padding: 15px; border-radius: 8px; font-weight: 800; border: none; cursor: pointer; }
+.btn-clear { background: var(--bg-input); color: white; border: 1px solid var(--border-color); border-radius: 8px; font-weight: 800; cursor: pointer; }
