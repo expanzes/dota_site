@@ -127,4 +127,152 @@ function renderDropdown(input, wrapper) {
     const q = input.value.toLowerCase().trim();
     const filtered = heroesList.filter(h => {
         const nameMatch = h.name.toLowerCase().includes(q);
-        const aliasMatch = HERO_ALIASES[h.name] && HERO
+        const aliasMatch = HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.toLowerCase().includes(q));
+        return nameMatch || aliasMatch;
+    });
+
+    if (filtered.length === 0) return;
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'autocomplete-dropdown';
+
+    filtered.slice(0, 12).forEach(hero => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.innerHTML = `<img src="${hero.img}" width="35" style="border-radius:3px;"><span>${hero.name}</span>`;
+        
+        item.onmousedown = (e) => {
+            e.preventDefault();
+            input.value = hero.name;
+            dropdown.remove();
+            // Генерируем событие input, чтобы показался крестик
+            input.dispatchEvent(new Event('input'));
+        };
+        dropdown.appendChild(item);
+    });
+    wrapper.appendChild(dropdown);
+}
+
+async function analyzeDraft() {
+    const myTeam = {
+        pos1: document.getElementById('my-pos1').value,
+        pos2: document.getElementById('my-pos2').value,
+        pos3: document.getElementById('my-pos3').value,
+        pos4: document.getElementById('my-pos4').value,
+        pos5: document.getElementById('my-pos5').value
+    };
+
+    const enemyTeam = [1,2,3,4,5]
+        .map(i => document.getElementById(`enemy-${i}`).value)
+        .filter(v => v.trim() !== "");
+
+    const resContainer = document.getElementById('results-container');
+    resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px;">Анализируем драфт...</p>';
+
+    try {
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                my_team: myTeam,
+                enemy_team: enemyTeam,
+                user_id: currentUser ? currentUser.user_id : null
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            renderResults(data.results);
+        }
+    } catch (err) {
+        resContainer.innerHTML = '<p style="color:var(--accent-red); text-align:center;">Ошибка соединения</p>';
+    }
+}
+
+function renderResults(results) {
+    const container = document.getElementById('results-container');
+    container.innerHTML = '';
+
+    results.forEach(item => {
+        const section = document.createElement('div');
+        section.className = 'results-section';
+        section.innerHTML = `<h3 class="role-group-title">${item.role}</h3>`;
+
+        const topRow = document.createElement('div');
+        topRow.className = 'top-picks-row';
+
+        if (item.data.top_favorite) {
+            topRow.appendChild(createCard(item.data.top_favorite, 'favorite', 'ИЗ ВАШЕГО ПУЛА'));
+        }
+        if (item.data.top_winrate) {
+            topRow.appendChild(createCard(item.data.top_winrate, 'winrate', 'ЛУЧШИЙ ВАРИАНТ'));
+        }
+        section.appendChild(topRow);
+
+        const grid = document.createElement('div');
+        grid.className = 'hero-cards-grid';
+        item.data.others.forEach(h => {
+            if (h) grid.appendChild(createHeroSmallCard(h));
+        });
+        section.appendChild(grid);
+        
+        container.appendChild(section);
+    });
+}
+
+function createCard(h, type, label) {
+    const div = document.createElement('div');
+    div.className = `top-pick-card ${type}`;
+    const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    const sign = h.advantage >= 0 ? '+' : '';
+    
+    div.innerHTML = `
+        <div class="top-pick-label">${label}</div>
+        <img src="${h.img}" alt="${h.name}">
+        <div style="font-weight:bold; font-size:1.1rem;">${h.name}</div>
+        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:5px;">
+            Прогноз WR: <span class="val-green">${h.winrate}%</span><br>
+            Контрпик: <span style="color:${cl}; font-weight:bold;">${sign}${h.advantage}%</span>
+        </div>`;
+    return div;
+}
+
+function createHeroSmallCard(h) {
+    const div = document.createElement('div');
+    div.className = 'result-hero-card';
+    const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    const sign = h.advantage >= 0 ? '+' : '';
+    
+    div.innerHTML = `
+        <img src="${h.img}" alt="${h.name}">
+        <div class="hero-info">
+            <div style="font-size:0.95rem; font-weight:bold;">
+                ${h.name} <span style="color:${cl}; font-size:0.7rem;">${sign}${h.advantage}%</span>
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">Итоговый WR: ${h.winrate}%</div>
+        </div>`;
+    return div;
+}
+
+function clearSingleInput(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.value = '';
+        el.dispatchEvent(new Event('input')); // Чтобы скрыть крестик
+        el.focus();
+    }
+}
+
+function clearInputs() {
+    for(let i=1; i<=5; i++) {
+        const p = document.getElementById(`my-pos${i}`);
+        const e = document.getElementById(`enemy-${i}`);
+        if(p) { p.value = ''; p.dispatchEvent(new Event('input')); }
+        if(e) { e.value = ''; e.dispatchEvent(new Event('input')); }
+    }
+    document.getElementById('results-container').innerHTML = '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadHeroes();
+});
