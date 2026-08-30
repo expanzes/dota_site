@@ -14,68 +14,96 @@ const INVOKER_SPELLS = [
 let currentOrbs = [];
 let targetSpell = null;
 let score = 0;
-let isGameActive = false;
 
 function startGame() {
+    console.log("Инвокер: Игра началась!");
     score = 0;
-    isGameActive = true;
-    document.getElementById('score').innerText = score;
+    const scoreEl = document.getElementById('score');
+    if (scoreEl) scoreEl.innerText = score;
     nextSpell();
 }
 
 function nextSpell() {
     targetSpell = INVOKER_SPELLS[Math.floor(Math.random() * INVOKER_SPELLS.length)];
-    document.getElementById('target-spell-img').src = targetSpell.img;
-    document.getElementById('target-spell-name').innerText = targetSpell.name;
+    const imgEl = document.getElementById('target-spell-img');
+    const nameEl = document.getElementById('target-spell-name');
+    
+    if (imgEl) imgEl.src = targetSpell.img;
+    if (nameEl) nameEl.innerText = targetSpell.name;
+    console.log("Цель:", targetSpell.name, targetSpell.keys);
 }
 
 function updateOrbsUI() {
     for (let i = 0; i < 3; i++) {
         const orbEl = document.getElementById(`orb-${i}`);
-        orbEl.className = 'orb'; // Reset
-        if (currentOrbs[i]) {
-            if (currentOrbs[i] === 'Q') orbEl.classList.add('quas');
-            if (currentOrbs[i] === 'W') orbEl.classList.add('wex');
-            if (currentOrbs[i] === 'E') orbEl.classList.add('exort');
-        }
+        if (!orbEl) continue;
+        
+        orbEl.className = 'orb'; // Сброс классов
+        const orbType = currentOrbs[i];
+        
+        if (orbType === 'Q') orbEl.classList.add('quas');
+        else if (orbType === 'W') orbEl.classList.add('wex');
+        else if (orbType === 'E') orbEl.classList.add('exort');
     }
 }
 
 function addOrb(type) {
     currentOrbs.push(type);
-    if (currentOrbs.length > 3) currentOrbs.shift();
+    if (currentOrbs.length > 3) {
+        currentOrbs.shift(); // Оставляем только последние 3 сферы
+    }
     updateOrbsUI();
 }
 
 function invoke() {
     if (!targetSpell) return;
     
-    // Сортируем нажатые клавиши и нужные клавиши, чтобы порядок не ролял (как в доте)
-    const currentCombo = currentOrbs.slice().sort().join('');
+    // Сортируем нажатые сферы и нужные для заклинания (порядок в Доте не важен)
+    const currentCombo = [...currentOrbs].sort().join('');
     const targetCombo = targetSpell.keys.split('').sort().join('');
+
+    const container = document.querySelector('.game-container');
 
     if (currentCombo === targetCombo) {
         score++;
-        document.getElementById('score').innerText = score;
-        // Эффект успеха
-        document.querySelector('.game-container').style.borderColor = 'var(--accent-green)';
-        setTimeout(() => document.querySelector('.game-container').style.borderColor = 'var(--border-color)', 200);
+        const scoreEl = document.getElementById('score');
+        if (scoreEl) scoreEl.innerText = score;
+        
+        // Вспышка зеленым при успехе
+        if (container) {
+            container.style.boxShadow = "0 0 30px var(--accent-green)";
+            setTimeout(() => container.style.boxShadow = "", 300);
+        }
         nextSpell();
     } else {
-        // Эффект провала
-        document.querySelector('.game-container').style.borderColor = 'var(--accent-red)';
-        setTimeout(() => document.querySelector('.game-container').style.borderColor = 'var(--border-color)', 200);
+        // Вспышка красным при ошибке
+        if (container) {
+            container.style.boxShadow = "0 0 30px var(--accent-red)";
+            setTimeout(() => container.style.boxShadow = "", 300);
+        }
     }
 }
 
-// Слушатель клавиатуры
-document.addEventListener('keydown', (e) => {
+// Обработка клавиш
+function handleKeyDown(e) {
     const key = e.key.toUpperCase();
-    if (key === 'Q') addOrb('Q');
-    if (key === 'W') addOrb('W');
-    if (key === 'E') addOrb('E');
-    if (key === 'R') invoke();
-});
+    
+    // Проверяем, что пользователь не пишет в каком-то поле ввода (если оно появится)
+    if (e.target.tagName === 'INPUT') return;
 
-// Запуск при загрузке
-window.onload = startGame;
+    if (key === 'Q' || key === 'W' || key === 'E') {
+        addOrb(key);
+    } else if (key === 'R') {
+        invoke();
+    }
+}
+
+// Принудительная инициализация
+document.addEventListener('keydown', handleKeyDown);
+
+// Запуск игры после того, как всё дерево DOM построено
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startGame);
+} else {
+    startGame();
+}
