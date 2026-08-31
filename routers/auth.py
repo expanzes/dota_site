@@ -8,21 +8,26 @@ router = APIRouter()
 DATABASE_URL = os.getenv("DATABASE_URL")
 STEAM_API_KEY = os.getenv("STEAM_API_KEY")
 
+# ТВОЙ НОВЫЙ ДОМЕН
+MY_DOMAIN = "dotahelper.ru"
+
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL)
 
 def generate_site_id():
+    """Генерирует уникальный 10-значный ID"""
     return ''.join([str(random.randint(0, 9)) for _ in range(10)])
 
-def hash_password(pw: str): return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
-def verify_password(pw: str, h: str): return bcrypt.checkpw(pw.encode(), h.encode())
+def hash_password(pw: str): 
+    return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
 
-# Конвертация SteamID64 в Account ID для OpenDota
+def verify_password(pw: str, h: str): 
+    return bcrypt.checkpw(pw.encode(), h.encode())
+
 def to_account_id(steam64):
-    try:
-        return int(steam64) - 76561197960265728
-    except:
-        return steam64
+    """Конвертация SteamID64 в Account ID для OpenDota"""
+    try: return int(steam64) - 76561197960265728
+    except: return steam64
 
 def ensure_tables_exist():
     try:
@@ -40,9 +45,15 @@ def ensure_tables_exist():
                         is_premium BOOLEAN DEFAULT FALSE
                     );
                 """)
-                cur.execute("CREATE TABLE IF NOT EXISTS favorites (user_id VARCHAR(10) PRIMARY KEY REFERENCES users(site_id), favorite_ids INTEGER[]);")
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS favorites (
+                        user_id VARCHAR(10) PRIMARY KEY REFERENCES users(site_id),
+                        favorite_ids INTEGER[]
+                    );
+                """)
                 conn.commit()
-    except Exception as e: print(f"DB Error: {e}")
+    except Exception as e: 
+        print(f"DB Error: {e}")
 
 async def get_favorites_db(user_id: str):
     try:
@@ -69,44 +80,21 @@ class ScoreModel(BaseModel):
     username: str
     score: int
 
-@router.post("/register")
-async def register(data: AuthModel, request: Request):
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1 FROM users WHERE username = %s", (data.username,))
-                if cur.fetchone(): raise HTTPException(400, "Никнейм занят")
-                sid = generate_site_id()
-                cur.execute("INSERT INTO users (site_id, username, password_hash) VALUES (%s, %s, %s)", 
-                           (sid, data.username, hash_password(data.password)))
-                conn.commit()
-                request.session["user"] = {"site_id": sid, "username": data.username}
-                return {"site_id": sid, "username": data.username}
-    except HTTPException as he: raise he
-    except Exception as e: raise HTTPException(500, str(e))
-
-@router.post("/login")
-async def login(data: AuthModel, request: Request):
-    with get_db_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT site_id, username, password_hash FROM users WHERE username = %s", (data.username,))
-            row = cur.fetchone()
-            if not row or not row[2] or not verify_password(data.password, row[2]):
-                raise HTTPException(400, "Неверные данные")
-            request.session["user"] = {"site_id": row[0], "username": row[1]}
-            return {"site_id": row[0], "username": row[1]}
-
 @router.post("/logout")
 async def logout(request: Request):
     request.session.clear()
     return {"status": "ok"}
 
+# --- STEAM LOGIN (ОБНОВЛЕНО ПОД ДОМЕН) ---
+
 @router.get("/login/steam")
 async def steam_login(request: Request):
-    base_url = str(request.base_url).rstrip('/')
-    return_to = f"{base_url}/api/auth/steam/callback"
+    # Принудительно используем HTTPS и твой новый домен
+    return_to = f"https://{MY_DOMAIN}/api/auth/steam/callback"
+    realm = f"https://{MY_DOMAIN}"
+    
     url = (f"https://steamcommunity.com/openid/login?openid.ns=http://specs.openid.net/auth/2.0&"
-           f"openid.mode=checkid_setup&openid.return_to={return_to}&openid.realm={base_url}&"
+           f"openid.mode=checkid_setup&openid.return_to={return_to}&openid.realm={realm}&"
            f"openid.identity=http://specs.openid.net/auth/2.0/identifier_select&"
            f"openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select")
     return RedirectResponse(url)
@@ -120,43 +108,45 @@ async def steam_callback(request: Request):
         account_id = to_account_id(steam_id)
 
         async with httpx.AsyncClient() as client:
-            res = await client.get(f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={STEAM_API_KEY}&steamids={steam_id}", timeout=10.0)
+            # Данные из Steam
+            res = await client.get(f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={STEAM_API_KEY}&steamids={steam_id}", timeout=15.0)
             s_data = res.json()["response"]["players"][0]
-            
-            # Запрос к OpenDota через Account ID
+            # Ранг из OpenDota
             od = await client.get(f"https://api.opendota.com/api/players/{account_id}", timeout=5.0)
-            rank = 0
-            if od.status_code == 200:
-                rank = od.json().get("rank_tier", 0) or 0
+            rank = od.json().get("rank_tier", 0) if od.status_code == 200 else 0
 
         current_session = request.session.get("user")
         
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT site_id FROM users WHERE steam_id = %s", (steam_id,))
+                cur.execute("SELECT site_id, username FROM users WHERE steam_id = %s", (steam_id,))
                 existing = cur.fetchone()
 
                 if current_session:
+                    # Привязка Steam к текущему аккаунту (если вошли по паролю)
                     sid = current_session["site_id"]
                     cur.execute("UPDATE users SET steam_id = %s, avatar_url = %s, rank_tier = %s WHERE site_id = %s", 
                                (steam_id, s_data["avatarfull"], rank, sid))
                     username = current_session["username"]
                 elif existing:
-                    sid = existing[0]
+                    # Обычный вход для старого юзера
+                    sid, username = existing[0], existing[1]
                     cur.execute("UPDATE users SET avatar_url = %s, rank_tier = %s WHERE site_id = %s", 
                                (s_data["avatarfull"], rank, sid))
-                    cur.execute("SELECT username FROM users WHERE site_id = %s", (sid,))
-                    username = cur.fetchone()[0]
                 else:
+                    # Новый пользователь через Steam
                     sid = generate_site_id()
                     username = s_data["personaname"]
+                    cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
+                    if cur.fetchone(): username = f"{username}_{sid[:4]}"
                     cur.execute("INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier) VALUES (%s, %s, %s, %s, %s)", 
                                (sid, username, steam_id, s_data["avatarfull"], rank))
                 conn.commit()
 
         request.session["user"] = {"site_id": sid, "username": username}
         return RedirectResponse("/profile")
-    except Exception as e: return HTMLResponse(content=f"<h1>Ошибка</h1><p>{str(e)}</p>")
+    except Exception as e: 
+        return HTMLResponse(content=f"<h1>Ошибка авторизации</h1><p>{str(e)}</p>")
 
 @router.get("/me")
 async def get_me(request: Request):
@@ -169,8 +159,7 @@ async def get_me(request: Request):
             if not u: return {"logged_in": False}
             
             rank = u[3]
-            # Если ранг 0, пробуем обновить через Account ID
-            if rank == 0 and u[6]:
+            if rank == 0 and u[6]: # Обновление ранга "на лету"
                 try:
                     acc_id = to_account_id(u[6])
                     async with httpx.AsyncClient() as client:
@@ -183,7 +172,37 @@ async def get_me(request: Request):
                                 rank = new_rank
                 except: pass
 
-            return {"logged_in": True, "site_id": u[0], "username": u[1], "avatar": u[2], "rank": rank, "invoker_score": u[4], "is_premium": u[5], "steam_linked": bool(u[6])}
+            return {
+                "logged_in": True, "site_id": u[0], "username": u[1], 
+                "avatar": u[2], "rank": rank, "invoker_score": u[4], 
+                "is_premium": u[5], "steam_linked": bool(u[6])
+            }
+
+@router.post("/register")
+async def register(data: AuthModel, request: Request):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM users WHERE username = %s", (data.username,))
+                if cur.fetchone(): raise HTTPException(status_code=400, detail="Никнейм занят")
+                sid = generate_site_id()
+                cur.execute("INSERT INTO users (site_id, username, password_hash) VALUES (%s, %s, %s)", 
+                           (sid, data.username, hash_password(data.password)))
+                conn.commit()
+                request.session["user"] = {"site_id": sid, "username": data.username}
+                return {"site_id": sid, "username": data.username}
+    except Exception as e: raise HTTPException(500, str(e))
+
+@router.post("/login")
+async def login(data: AuthModel, request: Request):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT site_id, username, password_hash FROM users WHERE username = %s", (data.username,))
+            row = cur.fetchone()
+            if not row or not row[2] or not verify_password(data.password, row[2]):
+                raise HTTPException(400, "Неверные данные")
+            request.session["user"] = {"site_id": row[0], "username": row[1]}
+            return {"site_id": row[0], "username": row[1]}
 
 @router.post("/update-username")
 async def update_username(data: UpdateUsernameModel):
