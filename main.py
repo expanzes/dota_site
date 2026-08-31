@@ -7,7 +7,6 @@ from routers import auth, draft
 
 app = FastAPI()
 
-# Секрет для сессий (Steam Auth)
 app.add_middleware(
     SessionMiddleware, 
     secret_key=os.getenv("SESSION_SECRET", "dota-helper-secret-999"),
@@ -26,29 +25,23 @@ app.include_router(draft.router, prefix="/api")
 
 STATIC_VERSION = os.getenv("RENDER_GIT_COMMIT", "dev")[:8]
 
-def serve_page(file_name: str, css_module: str = None):
+def serve_page(file_name: str, module_name: str = None):
     file_path = f"static/{file_name}"
-    if not os.path.exists(file_path):
-        return HTMLResponse(content="<h1>404 Not Found</h1>", status_code=404)
-    
     with open(file_path, "r", encoding="utf-8") as f:
         html = f.read()
     
-    # Формируем список CSS файлов
+    # Собираем пак стилей: Глобальные + Шапка + Модуль (если есть)
     css_links = f'<link rel="stylesheet" href="/static/css/global.css?v={STATIC_VERSION}">'
     css_links += f'\n    <link rel="stylesheet" href="/static/css/header.css?v={STATIC_VERSION}">'
-    if css_module:
-        css_links += f'\n    <link rel="stylesheet" href="/static/css/{css_module}.css?v={STATIC_VERSION}">'
+    if module_name:
+        css_links += f'\n    <link rel="stylesheet" href="/static/css/{module_name}.css?v={STATIC_VERSION}">'
     
-    # ЗАМЕНА: ищем ЛЮБУЮ строку со styles.css и заменяем на пачку файлов
-    import re
-    html = re.sub(r'<link.*href=".*styles\.css".*>', css_links, html)
-    html = re.sub(r"<link.*href='.*styles\.css'.*>", css_links, html)
+    # Заменяем временную метку на реальные CSS
+    html = html.replace('<link rel="stylesheet" href="/static/css/styles.css">', css_links)
     
-    # Версии для JS
+    # Прокидываем версии в JS
     for js in ["auth.js", "favorites.js", "draft.js", "invoker.js"]:
         html = html.replace(f'/static/js/{js}"', f'/static/js/{js}?v={STATIC_VERSION}"')
-        
     return HTMLResponse(content=html)
 
 @app.get("/")
