@@ -1,4 +1,4 @@
-import asyncio, httpx
+import asyncio, httpx, time
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional
@@ -6,9 +6,32 @@ from routers.auth import get_db_connection, get_favorites_db
 from routers.constants import HERO_TAGS, HERO_POSITIONS, ILLUSION_HERO_NAMES, ILLUSION_KILLERS
 
 router = APIRouter()
+
+# --- КЭШИРОВАНИЕ ДАННЫХ В ПАМЯТИ СЕРВЕРА ---
+CACHE = {
+    "heroes": [],
+    "last_update": 0
+}
 MATCHUP_CACHE = {}
 
 ROLES = {"pos1": "Поз 1 (Керри)", "pos2": "Поз 2 (Мид)", "pos3": "Поз 3 (Тройка)", "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"}
+
+async def get_heroes_list():
+    """Получает список героев из кэша или из API"""
+    now = time.time()
+    if CACHE["heroes"] and (now - CACHE["last_update"] < 3600): # Кэш на 1 час
+        return CACHE["heroes"]
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get("https://api.opendota.com/api/heroes")
+            if r.status_code == 200:
+                data = r.json()
+                CACHE["heroes"] = [{"id": h["id"], "name": h["localized_name"], "img": f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png"} for h in data]
+                CACHE["last_update"] = now
+                return CACHE["heroes"]
+    except:
+        return CACHE["heroes"] if CACHE["heroes"] else []
 
 async def get_matchups_data(hero_id: int):
     if hero_id in MATCHUP_CACHE: return MATCHUP_CACHE[hero_id]
@@ -29,20 +52,19 @@ class DraftRequest(BaseModel):
 
 @router.get("/heroes")
 async def heroes_endpoint():
-    async with httpx.AsyncClient() as c:
-        r = await c.get("https://api.opendota.com/api/heroes")
-        data = r.json()
-        return [{"id": h["id"], "name": h["localized_name"], "img": f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png"} for h in data]
+    # Отдает список мгновенно из памяти
+    return await get_heroes_list()
 
 @router.post("/analyze")
 async def analyze_perfect(payload: DraftRequest):
     try:
+        h_list = await get_heroes_list()
         async with httpx.AsyncClient() as c:
-            h_res, s_res = await asyncio.gather(c.get("https://api.opendota.com/api/heroes"), c.get("https://api.opendota.com/api/heroStats"))
-        h_list, h_stats = h_res.json(), s_res.json()
+            s_res = await c.get("https://api.opendota.com/api/heroStats")
+            h_stats = s_res.json()
         
-        name_to_id = {h["localized_name"].lower(): h["id"] for h in h_list}
-        img_map = {h["localized_name"]: f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png" for h in h_list}
+        name_to_id = {h["name"].lower(): h["id"] for h in h_list}
+        img_map = {h["name"]: h["img"] for h in h_list}
         picked = {v.lower() for v in payload.my_team.values() if v} | {n.lower() for n in payload.enemy_team}
 
         team_tags = [0] * 6
@@ -58,7 +80,7 @@ async def analyze_perfect(payload: DraftRequest):
 
         hero_final_stats = []
         for h in h_list:
-            name = h["localized_name"]
+            name = h["name"]
             if name.lower() in picked: continue
             
             advs, worst = [], 0
