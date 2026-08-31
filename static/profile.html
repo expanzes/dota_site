@@ -1,37 +1,180 @@
-// (Замени функцию loadProfile и ranks внутри script в profile.html)
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой Профиль — Dota 2 Helper</title>
+    <!-- Подключаем стили через общую точку входа (main.py сам подменит на global+header+profile) -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <!-- Иконки для карандашика и Стима -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body id="body-profile">
+    <header>
+        <div class="header-left">
+            <div class="logo" onclick="window.location.href='/'">Dota 2 Helper</div>
+            <nav class="main-nav">
+                <button class="nav-link" onclick="window.location.href='/drafts'">АНАЛИЗ ДРАФТОВ</button>
+                <button class="nav-link" onclick="window.location.href='/fantasy'">ФЕНТАЗИ ПОМОЩНИК</button>
+                <button class="nav-link" onclick="window.location.href='/invoker'">ТРЕНАЖЁР ИНВОКЕР</button>
+            </nav>
+        </div>
+        <div class="user-panel">
+            <span id="user-display-name" class="user-badge">...</span>
+            <button class="btn-logout" onclick="logout()">Выйти</button>
+        </div>
+    </header>
 
-async function loadProfile() {
-    const res = await fetch('/api/me');
-    const user = await res.json();
-    if (!user.logged_in) { window.location.href = '/'; return; }
+    <main>
+        <div class="profile-container">
+            <div id="premium-badge" class="hidden" style="color: var(--accent-yellow); font-weight: bold; margin-bottom: 10px;">★ PREMIUM АККАУНТ ★</div>
+            
+            <div style="position: relative; margin-bottom: 15px;">
+                <img id="profile-avatar" src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png" 
+                     style="width:110px; height:110px; border-radius:50%; border: 4px solid var(--accent-red); object-fit: cover;">
+            </div>
 
-    userSiteId = user.site_id;
-    document.getElementById('display-username').innerText = user.username;
-    document.getElementById('user-display-name').innerText = user.username;
-    document.getElementById('display-site-id').innerText = user.site_id;
-    document.getElementById('display-score').innerText = user.invoker_score;
+            <!-- Блок Никнейма -->
+            <div class="profile-name-row">
+                <h2 id="display-username" style="font-size: 2rem; font-weight: 900;">Загрузка...</h2>
+                <i class="fas fa-pencil-alt edit-icon" onclick="toggleEditName()" style="cursor: pointer; color: var(--text-muted); margin-left: 10px;"></i>
+            </div>
+            
+            <!-- Форма редактирования (скрыта) -->
+            <div id="edit-name-form" class="hidden" style="margin-top: 10px;">
+                <input type="text" id="new-username-input" style="background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 10px; border-radius: 8px; width: 200px;">
+                <button class="btn-primary" onclick="saveNewName()" style="padding: 10px 20px; min-width: auto; margin-left: 5px;">ОК</button>
+            </div>
+
+            <!-- Site ID -->
+            <div class="site-id-badge" style="background: var(--bg-input); padding: 5px 15px; border-radius: 20px; font-family: monospace; font-size: 0.8rem; border: 1px solid var(--border-color);">
+                ID: <span id="display-site-id">0000000000</span>
+            </div>
+
+            <!-- Сетка статистики -->
+            <div class="profile-info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-top: 20px;">
+                <div class="info-item" style="background: var(--bg-input); padding: 20px; border-radius: 15px; text-align: center;">
+                    <div style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">Ранг:</div>
+                    <b id="display-rank" style="color: var(--accent-red); font-size: 1.2rem; display: block; margin-top: 5px;">...</b>
+                </div>
+                <div class="info-item" style="background: var(--bg-input); padding: 20px; border-radius: 15px; text-align: center;">
+                    <div style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">Рекорд Инвокера:</div>
+                    <b id="display-score" style="color: var(--accent-yellow); font-size: 1.2rem; display: block; margin-top: 5px;">0</b>
+                </div>
+            </div>
+
+            <!-- Кнопки действий -->
+            <button class="btn-yellow" onclick="openFavModal()" style="width: 100%; margin-top: 10px;">★ ВЫБРАТЬ ЛЮБИМЫХ ГЕРОЕВ</button>
+            
+            <button id="steam-link-btn" class="btn-secondary" onclick="window.location.href='/api/login/steam'" 
+                    style="width: 100%; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <i class="fab fa-steam"></i> ПРИВЯЗАТЬ STEAM
+            </button>
+        </div>
+    </main>
+
+    <!-- Модалка выбора героев -->
+    <div id="fav-modal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 900px; background: var(--bg-card); padding: 30px; border-radius: 20px;">
+            <h3 style="margin-bottom: 20px;">Ваши любимые герои</h3>
+            <input type="text" id="fav-search-input" placeholder="Поиск героя..." oninput="filterFavHeroes()" 
+                   style="background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px;">
+            <div id="fav-heroes-container" class="fav-heroes-grid"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
+                <button class="btn-secondary" onclick="closeFavModal()">Отмена</button>
+                <button class="btn-primary" onclick="saveFavorites()" style="min-width: 150px;">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- СКРИПТЫ -->
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/favorites.js"></script>
     
-    if (user.avatar) document.getElementById('profile-avatar').src = user.avatar;
-    if (user.is_premium) document.getElementById('premium-badge').classList.remove('hidden');
-    if (user.steam_linked) document.getElementById('steam-link-btn').classList.add('hidden');
+    <script>
+        let userSiteId = "";
 
-    // КРАСИВАЯ РАСШИФРОВКА РАНГА
-    const rankNames = ["Unranked", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
-    let rankText = "Unknown";
-    
-    if (user.rank && user.rank > 0) {
-        const medalIndex = Math.floor(user.rank / 10);
-        const stars = user.rank % 10;
-        const medalName = rankNames[medalIndex] || "Unknown";
-        
-        if (medalIndex === 8) { // Immortal
-            rankText = "Immortal";
-        } else {
-            rankText = `${medalName} [${stars}]`; // Например: Archon [3]
+        async function loadProfile() {
+            try {
+                const res = await fetch('/api/me');
+                const user = await res.json();
+                
+                if (!user.logged_in) {
+                    window.location.href = '/';
+                    return;
+                }
+
+                userSiteId = user.site_id;
+                document.getElementById('display-username').innerText = user.username;
+                document.getElementById('user-display-name').innerText = user.username;
+                document.getElementById('display-site-id').innerText = user.site_id;
+                document.getElementById('display-score').innerText = user.invoker_score || 0;
+                
+                if (user.avatar) {
+                    document.getElementById('profile-avatar').src = user.avatar;
+                }
+                
+                if (user.is_premium) {
+                    document.getElementById('premium-badge').classList.remove('hidden');
+                }
+                
+                if (user.steam_linked) {
+                    document.getElementById('steam-link-btn').classList.add('hidden');
+                }
+
+                // РАСШИФРОВКА РАНГА
+                const rankNames = ["Unranked", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
+                let rankText = "Unknown";
+                
+                if (user.rank && user.rank > 0) {
+                    const medalIndex = Math.floor(user.rank / 10);
+                    const stars = user.rank % 10;
+                    const medalName = rankNames[medalIndex] || "Unknown";
+                    
+                    if (medalIndex === 8) {
+                        rankText = "Immortal";
+                    } else {
+                        rankText = `${medalName} [${stars}]`;
+                    }
+                } else {
+                    rankText = user.steam_linked ? "Hidden/Unranked" : "Привяжите Steam";
+                }
+
+                document.getElementById('display-rank').innerText = rankText;
+
+            } catch (err) {
+                console.error("Ошибка загрузки профиля:", err);
+            }
         }
-    } else {
-        rankText = user.steam_linked ? "Hidden/Unranked" : "Link Steam first";
-    }
 
-    document.getElementById('display-rank').innerText = rankText;
-}
+        function toggleEditName() {
+            document.getElementById('display-username').classList.toggle('hidden');
+            document.getElementById('edit-name-form').classList.toggle('hidden');
+            document.getElementById('new-username-input').value = document.getElementById('display-username').innerText;
+        }
+
+        async function saveNewName() {
+            const newName = document.getElementById('new-username-input').value.trim();
+            if (!newName) return;
+
+            const res = await fetch('/api/update-username', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ site_id: userSiteId, new_username: newName })
+            });
+
+            if (res.ok) {
+                // Обновляем локальные данные, чтобы Header тоже сменил имя
+                const localUser = JSON.parse(localStorage.getItem('dota_user') || '{}');
+                localUser.username = newName;
+                localStorage.setItem('dota_user', JSON.stringify(localUser));
+                location.reload();
+            } else {
+                alert("Этот ник уже занят или произошла ошибка!");
+            }
+        }
+
+        window.onload = loadProfile;
+    </script>
+</body>
+</html>
