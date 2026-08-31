@@ -1,103 +1,37 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8"><title>Профиль — Dota 2 Helper</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <!-- Иконки для карандашика -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body id="body-profile">
-    <header>
-        <div class="header-left">
-            <div class="logo" onclick="window.location.href='/'">Dota 2 Helper</div>
-            <nav class="main-nav">
-                <button class="nav-link" onclick="window.location.href='/drafts'">АНАЛИЗ ДРАФТОВ</button>
-                <button class="nav-link" onclick="window.location.href='/fantasy'">ФЕНТАЗИ ПОМОЩНИК</button>
-                <button class="nav-link" onclick="window.location.href='/invoker'">ТРЕНАЖЁР ИНВОКЕР</button>
-            </nav>
-        </div>
-        <div class="user-panel">
-            <span id="user-display-name" class="user-badge">...</span>
-            <button class="btn-logout" onclick="logout()">Выйти</button>
-        </div>
-    </header>
+// (Замени функцию loadProfile и ranks внутри script в profile.html)
 
-    <main>
-        <div class="profile-container">
-            <div id="premium-badge" class="hidden" style="color: var(--accent-yellow); font-weight: bold; margin-bottom: 10px;">★ PREMIUM АККАУНТ ★</div>
-            
-            <div style="position: relative;">
-                <img id="profile-avatar" src="/static/img/default_avatar.png" style="width:100px; border-radius:50%; border: 3px solid var(--border-color);">
-            </div>
+async function loadProfile() {
+    const res = await fetch('/api/me');
+    const user = await res.json();
+    if (!user.logged_in) { window.location.href = '/'; return; }
 
-            <!-- Блок Никнейма с редактированием -->
-            <div class="profile-name-row">
-                <h2 id="display-username">Загрузка...</h2>
-                <i class="fas fa-pencil-alt edit-icon" onclick="toggleEditName()"></i>
-            </div>
-            
-            <div id="edit-name-form" class="hidden">
-                <input type="text" id="new-username-input" style="width: 200px; margin-bottom: 5px;">
-                <button class="btn-primary" onclick="saveNewName()" style="padding: 5px 15px; min-width: auto;">ОК</button>
-            </div>
+    userSiteId = user.site_id;
+    document.getElementById('display-username').innerText = user.username;
+    document.getElementById('user-display-name').innerText = user.username;
+    document.getElementById('display-site-id').innerText = user.site_id;
+    document.getElementById('display-score').innerText = user.invoker_score;
+    
+    if (user.avatar) document.getElementById('profile-avatar').src = user.avatar;
+    if (user.is_premium) document.getElementById('premium-badge').classList.remove('hidden');
+    if (user.steam_linked) document.getElementById('steam-link-btn').classList.add('hidden');
 
-            <div class="site-id-badge">ID: <span id="display-site-id">0000000000</span></div>
-
-            <div class="profile-info-grid">
-                <div class="info-item"><span>Ранг:</span> <b id="display-rank">...</b></div>
-                <div class="info-item"><span>Рекорд Инвокера:</span> <b id="display-score">0</b></div>
-            </div>
-
-            <button class="btn-yellow" onclick="openFavModal()">ВЫБРАТЬ ЛЮБИМЫХ ГЕРОЕВ</button>
-            
-            <button id="steam-link-btn" class="btn-secondary" onclick="window.location.href='/api/login/steam'" style="margin-top: 10px;">
-                <i class="fab fa-steam"></i> ПРИВЯЗАТЬ STEAM
-            </button>
-        </div>
-    </main>
-
-    <script src="/static/js/auth.js"></script>
-    <script src="/static/js/favorites.js"></script>
-    <script>
-        let userSiteId = "";
-
-        async function loadProfile() {
-            const res = await fetch('/api/me');
-            const user = await res.json();
-            if (!user.logged_in) { window.location.href = '/'; return; }
-
-            userSiteId = user.site_id;
-            document.getElementById('display-username').innerText = user.username;
-            document.getElementById('user-display-name').innerText = user.username;
-            document.getElementById('display-site-id').innerText = user.site_id;
-            document.getElementById('display-score').innerText = user.invoker_score;
-            
-            if (user.avatar) document.getElementById('profile-avatar').src = user.avatar;
-            if (user.is_premium) document.getElementById('premium-badge').classList.remove('hidden');
-            if (user.steam_linked) document.getElementById('steam-link-btn').classList.add('hidden');
-
-            const ranks = ["Unranked", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
-            document.getElementById('display-rank').innerText = ranks[Math.floor(user.rank_tier/10)] || "Unknown";
+    // КРАСИВАЯ РАСШИФРОВКА РАНГА
+    const rankNames = ["Unranked", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
+    let rankText = "Unknown";
+    
+    if (user.rank && user.rank > 0) {
+        const medalIndex = Math.floor(user.rank / 10);
+        const stars = user.rank % 10;
+        const medalName = rankNames[medalIndex] || "Unknown";
+        
+        if (medalIndex === 8) { // Immortal
+            rankText = "Immortal";
+        } else {
+            rankText = `${medalName} [${stars}]`; // Например: Archon [3]
         }
+    } else {
+        rankText = user.steam_linked ? "Hidden/Unranked" : "Link Steam first";
+    }
 
-        function toggleEditName() {
-            document.getElementById('display-username').classList.toggle('hidden');
-            document.getElementById('edit-name-form').classList.toggle('hidden');
-            document.getElementById('new-username-input').value = document.getElementById('display-username').innerText;
-        }
-
-        async function saveNewName() {
-            const newName = document.getElementById('new-username-input').value;
-            const res = await fetch('/api/update-username', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ site_id: userSiteId, new_username: newName })
-            });
-            if (res.ok) location.reload();
-            else alert("Этот ник уже занят!");
-        }
-
-        window.onload = loadProfile;
-    </script>
-</body>
-</html>
+    document.getElementById('display-rank').innerText = rankText;
+}
