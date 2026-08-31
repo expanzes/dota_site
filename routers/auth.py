@@ -58,6 +58,12 @@ class UpdateUsernameModel(BaseModel):
     site_id: str
     new_username: str
 
+# --- ЛОГИКА ВЫХОДА (НОВОЕ) ---
+@router.post("/logout")
+async def logout_api(request: Request):
+    request.session.clear() # Полностью стираем данные на сервере
+    return {"status": "ok"}
+
 @router.post("/register")
 async def register(data: AuthModel, request: Request):
     try:
@@ -101,56 +107,39 @@ async def steam_callback(request: Request):
         claimed_id = request.query_params.get("openid.claimed_id")
         if not claimed_id: return RedirectResponse("/")
         steam_id = claimed_id.split("/")[-1]
-
-        # Данные из Steam и OpenDota
         async with httpx.AsyncClient() as client:
             res = await client.get(f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={STEAM_API_KEY}&steamids={steam_id}", timeout=10.0)
             s_data = res.json()["response"]["players"][0]
             od = await client.get(f"https://api.opendota.com/api/players/{steam_id}", timeout=5.0)
             rank = od.json().get("rank_tier", 0) if od.status_code == 200 else 0
-
-        # Проверяем, залогинен ли уже пользователь по сессии
         current_session = request.session.get("user")
-        
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                # 1. Проверяем, не привязан ли этот Steam уже к КАКОМУ-ТО другому аккаунту
                 cur.execute("SELECT site_id, username FROM users WHERE steam_id = %s", (steam_id,))
                 existing_steam_user = cur.fetchone()
-
                 if current_session:
-                    # СЛУЧАЙ: Пользователь ХОЧЕТ ПРИВЯЗАТЬ Steam к текущему аккаунту
                     sid = current_session["site_id"]
-                    
                     if existing_steam_user and existing_steam_user[0] != sid:
-                        return HTMLResponse(content=f"<h1>Ошибка</h1><p>Этот Steam уже привязан к другому аккаунту ({existing_steam_user[1]})</p>")
-                    
+                        return HTMLResponse(content=f"<h1>Ошибка</h1><p>Steam уже привязан к другому аккаунту</p>")
                     cur.execute("UPDATE users SET steam_id = %s, avatar_url = %s, rank_tier = %s WHERE site_id = %s", 
                                (steam_id, s_data["avatarfull"], rank, sid))
                     username = current_session["username"]
                 else:
-                    # СЛУЧАЙ: Обычный вход через Steam
                     if not existing_steam_user:
-                        # Новый пользователь
                         sid = generate_site_id()
                         username = s_data["personaname"]
                         cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
                         if cur.fetchone(): username = f"{username}_{sid[:4]}"
-                        
                         cur.execute("INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier) VALUES (%s, %s, %s, %s, %s)", 
                                    (sid, username, steam_id, s_data["avatarfull"], rank))
                     else:
-                        # Существующий пользователь
                         sid, username = existing_steam_user[0], existing_steam_user[1]
                         cur.execute("UPDATE users SET avatar_url = %s, rank_tier = %s WHERE site_id = %s", 
                                    (s_data["avatarfull"], rank, sid))
-                
                 conn.commit()
-
         request.session["user"] = {"site_id": sid, "username": username}
         return RedirectResponse("/profile")
-    except Exception as e:
-        return HTMLResponse(content=f"<h1>Ошибка авторизации</h1><p>{str(e)}</p>")
+    except Exception as e: return HTMLResponse(content=f"<h1>Ошибка</h1><p>{str(e)}</p>")
 
 @router.get("/me")
 async def get_me(request: Request):
