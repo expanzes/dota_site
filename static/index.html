@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dota 2 Helper — Главная</title>
     <link rel="stylesheet" href="/static/css/styles.css">
-    <!-- Иконки для кнопки Steam -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body id="body-index">
     
+    <!-- ЭКРАН ПРИВЕТСТВИЯ -->
     <div id="welcome-screen">
         <div class="welcome-card">
             <h1>Dota 2 Helper</h1>
@@ -21,6 +21,7 @@
         </div>
     </div>
 
+    <!-- ОСНОВНОЕ МЕНЮ (Скрыто до входа) -->
     <div id="main-app" class="hidden">
         <header>
             <div class="header-left">
@@ -42,7 +43,7 @@
         </main>
     </div>
 
-    <!-- ОБНОВЛЕННАЯ МОДАЛКА ВХОДА -->
+    <!-- МОДАЛКА ВХОДА -->
     <div id="auth-modal" class="modal-overlay hidden">
         <div class="modal-card">
             <div class="auth-tabs">
@@ -55,16 +56,14 @@
             <input type="text" id="auth-username" placeholder="Логин">
             <input type="password" id="auth-password" placeholder="Пароль">
             
-            <button class="btn-primary" onclick="submitAuth()" style="margin-top: 10px;">ПОДТВЕРДИТЬ</button>
+            <button class="btn-primary" onclick="submitAuth()">ПОДТВЕРДИТЬ</button>
             
-            <!-- РАЗДЕЛИТЕЛЬ -->
             <div style="margin: 20px 0; display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 0.8rem;">
                 <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
                 ИЛИ
                 <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
             </div>
 
-            <!-- КНОПКА STEAM -->
             <button class="btn-steam" onclick="loginWithSteam()">
                 <i class="fab fa-steam"></i> ВОЙТИ ЧЕРЕЗ STEAM
             </button>
