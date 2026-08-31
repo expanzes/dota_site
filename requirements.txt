@@ -4,3 +4,5 @@ httpx
 pydantic
 psycopg2-binary
 bcrypt
+itsdangerous
+python-multipart
