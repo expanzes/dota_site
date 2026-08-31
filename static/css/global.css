@@ -1,95 +1,29 @@
-:root {
-  --bg-dark: #0b0d12;
-  --bg-card: #12151e;
-  --bg-input: #171b26;
-  --border-color: #202636;
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --accent-red: #f43f5e;
-  --accent-red-hover: #e11d48;
-  --accent-green: #20c997;
-  --accent-yellow: #eab308;
-  --accent-yellow-hover: #d9a306;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; }
-.hidden { display: none !important; }
-
-/* --- ЭКРАН ПРИВЕТСТВИЯ --- */
-#welcome-screen {
-  display: flex; justify-content: center; align-items: center;
-  min-height: 100vh; width: 100%;
-  background: radial-gradient(circle at center, #171b26 0%, var(--bg-dark) 100%);
-  position: fixed; top: 0; left: 0;
-}
-
-.welcome-card {
-  background: var(--bg-card); padding: 40px; border-radius: 16px;
-  border: 1px solid var(--border-color); text-align: center;
-  max-width: 480px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-}
-
-.welcome-card h1 { font-size: 2.2rem; margin-bottom: 12px; color: var(--accent-red); font-weight: 900; }
-.welcome-card p { color: var(--text-muted); margin-bottom: 24px; }
-.btn-group { display: flex; flex-direction: column; gap: 12px; }
-
-/* --- МОДАЛКИ (ВХОД / РЕГИСТРАЦИЯ) --- */
-.modal-overlay { 
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-  background: rgba(0,0,0,0.85); display: flex; align-items: center; 
-  justify-content: center; z-index: 1000; backdrop-filter: blur(4px);
-}
-
-/* УВЕЛИЧЕННОЕ ОКНО */
-.modal-card { 
-  background: var(--bg-card); 
-  border: 1px solid var(--border-color); 
-  padding: 40px; 
-  border-radius: 20px; 
-  width: 95%; 
-  max-width: 550px; /* Сделали шире (было 400) */
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-}
-
-.auth-tabs { display: flex; background: var(--bg-input); padding: 5px; border-radius: 10px; margin-bottom: 25px; }
-.auth-tab { flex: 1; border: none; background: transparent; color: var(--text-muted); padding: 12px; cursor: pointer; border-radius: 8px; font-weight: bold; font-size: 1rem; }
-.auth-tab.active { background: var(--accent-red); color: white; }
-
-/* Инпуты в модалке */
-.modal-card input {
-    background: var(--bg-input); border: 1px solid var(--border-color);
-    color: white; padding: 14px; border-radius: 8px; width: 100%; margin-bottom: 15px; outline: none; font-size: 1rem;
-}
-.modal-card input:focus { border-color: var(--accent-red); }
-
-.alert-error { background: rgba(244, 63, 94, 0.15); border: 1px solid var(--accent-red); color: #fca5a5; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px; text-align: center; }
-
-/* --- КНОПКИ --- */
-.btn-primary { 
-    background: var(--accent-red); 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    padding: 14px 30px; 
-    font-weight: 700; 
-    cursor: pointer; 
-    transition: 0.2s; 
+/* КНОПКА STEAM */
+.btn-steam {
+    background: #171a21; /* Фирменный цвет Steam */
+    color: #ffffff;
+    border: 1px solid #2a475e;
+    border-radius: 8px;
+    padding: 14px 30px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
     text-transform: uppercase;
-    display: block;      /* Делаем блочной */
-    margin: 10px auto 0; /* ЦЕНТРИРУЕМ: 10px сверху, auto по бокам */
-    width: fit-content;  /* Ширина по тексту + отступы */
-    min-width: 220px;    /* Чтобы не была слишком маленькой */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
 }
-.btn-primary:hover { background: var(--accent-red-hover); transform: translateY(-1px); box-shadow: 0 5px 15px rgba(244, 63, 94, 0.3); }
 
-.btn-secondary { 
-    background: var(--bg-input); color: var(--text-main); 
-    border: 1px solid var(--border-color); border-radius: 8px; 
-    padding: 12px 20px; font-weight: 600; cursor: pointer; transition: 0.2s;
-    display: block;
-    margin: 15px auto 0;
-    width: fit-content;
-    font-size: 0.9rem;
+.btn-steam i {
+    font-size: 1.4rem;
 }
-.btn-secondary:hover { background: #202636; color: white; }
+
+.btn-steam:hover {
+    background: #2a475e;
+    border-color: #66c0f4;
+    box-shadow: 0 0 20px rgba(102, 192, 244, 0.2);
+}
