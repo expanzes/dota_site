@@ -1,4 +1,4 @@
-/* Модуль: Личный кабинет */
+/* --- МОДУЛЬ: ЛИЧНЫЙ КАБИНЕТ --- */
 .profile-container {
     max-width: 700px;
     margin: 60px auto;
@@ -13,7 +13,58 @@
     box-shadow: 0 20px 60px rgba(0,0,0,0.6);
 }
 
-/* ЖЕЛТАЯ КНОПКА (Принудительно) */
+#profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid var(--accent-red);
+    object-fit: cover;
+}
+
+.profile-main-title { font-size: 2.2rem; font-weight: 900; color: var(--accent-red); text-transform: uppercase; }
+
+/* Смена ника */
+.profile-name-row { display: flex; align-items: center; gap: 15px; justify-content: center; }
+.edit-icon { font-size: 1.2rem; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
+.edit-icon:hover { color: var(--accent-yellow); }
+
+.site-id-badge {
+    background: var(--bg-input);
+    color: var(--text-muted);
+    padding: 6px 18px;
+    border-radius: 30px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    border: 1px solid var(--border-color);
+}
+
+/* Сетка статистики */
+.profile-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+}
+
+.info-item {
+    background: var(--bg-input);
+    padding: 30px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.info-label { color: var(--text-muted); font-size: 0.9rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
+.info-value { font-size: 1.6rem; font-weight: 900; }
+#display-rank { color: var(--accent-red); }
+#display-score { color: var(--accent-yellow); }
+#rank-medal { width: 70px; height: 70px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
+
+/* ЖЕЛТАЯ КНОПКА */
 .btn-yellow {
     background: var(--accent-yellow) !important;
     color: #000 !important;
@@ -33,7 +84,7 @@
     box-shadow: 0 8px 20px rgba(234, 179, 8, 0.4);
 }
 
-/* СЕТКА ГЕРОЕВ В МОДАЛКЕ (ВОЗВРАТ ПЛИТКИ) */
+/* СЕТКА ГЕРОЕВ В МОДАЛКЕ */
 .fav-heroes-grid {
     display: grid !important; 
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important; 
@@ -41,8 +92,6 @@
     max-height: 500px;
     overflow-y: auto;
     padding: 15px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 12px;
 }
 
 .fav-hero-card {
@@ -52,43 +101,10 @@
     padding: 10px;
     text-align: center;
     cursor: pointer;
-    transition: 0.2s;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
-.fav-hero-card.selected {
-    border-color: var(--accent-yellow);
-    background: rgba(234, 179, 8, 0.1);
-}
-.fav-hero-card img {
-    width: 100%;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    aspect-ratio: 16/9;
-    object-fit: cover;
-}
+.fav-hero-card.selected { border-color: var(--accent-yellow); background: rgba(234, 179, 8, 0.1); }
+.fav-hero-card img { width: 100%; border-radius: 6px; margin-bottom: 8px; aspect-ratio: 16/9; object-fit: cover; }
 .fav-hero-card span { font-size: 0.8rem; font-weight: 700; color: white; }
-
-/* Статистика (Ранг и Рекорд) */
-.profile-info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    width: 100%;
-}
-.info-item {
-    background: var(--bg-input);
-    padding: 25px 15px;
-    border-radius: 20px;
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-.info-label { color: var(--text-muted); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-.info-value { font-size: 1.4rem; font-weight: 900; }
-#display-rank { color: var(--accent-red); }
-#display-score { color: var(--accent-yellow); }
