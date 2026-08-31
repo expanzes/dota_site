@@ -1,34 +1,36 @@
 let allHeroes = [];
 let selectedFavoriteIds = new Set();
+let isDataLoaded = false;
+
+// Запускаем загрузку сразу при подключении скрипта
+async function preloadFavoritesData() {
+    try {
+        const res = await fetch('/api/heroes');
+        allHeroes = await res.json();
+        allHeroes.sort((a, b) => a.name.localeCompare(b.name));
+        
+        const user = currentUser || JSON.parse(localStorage.getItem('dota_user'));
+        if (user && user.site_id) {
+            const favRes = await fetch(`/api/favorites?user_id=${user.site_id}`);
+            const data = await favRes.json();
+            selectedFavoriteIds = new Set(data.favorite_ids || []);
+        }
+        isDataLoaded = true;
+        console.log("Данные героев предзагружены");
+    } catch (e) {
+        console.error("Ошибка предзагрузки:", e);
+    }
+}
 
 async function openFavModal() {
     const modal = document.getElementById('fav-modal');
     if (modal) modal.classList.remove('hidden');
     
-    // 1. Загружаем всех героев, если еще не загружены
-    if (allHeroes.length === 0) {
-        try {
-            const res = await fetch('/api/heroes');
-            allHeroes = await res.json();
-            // Сортируем по алфавиту для удобства
-            allHeroes.sort((a, b) => a.name.localeCompare(b.name));
-        } catch (e) {
-            console.error("Не удалось загрузить список героев:", e);
-        }
-    }
-
-    // 2. Берем текущего юзера из памяти или localStorage
-    const user = currentUser || JSON.parse(localStorage.getItem('dota_user'));
-    
-    if (user && user.site_id) {
-        try {
-            // Запрашиваем текущее избранное с сервера по site_id
-            const favRes = await fetch(`/api/favorites?user_id=${user.site_id}`);
-            const data = await favRes.json();
-            selectedFavoriteIds = new Set(data.favorite_ids || []);
-        } catch (e) {
-            console.error("Ошибка загрузки избранного:", e);
-        }
+    // Если данные еще не успели загрузиться (редкий случай), ждем
+    if (!isDataLoaded) {
+        const container = document.getElementById('fav-heroes-container');
+        if (container) container.innerHTML = "<p style='padding:20px; color:white;'>Загрузка героев...</p>";
+        await preloadFavoritesData();
     }
 
     renderFavGrid();
@@ -45,8 +47,10 @@ function renderFavGrid(query = "") {
     
     container.innerHTML = "";
     const q = query.toLowerCase().trim();
-
     const filtered = allHeroes.filter(h => h.name.toLowerCase().includes(q));
+
+    // Используем DocumentFragment для ускорения отрисовки 127 элементов
+    const fragment = document.createDocumentFragment();
 
     filtered.forEach(h => {
         const card = document.createElement('div');
@@ -54,11 +58,7 @@ function renderFavGrid(query = "") {
         const isSelected = selectedFavoriteIds.has(heroId);
         
         card.className = `fav-hero-card ${isSelected ? 'selected' : ''}`;
-        
-        card.innerHTML = `
-            <img src="${h.img}" alt="${h.name}">
-            <span>${h.name}</span>
-        `;
+        card.innerHTML = `<img src="${h.img}" loading="lazy"><span>${h.name}</span>`;
 
         card.onclick = () => {
             if (selectedFavoriteIds.has(heroId)) {
@@ -69,9 +69,10 @@ function renderFavGrid(query = "") {
                 card.classList.add('selected');
             }
         };
-
-        container.appendChild(card);
+        fragment.appendChild(card);
     });
+
+    container.appendChild(fragment);
 }
 
 function filterFavHeroes() {
@@ -79,47 +80,33 @@ function filterFavHeroes() {
     if (input) renderFavGrid(input.value);
 }
 
-// ГЛАВНЫЙ ФИКС КНОПКИ СОХРАНИТЬ
 async function saveFavorites() {
-    // Берем актуального пользователя
     const user = currentUser || JSON.parse(localStorage.getItem('dota_user'));
-
-    if (!user || !user.site_id) {
-        alert("Пожалуйста, войдите в аккаунт, чтобы сохранить героев.");
-        return;
-    }
+    if (!user || !user.site_id) return;
 
     const saveBtn = document.querySelector('.btn-save') || document.querySelector('#fav-modal .btn-primary');
-    if (saveBtn) {
-        saveBtn.innerText = "СОХРАНЕНИЕ...";
-        saveBtn.disabled = true;
-    }
+    if (saveBtn) { saveBtn.innerText = "СОХРАНЕНИЕ..."; saveBtn.disabled = true; }
 
     try {
         const response = await fetch('/api/favorites', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                user_id: String(user.site_id), // Отправляем наш новый 10-значный ID
+                user_id: String(user.site_id),
                 favorite_ids: Array.from(selectedFavoriteIds).map(Number)
             })
         });
 
         if (response.ok) {
             closeFavModal();
-            // Если мы в профиле, можно обновить интерфейс без перезагрузки
             if (typeof loadProfile === 'function') loadProfile();
-        } else {
-            const errData = await response.json();
-            alert("Ошибка при сохранении: " + (errData.detail || "неизвестная ошибка"));
         }
     } catch (err) {
-        console.error("Ошибка сети:", err);
-        alert("Не удалось связаться с сервером");
+        alert("Ошибка сети");
     } finally {
-        if (saveBtn) {
-            saveBtn.innerText = "СОХРАНИТЬ";
-            saveBtn.disabled = false;
-        }
+        if (saveBtn) { saveBtn.innerText = "СОХРАНИТЬ"; saveBtn.disabled = false; }
     }
 }
+
+// Инициализация при загрузке страницы
+preloadFavoritesData();
