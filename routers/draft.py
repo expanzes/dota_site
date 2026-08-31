@@ -2,7 +2,7 @@ import asyncio, httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional
-from routers.auth import get_db_connection, get_favorites
+from routers.auth import get_db_connection, get_favorites_db
 from routers.constants import HERO_TAGS, HERO_POSITIONS, ILLUSION_HERO_NAMES, ILLUSION_KILLERS
 
 router = APIRouter()
@@ -87,10 +87,8 @@ async def analyze_perfect(payload: DraftRequest):
 
         fav_ids = []
         if payload.user_id:
-            try:
-                fav_data = await get_favorites(payload.user_id)
-                fav_ids = fav_data["favorite_ids"]
-            except: pass
+            fav_data = await get_favorites_db(payload.user_id)
+            fav_ids = fav_data["favorite_ids"]
             
         final_results = []
         for r_k, r_t in ROLES.items():
