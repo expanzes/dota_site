@@ -15,13 +15,11 @@ def hash_password(pw: str): return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).
 def verify_password(pw: str, h: str): return bcrypt.checkpw(pw.encode(), h.encode())
 
 def generate_site_id():
-    """Генерирует уникальный 10-значный ID"""
     return ''.join([str(random.randint(0, 9)) for _ in range(10)])
 
 def ensure_tables_exist():
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            # Таблица пользователей
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     site_id VARCHAR(10) PRIMARY KEY,
@@ -34,53 +32,58 @@ def ensure_tables_exist():
                     is_premium BOOLEAN DEFAULT FALSE
                 );
             """)
-            # Таблица избранного (теперь привязана к site_id)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS favorites (
-                    user_id VARCHAR(10) PRIMARY KEY REFERENCES users(site_id),
+                    user_id VARCHAR(10) PRIMARY KEY,
                     favorite_ids INTEGER[]
                 );
             """)
             conn.commit()
 
+# Помощник для получения избранного (чтобы draft.py не ругался)
+async def get_favorites_db(user_id: str):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT favorite_ids FROM favorites WHERE user_id = %s", (user_id,))
+                row = cur.fetchone()
+                return {"favorite_ids": row[0] if row and row[0] else []}
+    except:
+        return {"favorite_ids": []}
+
 class AuthModel(BaseModel):
     username: str
     password: str
+
+class FavoriteModel(BaseModel):
+    user_id: str
+    favorite_ids: List[int]
 
 class UpdateUsernameModel(BaseModel):
     site_id: str
     new_username: str
 
-# --- ОБЫЧНЫЙ ВХОД / РЕГИСТРАЦИЯ ---
-
 @router.post("/register")
 async def register(data: AuthModel):
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1 FROM users WHERE username = %s", (data.username,))
-                if cur.fetchone(): raise HTTPException(400, "Никнейм занят")
-                
-                sid = generate_site_id()
-                cur.execute("""
-                    INSERT INTO users (site_id, username, password_hash) 
-                    VALUES (%s, %s, %s)
-                """, (sid, data.username, hash_password(data.password)))
-                conn.commit()
-                return {"site_id": sid, "username": data.username}
-    except Exception as e: raise HTTPException(500, str(e))
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM users WHERE username = %s", (data.username,))
+            if cur.fetchone(): raise HTTPException(400, "Никнейм занят")
+            sid = generate_site_id()
+            cur.execute("INSERT INTO users (site_id, username, password_hash) VALUES (%s, %s, %s)", 
+                       (sid, data.username, hash_password(data.password)))
+            conn.commit()
+            return {"site_id": sid, "username": data.username}
 
 @router.post("/login")
 async def login(data: AuthModel):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT site_id, username, password_hash, avatar_url FROM users WHERE username = %s", (data.username,))
+            cur.execute("SELECT site_id, username, password_hash FROM users WHERE username = %s", (data.username,))
             row = cur.fetchone()
             if not row or not row[2] or not verify_password(data.password, row[2]):
-                raise HTTPException(400, "Неверные данные")
-            return {"site_id": row[0], "username": row[1], "avatar": row[3]}
-
-# --- STEAM OPENID ---
+                raise HTTPException(400, "Ошибка входа")
+            return {"site_id": row[0], "username": row[1]}
 
 @router.get("/login/steam")
 async def steam_login(request: Request):
@@ -97,37 +100,26 @@ async def steam_callback(request: Request):
     claimed_id = request.query_params.get("openid.claimed_id")
     if not claimed_id: return RedirectResponse("/")
     steam_id = claimed_id.split("/")[-1]
-
     async with httpx.AsyncClient() as client:
-        # Данные из Steam
         res = await client.get(f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={STEAM_API_KEY}&steamids={steam_id}")
         s_data = res.json()["response"]["players"][0]
-        # Ранг из OpenDota
         od = await client.get(f"https://api.opendota.com/api/players/{steam_id}")
         rank = od.json().get("rank_tier", 0) if od.status_code == 200 else 0
-
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT site_id, username FROM users WHERE steam_id = %s", (steam_id,))
             user = cur.fetchone()
-            
             if not user:
                 sid = generate_site_id()
-                # При первой реге через стим username = ник в стиме
-                cur.execute("""
-                    INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (sid, s_data["personaname"], steam_id, s_data["avatarfull"], rank))
+                cur.execute("INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier) VALUES (%s, %s, %s, %s, %s)", 
+                           (sid, s_data["personaname"], steam_id, s_data["avatarfull"], rank))
                 username = s_data["personaname"]
             else:
                 sid, username = user[0], user[1]
                 cur.execute("UPDATE users SET avatar_url = %s, rank_tier = %s WHERE site_id = %s", (s_data["avatarfull"], rank, sid))
             conn.commit()
-
     request.session["user"] = {"site_id": sid, "username": username}
     return RedirectResponse("/profile")
-
-# --- УПРАВЛЕНИЕ ПРОФИЛЕМ ---
 
 @router.get("/me")
 async def get_me(request: Request):
@@ -137,24 +129,40 @@ async def get_me(request: Request):
         with conn.cursor() as cur:
             cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, is_premium, steam_id FROM users WHERE site_id = %s", (sess["site_id"],))
             u = cur.fetchone()
-            return {
-                "logged_in": True, "site_id": u[0], "username": u[1], 
-                "avatar": u[2], "rank": u[3], "invoker_score": u[4], 
-                "is_premium": u[5], "steam_linked": bool(u[6])
-            }
+            return {"logged_in": True, "site_id": u[0], "username": u[1], "avatar": u[2], "rank": u[3], "invoker_score": u[4], "is_premium": u[5], "steam_linked": bool(u[6])}
+
+@router.get("/favorites")
+async def get_favs_api(user_id: str):
+    return await get_favorites_db(user_id)
+
+@router.post("/favorites")
+async def save_favorites(data: FavoriteModel):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO favorites (user_id, favorite_ids) VALUES (%s, %s) ON CONFLICT (user_id) DO UPDATE SET favorite_ids = EXCLUDED.favorite_ids", (data.user_id, data.favorite_ids))
+            conn.commit()
+    return {"status": "ok"}
 
 @router.post("/update-username")
 async def update_username(data: UpdateUsernameModel):
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("UPDATE users SET username = %s WHERE site_id = %s", (data.new_username, data.site_id))
-                conn.commit()
-        return {"status": "ok"}
-    except Exception: raise HTTPException(400, "Никнейм уже занят")
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET username = %s WHERE site_id = %s", (data.new_username, data.site_id))
+            conn.commit()
+    return {"status": "ok"}
 
-@router.get("/user-matches")
-async def get_matches(steam_id: str):
-    async with httpx.AsyncClient() as client:
-        r = await client.get(f"https://api.opendota.com/api/players/{steam_id}/recentMatches")
-        return r.json()[:5] if r.status_code == 200 else []
+@router.get("/user-stats")
+async def get_stats(username: str):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT invoker_high_score FROM users WHERE username = %s", (username,))
+            row = cur.fetchone()
+    return {"high_score": row[0] if row else 0}
+
+@router.post("/save-invoker-score")
+async def save_score(data: dict):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET invoker_high_score = GREATEST(invoker_high_score, %s) WHERE username = %s", (data['score'], data['username']))
+            conn.commit()
+    return {"status": "ok"}
