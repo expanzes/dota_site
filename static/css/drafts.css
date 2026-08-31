@@ -1,8 +1,24 @@
-/* --- СТРАНИЦА АНАЛИЗА ДРАФТОВ --- */
-main { max-width: 1300px; margin: 0 auto; padding: 20px 40px; }
+/* --- МОДУЛЬ: АНАЛИЗ ДРАФТОВ --- */
+main { 
+    max-width: 1300px; 
+    margin: 0 auto; 
+    padding: 20px 40px; 
+}
 
-.draft-container { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 25px; }
-.team-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 15px; padding: 25px; }
+.draft-container { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 30px; 
+    margin-bottom: 25px; 
+}
+
+.team-box { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-color); 
+    border-radius: 15px; 
+    padding: 25px; 
+}
+
 .team-box.allies { border-top: 4px solid var(--accent-green); }
 .team-box.enemies { border-top: 4px solid var(--accent-red); }
 
@@ -10,59 +26,125 @@ main { max-width: 1300px; margin: 0 auto; padding: 20px 40px; }
 .enemies-title { color: var(--accent-red); text-transform: uppercase; margin-bottom: 25px; font-size: 1.1rem; text-align: center; }
 
 .inputs-grid { display: flex; flex-direction: column; gap: 14px; }
-.input-field-group { display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 15px; }
-.input-field-group label { font-size: 0.75rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; text-align: right; }
 
-.hero-slot { position: relative; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; height: 48px; display: flex; align-items: center; }
+.input-field-group { 
+    display: grid; 
+    grid-template-columns: 100px 1fr; 
+    align-items: center; 
+    gap: 15px; 
+}
+
+.input-field-group label { 
+    font-size: 0.75rem; 
+    color: var(--text-muted); 
+    font-weight: 800; 
+    text-transform: uppercase; 
+    text-align: right; 
+}
+
+/* Слот героя */
+.hero-slot {
+    position: relative;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+}
+
 .hero-slot.filled { border-color: rgba(255,255,255,0.2); }
-.slot-hero-img { width: 60px; height: 100%; object-fit: cover; border-radius: 7px 0 0 7px; display: none; }
-.hero-slot.filled .slot-hero-img { display: block; }
-.hero-slot input { background: transparent; border: none; color: white; padding: 0 40px 0 15px; font-size: 0.95rem; width: 100%; height: 100%; outline: none; }
 
-.clear-input-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; display: none; z-index: 5; }
+.slot-hero-img {
+    width: 60px;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 7px 0 0 7px;
+    display: none;
+}
+.hero-slot.filled .slot-hero-img { display: block; }
+
+.hero-slot input {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 0 40px 0 15px;
+    font-size: 0.95rem;
+    width: 100%;
+    height: 100%;
+    outline: none;
+}
+
+/* Кнопка очистки внутри инпута */
+.clear-input-btn {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: transparent; border: none; color: var(--text-muted);
+    font-size: 1.3rem; cursor: pointer; display: none; z-index: 5;
+}
 .hero-slot input:not(:placeholder-shown) ~ .clear-input-btn { display: block; }
 
-/* КНОПКИ */
-.actions-row { display: grid; grid-template-columns: 2.5fr 1fr 1fr; gap: 16px; margin-top: 30px; align-items: stretch; }
-.btn-analyze { background: var(--accent-red); color: white; padding: 18px; border-radius: 12px; border: none; cursor: pointer; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
-.btn-clear { background: var(--bg-input); color: white; border: 1px solid var(--border-color); border-radius: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+/* КНОПКИ ДЕЙСТВИЙ (3 в ряд) */
+.actions-row { 
+    display: grid; 
+    grid-template-columns: 2.5fr 1fr 1fr; 
+    gap: 16px; 
+    margin-top: 30px; 
+    align-items: stretch;
+}
 
-/* КАК ЭТО РАБОТАЕТ */
+.btn-analyze { 
+    background: var(--accent-red); color: white; padding: 18px; 
+    border-radius: 12px; border: none; cursor: pointer; 
+    font-weight: 900; text-transform: uppercase; letter-spacing: 1px; 
+}
+
+.btn-clear { 
+    background: var(--bg-input); color: white; border: 1px solid var(--border-color); 
+    padding: 18px; border-radius: 12px; font-weight: 700; 
+    text-transform: uppercase; cursor: pointer; 
+}
+
+/* КАК ЭТО РАБОТАЕТ (Tooltip) */
 .help-container { position: relative; width: 100%; }
-.btn-help { width: 100%; height: 100%; background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 12px; font-weight: 700; font-size: 0.8rem; cursor: help; text-transform: uppercase; transition: 0.2s; }
-.help-tooltip { position: absolute; bottom: 125%; right: 0; width: 360px; background: #171b26; border: 1px solid var(--border-color); padding: 20px; border-radius: 15px; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 15px 40px rgba(0,0,0,0.8); z-index: 10000; }
+.btn-help { 
+    width: 100%; height: 100%; background: var(--bg-input); color: var(--text-muted); 
+    border: 1px solid var(--border-color); border-radius: 12px; 
+    font-weight: 700; font-size: 0.8rem; cursor: help; text-transform: uppercase; 
+}
+.help-tooltip {
+    position: absolute; bottom: 125%; right: 0; width: 360px;
+    background: #171b26; border: 1px solid var(--border-color);
+    padding: 20px; border-radius: 15px; opacity: 0; visibility: hidden;
+    transform: translateY(10px); transition: all 0.3s ease;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8); z-index: 10000;
+}
 .help-container:hover .help-tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
 .tooltip-title { color: var(--accent-red); font-weight: 900; font-size: 0.9rem; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
-.tooltip-content p { font-size: 0.8rem; color: var(--text-main); margin-bottom: 10px; line-height: 1.4; }
-.tooltip-content b { color: var(--accent-yellow); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 2px; }
+.tooltip-content p { font-size: 0.8rem; color: var(--text-main); margin-bottom: 10px; line-height: 1.4; text-align: left; }
+.tooltip-content b { color: var(--accent-yellow); text-transform: uppercase; font-size: 0.75rem; }
 
-/* РЕЗУЛЬТАТЫ (ТОП-2) */
+/* РЕЗУЛЬТАТЫ */
 .results-section { margin-top: 40px; }
 .role-group-title { font-size: 1.4rem; font-weight: 900; color: #fff; margin-bottom: 20px; border-left: 5px solid var(--accent-red); padding-left: 20px; text-transform: uppercase; }
+
 .top-picks-row { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
 .top-pick-card { background: var(--bg-card); border: 2px solid var(--border-color); border-radius: 18px; padding: 25px 20px; text-align: center; }
 .top-pick-card.favorite { border-color: #a855f7; }
 .top-pick-card.winrate { border-color: var(--accent-yellow); }
 .top-pick-card img { width: 160px; border-radius: 12px; margin-bottom: 15px; }
-.top-pick-label { font-size: 0.75rem; font-weight: 900; margin-bottom: 10px; }
+.top-pick-label { font-size: 0.75rem; font-weight: 900; margin-bottom: 10px; letter-spacing: 1px; }
 
-/* ИСПРАВЛЕННАЯ СЕТКА ГЕРОЕВ (ПЛИТКИ) */
+/* СЕТКА НИЖНИХ ГЕРОЕВ (ПЛИТКИ) */
 .hero-cards-grid { 
     display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
     gap: 15px; 
     margin-top: 20px; 
 }
 .result-hero-card { 
-    background: var(--bg-card); 
-    border: 1px solid var(--border-color); 
-    border-radius: 12px; 
-    padding: 15px; 
-    display: flex; 
-    flex-direction: column; /* Текст под картинкой */
-    align-items: center; 
-    text-align: center; 
-    gap: 10px; 
+    background: var(--bg-card); border: 1px solid var(--border-color); 
+    border-radius: 12px; padding: 15px; display: flex; 
+    flex-direction: column; align-items: center; text-align: center; gap: 10px; 
 }
 .result-hero-card img { width: 100%; max-width: 120px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; }
 .hero-name { font-weight: 700; color: white; font-size: 0.95rem; }
