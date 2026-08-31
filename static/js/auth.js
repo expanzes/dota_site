@@ -5,11 +5,8 @@ function enterAsGuest() {
   const mainApp = document.getElementById('main-app');
   if (welcome) welcome.classList.add('hidden');
   if (mainApp) mainApp.classList.remove('hidden');
-  
   const nameDisplay = document.getElementById('user-display-name');
   if (nameDisplay) nameDisplay.innerText = 'Гость';
-  
-  // Если есть функция загрузки героев (в drafts.html), запускаем
   if (typeof loadHeroes === 'function') loadHeroes();
 }
 
@@ -22,7 +19,8 @@ function closeAuthModal() {
     const modal = document.getElementById('auth-modal');
     if(modal) {
         modal.classList.add('hidden'); 
-        document.getElementById('auth-error').classList.add('hidden');
+        const err = document.getElementById('auth-error');
+        if(err) err.classList.add('hidden');
     }
 }
 
@@ -47,43 +45,33 @@ async function submitAuth() {
 
     if (res.ok) {
       const data = await res.json();
-      // Сохраняем данные для синхронизации между страницами
       localStorage.setItem('dota_user', JSON.stringify(data));
-      // Перезагружаем, чтобы main.py отдал страницу в состоянии "залогинен"
-      location.reload();
+      // ПОСЛЕ РЕГИ/ЛОГИНА СРАЗУ КИДАЕМ В ПРОФИЛЬ
+      window.location.href = '/profile';
     } else {
       const err = await res.json();
-      errorBox.innerText = err.detail || "Ошибка авторизации";
+      errorBox.innerText = err.detail || "Ошибка";
       errorBox.classList.remove('hidden');
     }
   } catch (e) {
-    errorBox.innerText = "Ошибка соединения с сервером";
+    errorBox.innerText = "Ошибка соединения";
     errorBox.classList.remove('hidden');
   }
 }
 
-function loginWithSteam() {
-    // Переход на бэкенд-роут Steam Auth
-    window.location.href = '/api/login/steam';
-}
+function loginWithSteam() { window.location.href = '/api/login/steam'; }
 
 function logout() {
     localStorage.removeItem('dota_user');
-    // Удаляем сессионную куку (опционально, бэкенд тоже проверит)
     document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     window.location.href = '/';
 }
 
-// Проверка состояния при загрузке любой страницы
 window.addEventListener('DOMContentLoaded', async () => {
   const welcome = document.getElementById('welcome-screen');
   const mainApp = document.getElementById('main-app');
   const nameDisplay = document.getElementById('user-display-name');
 
-  // 1. Проверяем локальное хранилище
-  const savedUser = localStorage.getItem('dota_user');
-  
-  // 2. Параллельно спрашиваем бэкенд (для Steam сессий)
   try {
       const res = await fetch('/api/me');
       const serverUser = await res.json();
@@ -91,21 +79,15 @@ window.addEventListener('DOMContentLoaded', async () => {
       if (serverUser.logged_in) {
           currentUser = serverUser;
           localStorage.setItem('dota_user', JSON.stringify(serverUser));
-          
           if (welcome) welcome.classList.add('hidden');
           if (mainApp) mainApp.classList.remove('hidden');
           if (nameDisplay) nameDisplay.innerText = serverUser.username;
-          
           if (typeof loadHeroes === 'function') loadHeroes();
-      } else if (savedUser) {
-          // Если сервер не знает, но в локале есть (старый вход по паролю)
-          currentUser = JSON.parse(savedUser);
-          if (welcome) welcome.classList.add('hidden');
-          if (mainApp) mainApp.classList.remove('hidden');
-          if (nameDisplay) nameDisplay.innerText = currentUser.username;
-          if (typeof loadHeroes === 'function') loadHeroes();
+      } else {
+          // Если не залогинен и не на главной - кидаем на главную (защита профиля)
+          if (window.location.pathname === '/profile') {
+              window.location.href = '/';
+          }
       }
-  } catch (e) {
-      console.warn("Авторизация не проверена:", e);
-  }
+  } catch (e) { console.warn("Session check failed"); }
 });
