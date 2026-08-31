@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dota 2 Helper — Главная</title>
-    <!-- Python сам заменит эту строку на global.css и header.css -->
     <link rel="stylesheet" href="/static/css/styles.css">
+    <!-- Иконки для кнопки Steam -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body id="body-index">
     
-    <!-- ЭКРАН ПРИВЕТСТВИЯ (Центрированный через CSS) -->
     <div id="welcome-screen">
         <div class="welcome-card">
             <h1>Dota 2 Helper</h1>
@@ -21,7 +21,6 @@
         </div>
     </div>
 
-    <!-- ОСНОВНОЕ МЕНЮ (скрыто, пока не вошли) -->
     <div id="main-app" class="hidden">
         <header>
             <div class="header-left">
@@ -43,18 +42,34 @@
         </main>
     </div>
 
-    <!-- МОДАЛКА ВХОДА -->
+    <!-- ОБНОВЛЕННАЯ МОДАЛКА ВХОДА -->
     <div id="auth-modal" class="modal-overlay hidden">
         <div class="modal-card">
             <div class="auth-tabs">
                 <button id="tab-login" class="auth-tab active" onclick="switchAuthMode('login')">Вход</button>
                 <button id="tab-register" class="auth-tab" onclick="switchAuthMode('register')">Регистрация</button>
             </div>
+            
             <div id="auth-error" class="alert-error hidden"></div>
+            
             <input type="text" id="auth-username" placeholder="Логин">
             <input type="password" id="auth-password" placeholder="Пароль">
+            
             <button class="btn-primary" onclick="submitAuth()" style="margin-top: 10px;">ПОДТВЕРДИТЬ</button>
-            <button class="btn-secondary" onclick="closeAuthModal()" style="width: 100%; margin-top: 8px; border: none; background: transparent;">Отмена</button>
+            
+            <!-- РАЗДЕЛИТЕЛЬ -->
+            <div style="margin: 20px 0; display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 0.8rem;">
+                <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                ИЛИ
+                <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+            </div>
+
+            <!-- КНОПКА STEAM -->
+            <button class="btn-steam" onclick="loginWithSteam()">
+                <i class="fab fa-steam"></i> ВОЙТИ ЧЕРЕЗ STEAM
+            </button>
+            
+            <button class="btn-secondary" onclick="closeAuthModal()" style="width: 100%; margin-top: 15px; border: none; background: transparent;">Отмена</button>
         </div>
     </div>
 
