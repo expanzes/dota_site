@@ -46,7 +46,6 @@ async function submitAuth() {
     if (res.ok) {
       const data = await res.json();
       localStorage.setItem('dota_user', JSON.stringify(data));
-      // ПОСЛЕ РЕГИ/ЛОГИНА СРАЗУ КИДАЕМ В ПРОФИЛЬ
       window.location.href = '/profile';
     } else {
       const err = await res.json();
@@ -61,9 +60,19 @@ async function submitAuth() {
 
 function loginWithSteam() { window.location.href = '/api/login/steam'; }
 
-function logout() {
+// --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ВЫХОДА ---
+async function logout() {
+    try {
+        // 1. Говорим бэкенду стереть сессию
+        await fetch('/api/logout', { method: 'POST' });
+    } catch (e) {
+        console.error("Ошибка при выходе с сервера", e);
+    }
+    
+    // 2. Стираем локальные данные
     localStorage.removeItem('dota_user');
-    document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    
+    // 3. Переходим на главную
     window.location.href = '/';
 }
 
@@ -84,7 +93,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           if (nameDisplay) nameDisplay.innerText = serverUser.username;
           if (typeof loadHeroes === 'function') loadHeroes();
       } else {
-          // Если не залогинен и не на главной - кидаем на главную (защита профиля)
+          // Если не залогинен и мы в профиле - выкидываем на вход
           if (window.location.pathname === '/profile') {
               window.location.href = '/';
           }
