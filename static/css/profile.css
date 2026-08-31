@@ -13,3 +13,41 @@
 .fav-hero-card.selected { border-color: var(--accent-yellow); background: rgba(234, 179, 8, 0.1); }
 .fav-hero-card img { width: 100%; border-radius: 6px; margin-bottom: 8px; aspect-ratio: 16/9; object-fit: cover; }
 .fav-hero-card span { font-size: 0.8rem; font-weight: 600; color: white; }
+.profile-name-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    justify-content: center;
+}
+
+.edit-icon {
+    font-size: 1rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.edit-icon:hover { color: var(--accent-yellow); }
+
+.site-id-badge {
+    background: var(--bg-input);
+    color: var(--text-muted);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-family: monospace;
+    border: 1px solid var(--border-color);
+}
+
+.profile-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    width: 100%;
+}
+.info-item {
+    background: var(--bg-input);
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+}
+.info-item b { display: block; color: var(--accent-red); font-size: 1.1rem; margin-top: 5px; }
