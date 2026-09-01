@@ -1,0 +1,57 @@
+/* --- КНОПКИ (Универсальные компоненты) --- */
+.ui-button {
+    height: 54px;
+    border-radius: 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    outline: none;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 0 20px;
+}
+
+.ui-button-main {
+    background: linear-gradient(135deg, #f43f5e 0%, #b91c1c 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+}
+.ui-button-main:hover { filter: brightness(1.2); transform: translateY(-1px); }
+
+.ui-button-sub {
+    background: var(--bg-input);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+}
+.ui-button-sub:hover { border-color: var(--text-muted); background: #1c212d; }
+
+/* --- ТУЛТИП (Изолированный) --- */
+.ui-help-wrapper { position: relative; width: 100%; height: 100%; }
+
+.ui-tooltip {
+    position: absolute; 
+    bottom: calc(100% + 15px); 
+    right: 0; 
+    width: 340px;
+    background: #0f121a; 
+    border: 1px solid #2d333f; 
+    padding: 20px; 
+    border-radius: 18px; 
+    opacity: 0; 
+    visibility: hidden; 
+    transform: translateY(10px); 
+    transition: 0.3s ease;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8); 
+    z-index: 10000;
+}
+.ui-help-wrapper:hover .ui-tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
+
+.ui-tooltip-header { color: var(--accent-red); font-weight: 900; font-size: 0.8rem; margin-bottom: 12px; }
+.ui-tooltip-item { display: flex; gap: 12px; margin-bottom: 12px; font-size: 0.75rem; text-align: left; }
+.ui-tooltip-item i { color: var(--accent-red); min-width: 15px; }
