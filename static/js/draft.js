@@ -1,12 +1,4 @@
 let heroesList = [];
-
-// Псевдонимы для быстрого поиска
-const HERO_ALIASES = {
-    "Anti-Mage": ["am", "ам"], "Shadow Fiend": ["sf", "сф"], "Phantom Assassin": ["pa", "па"],
-    "Wraith King": ["wk", "вк", "папич"], "Pudge": ["пудж", "мясо"], "Invoker": ["инвокер", "вокер"],
-    "Slardar": ["селедка"], "Nature's Prophet": ["np", "фурион"], "Largo": ["лягушка"]
-};
-
 const ALLY_LABELS = ["Керри", "Мид", "Тройка", "Четверка", "Пятерка"];
 
 const initDraftInputs = () => {
@@ -22,15 +14,7 @@ const initDraftInputs = () => {
 };
 
 function createSlotHTML(id, label) {
-    return `
-    <div class="input-field-group">
-        <label>${label}</label>
-        <div class="hero-slot" id="slot-container-${id}">
-            <img src="" class="slot-hero-img" id="img-${id}">
-            <input type="text" id="${id}" placeholder="Выбрать..." autocomplete="off">
-            <button type="button" class="clear-input-btn" onclick="clearSingleInput('${id}')">&times;</button>
-        </div>
-    </div>`;
+    return `<div class="input-field-group"><label>${label}</label><div class="hero-slot" id="slot-container-${id}"><img src="" class="slot-hero-img" id="img-${id}"><input type="text" id="${id}" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('${id}')">&times;</button></div></div>`;
 }
 
 async function loadHeroes() {
@@ -41,13 +25,14 @@ async function loadHeroes() {
             heroesList.sort((a, b) => a.name.localeCompare(b.name));
             initDraftInputs();
         }
-    } catch (e) { console.error("API Error:", e); }
+    } catch (e) { console.error("Error loading heroes", e); }
 }
 
 function updateHeroSlotUI(inputId) {
     const input = document.getElementById(inputId);
     const container = document.getElementById(`slot-container-${inputId}`);
     const img = document.getElementById(`img-${inputId}`);
+    if(!input || !container || !img) return;
     const hero = heroesList.find(h => h.name.toLowerCase() === input.value.toLowerCase());
     if (hero) { container.classList.add('filled'); img.src = hero.img; } 
     else { container.classList.remove('filled'); img.src = ''; }
@@ -58,7 +43,7 @@ function setupCustomAutocomplete() {
         input.addEventListener('focus', () => renderDropdown(input));
         input.addEventListener('input', () => { renderDropdown(input); updateHeroSlotUI(input.id); });
     });
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => { 
         if (!e.target.closest('.hero-slot')) {
             document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
         }
@@ -70,11 +55,11 @@ function renderDropdown(input) {
     document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
     
     const q = input.value.toLowerCase().trim();
-    // Показываем всех героев, если ничего не введено
+    // Поиск по имени ИЛИ по алиасам, которые теперь прилетают с сервера
     const filtered = q === "" 
         ? heroesList 
         : heroesList.filter(h => h.name.toLowerCase().includes(q) || 
-          (HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.includes(q))));
+          (h.aliases && h.aliases.some(a => a.toLowerCase().includes(q))));
     
     if (filtered.length === 0) return;
 
@@ -97,33 +82,22 @@ function renderDropdown(input) {
 }
 
 async function analyzeDraft() {
-    const myTeam = { 
-        pos1: document.getElementById('my-pos1').value, 
-        pos2: document.getElementById('my-pos2').value,
-        pos3: document.getElementById('my-pos3').value, 
-        pos4: document.getElementById('my-pos4').value, 
-        pos5: document.getElementById('my-pos5').value 
-    };
+    const myTeam = { pos1: document.getElementById('my-pos1').value, pos2: document.getElementById('my-pos2').value, pos3: document.getElementById('my-pos3').value, pos4: document.getElementById('my-pos4').value, pos5: document.getElementById('my-pos5').value };
     const enemyTeam = [1,2,3,4,5].map(i => document.getElementById(`enemy-${i}`).value).filter(v => v.trim() !== "");
+    const resContainer = document.getElementById('results-container');
+    resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:60px; font-size:1.2rem;">Анализ Immortal-матчей...</p>';
     
-    document.getElementById('results-container').innerHTML = 
-        '<p style="text-align:center; color:var(--text-muted); padding:60px;">Идет глубокий анализ матчапов...</p>';
-
     const user = JSON.parse(localStorage.getItem('dota_user'));
     
-    const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            my_team: myTeam, 
-            enemy_team: enemyTeam, 
-            user_id: user ? user.site_id : null 
-        })
+    const response = await fetch('/api/analyze', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ my_team: myTeam, enemy_team: enemyTeam, user_id: user ? user.site_id : null }) 
     });
-
-    if (response.ok) {
-        const data = await response.json();
-        renderResults(data.results);
+    
+    if (response.ok) { 
+        const data = await response.json(); 
+        renderResults(data.results); 
     }
 }
 
@@ -134,13 +108,11 @@ function renderResults(results) {
         const section = document.createElement('div');
         section.className = 'results-section';
         section.innerHTML = `<h3 class="role-group-title">${item.role}</h3>`;
-        
         const topRow = document.createElement('div');
         topRow.className = 'top-picks-row';
         if (item.data.top_favorite) topRow.appendChild(createCard(item.data.top_favorite, 'favorite', 'ВАШ ПУЛ'));
         if (item.data.top_winrate) topRow.appendChild(createCard(item.data.top_winrate, 'winrate', 'ЛУЧШИЙ ВИНРЕЙТ'));
         section.appendChild(topRow);
-
         const grid = document.createElement('div');
         grid.className = 'hero-cards-grid';
         item.data.others.forEach(h => { if(h) grid.appendChild(createHeroSmallCard(h)); });
@@ -153,15 +125,11 @@ function createCard(h, type, label) {
     const div = document.createElement('div');
     div.className = `top-pick-card ${type}`;
     const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-    const sign = h.advantage >= 0 ? '+' : '';
     div.innerHTML = `
         <div class="top-pick-label">${label}</div>
         <img src="${h.img}">
         <div class="top-pick-hero-name">${h.name}</div>
-        <div style="font-size:0.9rem; color:var(--text-muted)">
-            WR: <span style="color:var(--accent-green)">${h.winrate}%</span> | 
-            ADV: <span style="color:${cl}">${sign}${h.advantage}%</span>
-        </div>`;
+        <div style="font-size:0.9rem; color:var(--text-muted)">WR: <span style="color:var(--accent-green)">${h.winrate}%</span> | ADV: <span style="color:${cl}">${h.advantage >= 0 ? '+' : ''}${h.advantage}%</span></div>`;
     return div;
 }
 
@@ -169,23 +137,10 @@ function createHeroSmallCard(h) {
     const div = document.createElement('div');
     div.className = 'result-hero-card';
     const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-    div.innerHTML = `
-        <img src="${h.img}">
-        <div class="hero-info">
-            <div style="font-weight:700; font-size:0.9rem;">${h.name}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted)">${h.winrate}% <span style="color:${cl}">${h.advantage >= 0 ? '+' : ''}${h.advantage}%</span></div>
-        </div>`;
+    div.innerHTML = `<img src="${h.img}"><div class="hero-info"><div style="font-weight:700; font-size:0.9rem;">${h.name}</div><div style="font-size:0.75rem; color:var(--text-muted)">${h.winrate}% <span style="color:${cl}">${h.advantage >= 0 ? '+' : ''}${h.advantage}%</span></div></div>`;
     return div;
 }
 
-function clearSingleInput(id) { 
-    const el = document.getElementById(id); 
-    if (el) { el.value = ''; updateHeroSlotUI(id); } 
-}
-
-function clearInputs() { 
-    for(let i=1; i<=5; i++) { clearSingleInput(`my-pos${i}`); clearSingleInput(`enemy-${i}`); } 
-    document.getElementById('results-container').innerHTML = ''; 
-}
-
+function clearSingleInput(id) { const el = document.getElementById(id); if (el) { el.value = ''; updateHeroSlotUI(id); } }
+function clearInputs() { for(let i=1; i<=5; i++) { clearSingleInput(`my-pos${i}`); clearSingleInput(`enemy-${i}`); } document.getElementById('results-container').innerHTML = ''; }
 document.addEventListener('DOMContentLoaded', loadHeroes);
