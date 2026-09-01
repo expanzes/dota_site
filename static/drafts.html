@@ -1,66 +1,40 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Анализ Драфтов — Dota 2 Helper</title>
-    <link rel="stylesheet" href="/static/css/global.css">
-    <link rel="stylesheet" href="/static/css/header.css">
-    <link rel="stylesheet" href="/static/css/drafts.css">
-</head>
-<body id="body-drafts">
-    <div id="main-app">
-        <header>
-            <div class="header-left">
-                <div class="logo" onclick="window.location.href='/'">Dota 2 Helper</div>
-                <nav class="main-nav">
-                    <button class="nav-link active" onclick="window.location.href='/drafts'">АНАЛИЗ ДРАФТОВ</button>
-                    <button class="nav-link" onclick="window.location.href='/fantasy'">ФЕНТАЗИ ПОМОЩНИК</button>
-                    <button class="nav-link" onclick="window.location.href='/invoker'">ТРЕНАЖЁР ИНВОКЕР</button>
-                </nav>
+<div class="help-container">
+    <button class="btn-help">КАК ЭТО РАБОТАЕТ?</button>
+    <div class="help-tooltip">
+        <div class="tooltip-header">
+            <i class="fas fa-microchip"></i> Алгоритмы нейро-анализа
+        </div>
+        
+        <div class="tooltip-item">
+            <i class="fas fa-database"></i>
+            <div>
+                <b>БАЗА IMMORTAL-РАНГА</b>
+                <span>Анализ 50,000+ последних матчей высшего тира. Мы учитываем только актуальную мету.</span>
             </div>
-            <div class="user-panel">
-                <span id="user-display-name" class="user-badge" onclick="window.location.href='/profile'">Загрузка...</span>
-                <button class="btn-logout" onclick="logout()">Выйти</button>
-            </div>
-        </header>
+        </div>
 
-        <main>
-            <div class="draft-container">
-                <div class="team-box allies">
-                    <h3 class="allies-title">Моя команда</h3>
-                    <div class="inputs-grid" id="allies-inputs"></div>
-                </div>
-                <div class="team-box enemies">
-                    <h3 class="enemies-title">Команда противника</h3>
-                    <div class="inputs-grid" id="enemies-inputs"></div>
-                </div>
+        <div class="tooltip-item">
+            <i class="fas fa-shield-alt"></i>
+            <div>
+                <b>АНАЛИЗ КОНТРПИКОВ</b>
+                <span>Критические угрозы (напр. Axe против Naga) имеют приоритетный вес в расчетах.</span>
             </div>
+        </div>
 
-            <!-- БЛОК КНОПОК: ТЕПЕРЬ СТРОГО 3 В РЯД -->
-            <div class="actions-row">
-                <button class="btn-analyze" onclick="analyzeDraft()">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
-                <button class="btn-clear" onclick="clearInputs()">ОЧИСТИТЬ</button>
-                
-                <div class="help-container">
-                    <button class="btn-help">КАК ЭТО РАБОТАЕТ?</button>
-                    <div class="help-tooltip">
-                        <div class="tooltip-title">МАТЕМАТИКА PRO-LEVEL</div>
-                        <div class="tooltip-content">
-                            <p><b>Immortal Meta:</b> Анализ на основе матчей высшего ранга.</p>
-                            <p><b>Приоритет угроз:</b> Критические контрпики (напр. Axe против Naga) весят больше мелких плюсов.</p>
-                            <p><b>Детектор иллюзий:</b> ПЛ, Нага и ТБ получают штраф против Акса, Свена и Шейкера.</p>
-                            <p><b>Баланс состава:</b> Система видит нехватку станов и танков, предлагая героев для «закрытия дыр».</p>
-                            <p><b>Лимит 95%:</b> Прогноз учитывает человеческий фактор — 100% побед не бывает.</p>
-                        </div>
-                    </div>
-                </div>
+        <div class="tooltip-item">
+            <i class="fas fa-users"></i>
+            <div>
+                <b>БАЛАНС КОМАНДЫ</b>
+                <span>Система определяет нехватку контроля или выживаемости, предлагая «закрывающих» героев.</span>
             </div>
+        </div>
 
-            <div id="results-container"></div>
-        </main>
+        <div class="tooltip-item">
+            <i class="fas fa-percentage"></i>
+            <div>
+                <b>ВЕРОЯТНОСТНЫЙ ЛИМИТ</b>
+                <span>Прогноз ограничен 95%. Мы оставляем 5% на человеческий фактор и ошибки исполнения.</span>
+            </div>
+        </div>
     </div>
-    <script src="/static/js/auth.js"></script>
-    <script src="/static/js/draft.js"></script>
-</body>
-</html>
+</div>
