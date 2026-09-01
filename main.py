@@ -24,7 +24,7 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(draft.router, prefix="/api")
 
 # Меняй эту цифру, если хочешь мгновенно обновить дизайн у всех пользователей
-VERSION = "3.0.0"
+VERSION = "3.1.0"
 
 def serve_page(file_name: str, module_name: str = None):
     file_path = f"static/{file_name}"
