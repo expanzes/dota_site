@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Анализ Драфтов — Dota 2 Helper</title>
-    <!-- Эту строку менять нельзя, её заменяет бэкенд на пак стилей -->
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -27,16 +26,32 @@
 
         <main>
             <div class="draft-container">
+                <!-- МОЯ КОМАНДА -->
                 <div class="team-box allies">
                     <h3 class="allies-title">Моя команда</h3>
-                    <div class="inputs-grid" id="allies-inputs"></div>
+                    <div class="inputs-grid">
+                        <div class="input-field-group"><label>КЕРРИ</label><div class="hero-slot" id="slot-container-my-pos1"><img src="" class="slot-hero-img" id="img-my-pos1"><input type="text" id="my-pos1" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos1')">&times;</button></div></div>
+                        <div class="input-field-group"><label>МИД</label><div class="hero-slot" id="slot-container-my-pos2"><img src="" class="slot-hero-img" id="img-my-pos2"><input type="text" id="my-pos2" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos2')">&times;</button></div></div>
+                        <div class="input-field-group"><label>ТРОЙКА</label><div class="hero-slot" id="slot-container-my-pos3"><img src="" class="slot-hero-img" id="img-my-pos3"><input type="text" id="my-pos3" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos3')">&times;</button></div></div>
+                        <div class="input-field-group"><label>ЧЕТВЕРКА</label><div class="hero-slot" id="slot-container-my-pos4"><img src="" class="slot-hero-img" id="img-my-pos4"><input type="text" id="my-pos4" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos4')">&times;</button></div></div>
+                        <div class="input-field-group"><label>ПЯТЕРКА</label><div class="hero-slot" id="slot-container-my-pos5"><img src="" class="slot-hero-img" id="img-my-pos5"><input type="text" id="my-pos5" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('my-pos5')">&times;</button></div></div>
+                    </div>
                 </div>
+
+                <!-- ВРАГИ -->
                 <div class="team-box enemies">
                     <h3 class="enemies-title">Команда противника</h3>
-                    <div class="inputs-grid" id="enemies-inputs"></div>
+                    <div class="inputs-grid">
+                        <div class="input-field-group"><label>ВРАГ 1</label><div class="hero-slot" id="slot-container-enemy-1"><img src="" class="slot-hero-img" id="img-enemy-1"><input type="text" id="enemy-1" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-1')">&times;</button></div></div>
+                        <div class="input-field-group"><label>ВРАГ 2</label><div class="hero-slot" id="slot-container-enemy-2"><img src="" class="slot-hero-img" id="img-enemy-2"><input type="text" id="enemy-2" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-2')">&times;</button></div></div>
+                        <div class="input-field-group"><label>ВРАГ 3</label><div class="hero-slot" id="slot-container-enemy-3"><img src="" class="slot-hero-img" id="img-enemy-3"><input type="text" id="enemy-3" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-3')">&times;</button></div></div>
+                        <div class="input-field-group"><label>ВРАГ 4</label><div class="hero-slot" id="slot-container-enemy-4"><img src="" class="slot-hero-img" id="img-enemy-4"><input type="text" id="enemy-4" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-4')">&times;</button></div></div>
+                        <div class="input-field-group"><label>ВРАГ 5</label><div class="hero-slot" id="slot-container-enemy-5"><img src="" class="slot-hero-img" id="img-enemy-5"><input type="text" id="enemy-5" placeholder="Выбрать..." autocomplete="off"><button type="button" class="clear-input-btn" onclick="clearSingleInput('enemy-5')">&times;</button></div></div>
+                    </div>
                 </div>
             </div>
 
+            <!-- БЛОК КНОПОК: Теперь идеально ровный -->
             <div class="actions-row">
                 <button class="btn-analyze" onclick="analyzeDraft()">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
                 <button class="btn-clear" onclick="clearInputs()">ОЧИСТИТЬ</button>
@@ -44,41 +59,10 @@
                 <div class="help-container">
                     <button class="btn-help">КАК ЭТО РАБОТАЕТ?</button>
                     <div class="help-tooltip">
-                        <div class="tooltip-header">
-                            <i class="fas fa-microchip"></i> Алгоритмы нейро-анализа
-                        </div>
-                        
-                        <div class="tooltip-item">
-                            <i class="fas fa-database"></i>
-                            <div>
-                                <b>БАЗА IMMORTAL-РАНГА</b>
-                                <span>Анализ 50,000+ последних матчей высшего тира. Мы учитываем только актуальную мету.</span>
-                            </div>
-                        </div>
-
-                        <div class="tooltip-item">
-                            <i class="fas fa-shield-alt"></i>
-                            <div>
-                                <b>АНАЛИЗ КОНТРПИКОВ</b>
-                                <span>Критические угрозы (напр. Axe против Naga) имеют приоритетный вес в расчетах.</span>
-                            </div>
-                        </div>
-
-                        <div class="tooltip-item">
-                            <i class="fas fa-users"></i>
-                            <div>
-                                <b>БАЛАНС КОМАНДЫ</b>
-                                <span>Система определяет нехватку контроля или выживаемости, предлагая «закрывающих» героев.</span>
-                            </div>
-                        </div>
-
-                        <div class="tooltip-item">
-                            <i class="fas fa-percentage"></i>
-                            <div>
-                                <b>ВЕРОЯТНОСТНЫЙ ЛИМИТ</b>
-                                <span>Прогноз ограничен 95%. Мы оставляем 5% на человеческий фактор и ошибки исполнения.</span>
-                            </div>
-                        </div>
+                        <div class="tooltip-header"><i class="fas fa-microchip"></i> АЛГОРИТМЫ НЕЙРО-АНАЛИЗА</div>
+                        <div class="tooltip-item"><i class="fas fa-database"></i><div><b>БАЗА IMMORTAL</b><span>Анализ 50,000+ матчей актуальной меты высшего ранга.</span></div></div>
+                        <div class="tooltip-item"><i class="fas fa-shield-alt"></i><div><b>КОНТРПИКИ</b><span>Критические угрозы имеют максимальный вес в расчетах.</span></div></div>
+                        <div class="tooltip-item"><i class="fas fa-users"></i><div><b>БАЛАНС</b><span>Система видит нехватку контроля или выживаемости команды.</span></div></div>
                     </div>
                 </div>
             </div>
