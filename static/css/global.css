@@ -1,106 +1,174 @@
+/* --- ПРЕМИАЛЬНАЯ ТИПОГРАФИКА --- */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Inter:wght@300;400;600&display=swap');
+
 :root {
-  --bg-dark: #0b0d12; 
-  --bg-card: #12151e; 
-  --bg-input: #171b26; 
-  --border-color: #202636;
-  --text-main: #f1f5f9; 
-  --text-muted: #94a3b8; 
-  --accent-red: #f43f5e; 
-  --accent-red-hover: #e11d48;
-  --accent-green: #20c997; 
-  --accent-yellow: #eab308; 
-  --accent-yellow-hover: #d9a306;
+  /* Глубокая темная палитра */
+  --bg-dark: #060709; 
+  --bg-surface: rgba(18, 21, 28, 0.8);
+  --bg-input: rgba(255, 255, 255, 0.03); 
+  --border-color: rgba(255, 255, 255, 0.08);
+  
+  /* Акценты */
+  --accent-red: #ff3e3e; 
+  --accent-red-hover: #ff5a5a;
+  --accent-green: #00ffa3; 
+  --accent-yellow: #ffcc00; 
+  
+  /* Текст */
+  --text-main: #ffffff; 
+  --text-muted: #8a8f9d; 
+  
+  /* Тени и свечения */
+  --shadow-main: 0 10px 40px rgba(0, 0, 0, 0.6);
+  --glow-red: 0 0 15px rgba(255, 62, 62, 0.3);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; }
+/* Общие сбросы */
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    font-family: 'Inter', sans-serif; 
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .logo, .btn-primary {
+    font-family: 'Montserrat', sans-serif;
+    letter-spacing: -0.02em;
+}
+
+body { 
+    background-color: var(--bg-dark); 
+    color: var(--text-main); 
+    min-height: 100vh; 
+    /* Живой фон: радиальный градиент */
+    background: radial-gradient(circle at 50% -20%, #1a1f2b 0%, var(--bg-dark) 80%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+}
+
 .hidden { display: none !important; }
 
-/* --- ЭКРАН ПРИВЕТСТВИЯ (Центрирование и градиент) --- */
+/* --- ЭКРАН ПРИВЕТСТВИЯ --- */
 #welcome-screen {
   display: flex; 
   justify-content: center; 
   align-items: center;
   min-height: 100vh; 
   width: 100%;
-  background: radial-gradient(circle at center, #171b26 0%, var(--bg-dark) 100%);
 }
 
 .welcome-card {
-  background: var(--bg-card); 
-  padding: 40px; 
-  border-radius: 16px;
+  background: var(--bg-surface); 
+  backdrop-filter: blur(20px); /* Эффект матового стекла */
+  padding: 60px 40px; 
+  border-radius: 24px;
   border: 1px solid var(--border-color); 
   text-align: center;
-  max-width: 480px; 
+  max-width: 520px; 
   width: 90%; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow-main);
+  animation: fadeIn 0.8s ease-out;
 }
 
-.welcome-card h1 { font-size: 2.2rem; margin-bottom: 12px; color: var(--accent-red); font-weight: 900; }
-.welcome-card p { color: var(--text-muted); margin-bottom: 24px; }
+.welcome-card h1 { 
+    font-size: 3rem; 
+    margin-bottom: 16px; 
+    background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 900; 
+    text-transform: uppercase;
+}
 
-.btn-group { display: flex; flex-direction: column; gap: 12px; }
+.welcome-card p { 
+    color: var(--text-muted); 
+    margin-bottom: 32px; 
+    font-size: 1.1rem;
+    font-weight: 300;
+}
 
-/* --- ОБЩИЕ КНОПКИ --- */
+/* --- КНОПКИ --- */
 .btn-primary { 
     background: var(--accent-red); 
     color: white; 
     border: none; 
-    border-radius: 8px; 
-    padding: 12px 20px; 
-    font-weight: 600; 
+    border-radius: 12px; 
+    padding: 16px 32px; 
+    font-weight: 700; 
     cursor: pointer; 
-    transition: 0.2s; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
     text-transform: uppercase;
+    box-shadow: var(--glow-red);
 }
-.btn-primary:hover { background: var(--accent-red-hover); transform: translateY(-1px); }
+
+.btn-primary:hover { 
+    background: var(--accent-red-hover); 
+    transform: translateY(-2px); 
+    box-shadow: 0 0 25px rgba(255, 62, 62, 0.5);
+}
 
 .btn-secondary { 
     background: var(--bg-input); 
     color: var(--text-main); 
     border: 1px solid var(--border-color); 
-    border-radius: 8px; 
-    padding: 12px 20px; 
+    border-radius: 12px; 
+    padding: 16px 32px; 
     font-weight: 600; 
     cursor: pointer; 
-    transition: 0.2s;
+    transition: 0.3s;
 }
-.btn-secondary:hover { background: #202636; }
 
-/* --- КНОПКА STEAM --- */
+.btn-secondary:hover { 
+    background: rgba(255, 255, 255, 0.08); 
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Кнопка Steam */
 .btn-steam {
-    background: #171a21; 
-    color: #ffffff; 
-    border: 1px solid #2a475e;
-    border-radius: 8px; 
-    padding: 12px 20px; 
+    background: #ffffff; 
+    color: #000000; 
+    border: none;
+    border-radius: 12px; 
+    padding: 14px 28px; 
     font-weight: 700;
     cursor: pointer; 
-    transition: 0.2s; 
+    transition: 0.3s; 
     text-transform: uppercase;
     display: flex; 
     align-items: center; 
     justify-content: center; 
     gap: 12px;
     width: 100%;
-    margin-top: 10px;
 }
-.btn-steam:hover { background: #2a475e; border-color: #66c0f4; }
+.btn-steam:hover { background: #e2e2e2; transform: translateY(-1px); }
 
-/* --- МОДАЛКИ (ВХОД / РЕГИСТРАЦИЯ / ИЗБРАННОЕ) --- */
+/* --- МОДАЛКИ --- */
 .modal-overlay { 
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-  background: rgba(0,0,0,0.85); display: flex; align-items: center; 
-  justify-content: center; z-index: 1000; backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.9); 
+  display: flex; align-items: center; 
+  justify-content: center; z-index: 2000; 
+  backdrop-filter: blur(10px);
 }
-.modal-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 30px; border-radius: 16px; width: 100%; max-width: 450px; }
-.auth-tabs { display: flex; background: var(--bg-input); padding: 5px; border-radius: 10px; margin-bottom: 20px; }
-.auth-tab { flex: 1; border: none; background: transparent; color: var(--text-muted); padding: 10px; cursor: pointer; border-radius: 8px; font-weight: bold; }
-.auth-tab.active { background: var(--accent-red); color: white; }
 
-.modal-card input {
-    background: var(--bg-input); border: 1px solid var(--border-color);
-    color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 10px; outline: none;
+.modal-card { 
+    background: #11141b; 
+    border: 1px solid var(--border-color); 
+    padding: 40px; 
+    border-radius: 28px; 
+    width: 100%; 
+    max-width: 480px; 
+    box-shadow: var(--shadow-main);
 }
-.alert-error { background: rgba(244, 63, 94, 0.15); border: 1px solid var(--accent-red); color: #fca5a5; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 10px; text-align: center; }
+
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(20px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+/* Скроллбар для серьезного вида */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-red); }
