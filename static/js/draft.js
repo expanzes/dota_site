@@ -68,8 +68,15 @@ function createSlotHTML(id, label) {
 }
 
 async function loadHeroes() {
-    const response = await fetch('/api/heroes');
-    if (response.ok) { heroesList = await response.json(); initDraftInputs(); }
+    try {
+        const response = await fetch('/api/heroes');
+        if (response.ok) { 
+            heroesList = await response.json(); 
+            // Сортируем по алфавиту для удобства
+            heroesList.sort((a, b) => a.name.localeCompare(b.name));
+            initDraftInputs(); 
+        }
+    } catch (e) { console.error("Ошибка загрузки героев", e); }
 }
 
 function updateHeroSlotUI(inputId) {
@@ -87,34 +94,72 @@ function setupCustomAutocomplete() {
         input.addEventListener('focus', () => renderDropdown(input));
         input.addEventListener('input', () => { renderDropdown(input); updateHeroSlotUI(input.id); });
     });
-    document.addEventListener('click', (e) => { if (!e.target.closest('.hero-slot')) document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove()); });
+    document.addEventListener('click', (e) => { 
+        if (!e.target.closest('.hero-slot')) {
+            document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
+        }
+    });
 }
 
 function renderDropdown(input) {
     const wrapper = input.parentElement;
     document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
+    
     const q = input.value.toLowerCase().trim();
-    const filtered = heroesList.filter(h => h.name.toLowerCase().includes(q) || (HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.includes(q))));
+    // Показываем всех героев, если инпут пустой, иначе фильтруем
+    const filtered = q === "" 
+        ? heroesList 
+        : heroesList.filter(h => h.name.toLowerCase().includes(q) || (HERO_ALIASES[h.name] && HERO_ALIASES[h.name].some(a => a.includes(q))));
+    
     if (filtered.length === 0) return;
+
     const d = document.createElement('div');
     d.className = 'autocomplete-dropdown';
-    filtered.slice(0, 10).forEach(h => {
+    
+    filtered.forEach(h => {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
         item.innerHTML = `<img src="${h.img}"><span>${h.name}</span>`;
-        item.onmousedown = (e) => { e.preventDefault(); input.value = h.name; updateHeroSlotUI(input.id); document.querySelectorAll('.autocomplete-dropdown').forEach(el => el.remove()); };
+        item.onmousedown = (e) => { 
+            e.preventDefault(); 
+            input.value = h.name; 
+            updateHeroSlotUI(input.id); 
+            d.remove(); 
+        };
         d.appendChild(item);
     });
     wrapper.appendChild(d);
 }
 
 async function analyzeDraft() {
-    const myTeam = { pos1: document.getElementById('my-pos1').value, pos2: document.getElementById('my-pos2').value, pos3: document.getElementById('my-pos3').value, pos4: document.getElementById('my-pos4').value, pos5: document.getElementById('my-pos5').value };
+    const myTeam = { 
+        pos1: document.getElementById('my-pos1').value, 
+        pos2: document.getElementById('my-pos2').value, 
+        pos3: document.getElementById('my-pos3').value, 
+        pos4: document.getElementById('my-pos4').value, 
+        pos5: document.getElementById('my-pos5').value 
+    };
     const enemyTeam = [1,2,3,4,5].map(i => document.getElementById(`enemy-${i}`).value).filter(v => v.trim() !== "");
+    
     const resContainer = document.getElementById('results-container');
-    resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px;">Анализируем матчапы...</p>';
-    const response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ my_team: myTeam, enemy_team: enemyTeam, user_id: currentUser ? currentUser.user_id : null }) });
-    if (response.ok) { const data = await response.json(); renderResults(data.results); }
+    resContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:60px; font-size:1.2rem;">Анализируем тысячи матчей Immortal-ранга...</p>';
+    
+    const user = JSON.parse(localStorage.getItem('dota_user'));
+    
+    const response = await fetch('/api/analyze', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+            my_team: myTeam, 
+            enemy_team: enemyTeam, 
+            user_id: user ? user.site_id : null 
+        }) 
+    });
+    
+    if (response.ok) { 
+        const data = await response.json(); 
+        renderResults(data.results); 
+    }
 }
 
 function renderResults(results) {
@@ -124,15 +169,18 @@ function renderResults(results) {
         const section = document.createElement('div');
         section.className = 'results-section';
         section.innerHTML = `<h3 class="role-group-title">${item.role}</h3>`;
+        
         const topRow = document.createElement('div');
         topRow.className = 'top-picks-row';
         if (item.data.top_favorite) topRow.appendChild(createCard(item.data.top_favorite, 'favorite', 'ИЗ ВАШЕГО ПУЛА'));
         if (item.data.top_winrate) topRow.appendChild(createCard(item.data.top_winrate, 'winrate', 'ЛУЧШИЙ ВАРИАНТ'));
         section.appendChild(topRow);
+        
         const grid = document.createElement('div');
         grid.className = 'hero-cards-grid';
         item.data.others.forEach(h => { if(h) grid.appendChild(createHeroSmallCard(h)); });
         section.appendChild(grid);
+        
         container.appendChild(section);
     });
 }
@@ -142,7 +190,15 @@ function createCard(h, type, label) {
     div.className = `top-pick-card ${type}`;
     const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
     const sign = h.advantage >= 0 ? '+' : '';
-    div.innerHTML = `<div class="top-pick-label">${label}</div><img src="${h.img}"><div class="top-pick-hero-name">${h.name}</div><div class="top-pick-hero-stats">Винрейт: <span class="val-green">${h.winrate}%</span><br>Контрпик: <span style="color:${cl}">${sign}${h.advantage}%</span></div>`;
+    div.innerHTML = `
+        <div class="top-pick-label">${label}</div>
+        <img src="${h.img}">
+        <div class="top-pick-hero-name">${h.name}</div>
+        <div class="top-pick-hero-stats">
+            Винрейт: <span style="color:var(--accent-green)">${h.winrate}%</span><br>
+            Контрпик: <span style="color:${cl}">${sign}${h.advantage}%</span>
+        </div>
+    `;
     return div;
 }
 
@@ -151,10 +207,27 @@ function createHeroSmallCard(h) {
     div.className = 'result-hero-card';
     const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
     const sign = h.advantage >= 0 ? '+' : '';
-    div.innerHTML = `<img src="${h.img}"><div class="hero-info"><div class="hero-name">${h.name}</div><div class="hero-stats">WR: ${h.winrate}% <span style="color:${cl}">${sign}${h.advantage}%</span></div></div>`;
+    div.innerHTML = `
+        <img src="${h.img}">
+        <div class="hero-info">
+            <div class="hero-name">${h.name}</div>
+            <div class="hero-stats">WR: ${h.winrate}% <span style="color:${cl}">${sign}${h.advantage}%</span></div>
+        </div>
+    `;
     return div;
 }
 
-function clearSingleInput(id) { const el = document.getElementById(id); if (el) { el.value = ''; updateHeroSlotUI(id); } }
-function clearInputs() { for(let i=1; i<=5; i++) { clearSingleInput(`my-pos${i}`); clearSingleInput(`enemy-${i}`); } document.getElementById('results-container').innerHTML = ''; }
+function clearSingleInput(id) { 
+    const el = document.getElementById(id); 
+    if (el) { el.value = ''; updateHeroSlotUI(id); } 
+}
+
+function clearInputs() { 
+    for(let i=1; i<=5; i++) { 
+        clearSingleInput(`my-pos${i}`); 
+        clearSingleInput(`enemy-${i}`); 
+    } 
+    document.getElementById('results-container').innerHTML = ''; 
+}
+
 document.addEventListener('DOMContentLoaded', () => { loadHeroes(); });
