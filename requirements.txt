@@ -6,3 +6,4 @@ psycopg2-binary
 bcrypt
 itsdangerous
 python-multipart
+gunicorn
