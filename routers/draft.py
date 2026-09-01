@@ -3,11 +3,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 from routers.auth import get_db_connection, get_favorites_db
-from routers.constants import HERO_TAGS, HERO_POSITIONS, ILLUSION_HERO_NAMES, ILLUSION_KILLERS
+from routers.constants import HERO_TAGS, HERO_POSITIONS, ILLUSION_HERO_NAMES, ILLUSION_KILLERS, HERO_ALIASES
 
 router = APIRouter()
 
-# --- КЭШИРОВАНИЕ ДАННЫХ В ПАМЯТИ СЕРВЕРА ---
 CACHE = {
     "heroes": [],
     "last_update": 0
@@ -17,9 +16,8 @@ MATCHUP_CACHE = {}
 ROLES = {"pos1": "Поз 1 (Керри)", "pos2": "Поз 2 (Мид)", "pos3": "Поз 3 (Тройка)", "pos4": "Поз 4 (Четверка)", "pos5": "Поз 5 (Пятерка)"}
 
 async def get_heroes_list():
-    """Получает список героев из кэша или из API"""
     now = time.time()
-    if CACHE["heroes"] and (now - CACHE["last_update"] < 3600): # Кэш на 1 час
+    if CACHE["heroes"] and (now - CACHE["last_update"] < 3600):
         return CACHE["heroes"]
 
     try:
@@ -27,7 +25,17 @@ async def get_heroes_list():
             r = await client.get("https://api.opendota.com/api/heroes")
             if r.status_code == 200:
                 data = r.json()
-                CACHE["heroes"] = [{"id": h["id"], "name": h["localized_name"], "img": f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{h['name'].replace('npc_dota_hero_', '')}.png"} for h in data]
+                processed_heroes = []
+                for h in data:
+                    name = h["localized_name"]
+                    img_name = h['name'].replace('npc_dota_hero_', '')
+                    processed_heroes.append({
+                        "id": h["id"],
+                        "name": name,
+                        "img": f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{img_name}.png",
+                        "aliases": HERO_ALIASES.get(name, []) # Добавляем алиасы из констант
+                    })
+                CACHE["heroes"] = processed_heroes
                 CACHE["last_update"] = now
                 return CACHE["heroes"]
     except:
@@ -52,7 +60,6 @@ class DraftRequest(BaseModel):
 
 @router.get("/heroes")
 async def heroes_endpoint():
-    # Отдает список мгновенно из памяти
     return await get_heroes_list()
 
 @router.post("/analyze")
