@@ -41,6 +41,7 @@ function renderDropdown(input) {
     filtered.forEach(h => {
         const item = document.createElement('div');
         item.className = 'autocomplete-item';
+        // Здесь важно, чтобы img был внутри item
         item.innerHTML = `<img src="${h.img}"><span>${h.name}</span>`;
         item.onmousedown = (e) => {
             e.preventDefault();
@@ -55,8 +56,8 @@ function renderDropdown(input) {
 
 function updateHeroSlotUI(inputId) {
     const input = document.getElementById(inputId);
-    const container = document.getElementById(`slot-container-${inputId}`);
-    const img = document.getElementById(`img-${inputId}`);
+    const container = input.parentElement;
+    const img = container.querySelector('.slot-hero-img');
     const hero = heroesList.find(h => h.name.toLowerCase() === input.value.toLowerCase());
     if (hero) { container.classList.add('filled'); img.src = hero.img; } 
     else { container.classList.remove('filled'); img.src = ''; }
@@ -73,10 +74,9 @@ async function analyzeDraft() {
     const enemyTeam = [1,2,3,4,5].map(i => document.getElementById(`enemy-${i}`).value).filter(v => v.trim() !== "");
     
     const container = document.getElementById('results-container');
-    container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:60px; font-size:1.1rem;">Анализ текущей меты...</p>';
+    container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:60px;">Анализ Immortal-меты...</p>';
 
     const user = JSON.parse(localStorage.getItem('dota_user'));
-    
     const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,7 +95,7 @@ function renderResults(results) {
     results.forEach(item => {
         const section = document.createElement('div');
         section.className = 'results-section';
-        section.innerHTML = `<h3 class="role-group-title">${item.role}</h3>`;
+        section.innerHTML = `<h3 style="font-size:1.2rem; font-weight:900; color:#fff; margin-bottom:20px; padding-left:15px; border-left:4px solid var(--accent-red); text-transform:uppercase;">${item.role}</h3>`;
         
         const topRow = document.createElement('div');
         topRow.className = 'top-picks-row';
@@ -116,13 +116,13 @@ function createCard(h, type, label) {
     div.className = `top-pick-card ${type}`;
     const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
     div.innerHTML = `
-        <div class="top-pick-label">${label}</div>
-        <img src="${h.img}">
-        <div class="top-pick-hero-name">${h.name}</div>
-        <div class="card-stats-grid">
-            <div class="stat-box"><span class="stat-label">Winrate</span><span class="stat-value" style="color:var(--accent-green)">${h.winrate}%</span></div>
+        <div style="font-size:0.6rem; font-weight:900; letter-spacing:2px; color:var(--text-muted); margin-bottom:10px;">${label}</div>
+        <img src="${h.img}" style="width:140px; border-radius:10px; margin-bottom:10px;">
+        <div style="font-size:1.3rem; font-weight:900; margin-bottom:10px;">${h.name}</div>
+        <div style="display:flex; justify-content:center; gap:15px; background:rgba(0,0,0,0.2); padding:10px; border-radius:50px;">
+            <div style="text-align:center;"><span style="font-size:0.6rem; color:var(--text-muted); display:block; text-transform:uppercase;">Winrate</span><span style="font-weight:900; color:var(--accent-green);">${h.winrate}%</span></div>
             <div style="width:1px; background:rgba(255,255,255,0.1)"></div>
-            <div class="stat-box"><span class="stat-label">Advantage</span><span class="stat-value" style="color:${cl}">${h.advantage >= 0 ? '+' : ''}${h.advantage}%</span></div>
+            <div style="text-align:center;"><span style="font-size:0.6rem; color:var(--text-muted); display:block; text-transform:uppercase;">Advantage</span><span style="font-weight:900; color:${cl};">${h.advantage >= 0 ? '+' : ''}${h.advantage}%</span></div>
         </div>`;
     return div;
 }
@@ -130,10 +130,11 @@ function createCard(h, type, label) {
 function createHeroSmallCard(h) {
     const div = document.createElement('div');
     div.className = 'result-hero-card';
+    div.style = "background:#11141b; border:1px solid var(--border-color); border-radius:12px; padding:10px; display:flex; align-items:center; gap:12px;";
     const cl = h.advantage >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
     div.innerHTML = `
-        <img src="${h.img}">
-        <div class="hero-info">
+        <img src="${h.img}" style="width:60px; border-radius:4px;">
+        <div>
             <div style="font-weight:700; font-size:0.85rem; color:#fff;">${h.name}</div>
             <div style="font-size:0.75rem; color:var(--text-muted)">${h.winrate}% <span style="color:${cl}">${h.advantage >= 0 ? '+' : ''}${h.advantage}%</span></div>
         </div>`;
