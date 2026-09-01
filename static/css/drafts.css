@@ -1,34 +1,27 @@
 main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
-
 .draft-container { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 25px; }
-
 .team-box { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; }
-.team-box.allies { border-top: 4px solid var(--accent-green); }
-.team-box.enemies { border-top: 4px solid var(--accent-red); }
-
 .inputs-grid { display: flex; flex-direction: column; gap: 12px; }
 .input-field-group { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 15px; }
 .input-field-group label { font-size: 0.7rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; text-align: right; }
-
 .hero-slot { position: relative; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; height: 48px; display: flex; align-items: center; }
 .slot-hero-img { width: 65px; height: 100%; object-fit: cover; border-radius: 7px 0 0 7px; display: none; }
 .hero-slot.filled .slot-hero-img { display: block; }
 .hero-slot input { background: transparent; border: none !important; color: white; padding: 0 15px; width: 100%; height: 100%; outline: none; }
 
-/* КНОПКИ РОВНО В РЯД */
-.actions-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; margin-top: 20px; height: 52px; }
+.actions-row { display: flex; gap: 15px; margin-top: 20px; height: 50px; }
 
 /* ТУЛТИП (ФИКС) */
-.ui-help-wrapper { position: relative; height: 100%; }
+.ui-help-wrapper { position: relative; }
 .ui-tooltip {
-    position: absolute; bottom: 70px; right: 0; width: 320px;
-    background: #11141b; border: 1px solid #333b4a; padding: 20px; border-radius: 15px; 
-    opacity: 0; visibility: hidden; transform: translateY(10px); transition: 0.3s;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.8); z-index: 1000;
+    position: absolute; bottom: 60px; right: 0; width: 280px;
+    background: #11141b; border: 1px solid #333b4a; padding: 15px; border-radius: 12px; 
+    opacity: 0; visibility: hidden; transform: translateY(10px); transition: 0.2s;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1000;
 }
-.ui-help-wrapper:hover .ui-tooltip { opacity: 1 !important; visibility: visible !important; transform: translateY(0); }
+.ui-help-wrapper:hover .ui-tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
 
-/* АВТОКОМПЛИТ */
-.autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #1c212d; border: 1px solid #333b4a; border-radius: 0 0 12px 12px; z-index: 10000; max-height: 300px; overflow-y: auto; }
-.autocomplete-item { display: flex; align-items: center; gap: 12px; padding: 10px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03); }
-.autocomplete-item img { width: 40px !important; height: 23px !important; object-fit: cover !important; border-radius: 3px; }
+.autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #1c212d; border: 1px solid #333b4a; border-radius: 12px; z-index: 10000; max-height: 250px; overflow-y: auto; }
+.autocomplete-item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; }
+.autocomplete-item:hover { background: var(--accent-red); }
+.autocomplete-item img { width: 40px; border-radius: 4px; }
