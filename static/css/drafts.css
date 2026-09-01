@@ -10,30 +10,25 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 .input-field-group { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 15px; }
 .input-field-group label { font-size: 0.7rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; text-align: right; }
 
-/* Родитель для списка должен быть relative */
-.hero-slot { 
-    position: relative; 
-    background: rgba(0,0,0,0.3); 
-    border: 1px solid var(--border-color); 
-    border-radius: 8px; 
-    height: 48px; 
-    display: flex; 
-    align-items: center; 
-}
-
+.hero-slot { position: relative; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; height: 48px; display: flex; align-items: center; }
 .slot-hero-img { width: 65px; height: 100%; object-fit: cover; border-radius: 7px 0 0 7px; display: none; }
 .hero-slot.filled .slot-hero-img { display: block; }
 .hero-slot input { background: transparent; border: none !important; color: white; padding: 0 15px; width: 100%; height: 100%; outline: none; }
 
-.actions-row { 
-    display: grid; 
-    grid-template-columns: 2fr 1fr 1fr; 
-    gap: 15px; 
-    margin-top: 20px; 
-}
+/* КНОПКИ РОВНО В РЯД */
+.actions-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; margin-top: 20px; height: 52px; }
 
-/* Результаты (тоже фиксим картинки на всякий случай) */
-.results-section { margin-top: 50px; }
-.top-picks-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-.top-pick-card { background: #151921; border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; text-align: center; }
-.top-pick-card img { width: 150px; border-radius: 10px; margin-bottom: 10px; }
+/* ТУЛТИП (ФИКС) */
+.ui-help-wrapper { position: relative; height: 100%; }
+.ui-tooltip {
+    position: absolute; bottom: 70px; right: 0; width: 320px;
+    background: #11141b; border: 1px solid #333b4a; padding: 20px; border-radius: 15px; 
+    opacity: 0; visibility: hidden; transform: translateY(10px); transition: 0.3s;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8); z-index: 1000;
+}
+.ui-help-wrapper:hover .ui-tooltip { opacity: 1 !important; visibility: visible !important; transform: translateY(0); }
+
+/* АВТОКОМПЛИТ */
+.autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #1c212d; border: 1px solid #333b4a; border-radius: 0 0 12px 12px; z-index: 10000; max-height: 300px; overflow-y: auto; }
+.autocomplete-item { display: flex; align-items: center; gap: 12px; padding: 10px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.autocomplete-item img { width: 40px !important; height: 23px !important; object-fit: cover !important; border-radius: 3px; }
