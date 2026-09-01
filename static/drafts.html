@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Анализ Драфтов — Dota 2 Helper</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body id="body-drafts">
     <div id="main-app">
@@ -25,30 +26,37 @@
 
         <main>
             <div class="draft-container">
+                <!-- МОЯ КОМАНДА -->
                 <div class="team-box allies">
                     <h3 class="allies-title">Моя команда</h3>
-                    <div class="inputs-grid" id="allies-inputs"></div>
+                    <div class="inputs-grid">
+                        <div class="input-field-group"><label>КЕРРИ</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-my-pos1"><input type="text" id="my-pos1" placeholder="Выбрать..." autocomplete="off"></div></div>
+                        <div class="input-field-group"><label>МИД</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-my-pos2"><input type="text" id="my-pos2" placeholder="Выбрать..." autocomplete="off"></div></div>
+                        <div class="input-field-group"><label>ТРОЙКА</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-my-pos3"><input type="text" id="my-pos3" placeholder="Выбрать..." autocomplete="off"></div></div>
+                        <div class="input-field-group"><label>ЧЕТВЕРКА</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-my-pos4"><input type="text" id="my-pos4" placeholder="Выбрать..." autocomplete="off"></div></div>
+                        <div class="input-field-group"><label>ПЯТЕРКА</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-my-pos5"><input type="text" id="my-pos5" placeholder="Выбрать..." autocomplete="off"></div></div>
+                    </div>
                 </div>
+
+                <!-- КОМАНДА ПРОТИВНИКА -->
                 <div class="team-box enemies">
                     <h3 class="enemies-title">Команда противника</h3>
-                    <div class="inputs-grid" id="enemies-inputs"></div>
+                    <div class="inputs-grid">
+                        <div class="input-field-group"><label>ВРАГ 1</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-enemy-1"><input type="text" id="enemy-1" placeholder="Выбрать..." autocomplete="off"></div></div>
+                        <div class="input-field-group"><label>ВРАГ 2</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-enemy-2"><input type="text" id="enemy-2" placeholder="Выбрать..." autocomplete="off"></div></div>
+                        <div class="input-field-group"><label>ВРАГ 3</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-enemy-3"><input type="text" id="enemy-3" placeholder="Выбрать..." autocomplete="off"></div></div>
+                        <div class="input-field-group"><label>ВРАГ 4</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-enemy-4"><input type="text" id="enemy-4" placeholder="Выбрать..." autocomplete="off"></div></div>
+                        <div class="input-field-group"><label>ВРАГ 5</label><div class="hero-slot"><img src="" class="slot-hero-img" id="img-enemy-5"><input type="text" id="enemy-5" placeholder="Выбрать..." autocomplete="off"></div></div>
+                    </div>
                 </div>
             </div>
 
             <div class="actions-row">
-                <button class="btn-analyze" onclick="analyzeDraft()">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
-                <button class="btn-clear" onclick="clearInputs()">ОЧИСТИТЬ</button>
-                <div class="help-container">
-                    <button class="btn-help">КАК ЭТО РАБОТАЕТ?</button>
-                    <div class="help-tooltip">
-                        <div class="tooltip-title">МАТЕМАТИКА PRO-LEVEL</div>
-                        <div class="tooltip-content">
-                            <p><b>Immortal Meta:</b> Анализ на основе матчей высшего ранга.</p>
-                            <p><b>Приоритет угроз:</b> Критические контрпики весят больше мелких плюсов.</p>
-                        </div>
-                    </div>
-                </div>
+                <button class="btn-primary" onclick="analyzeDraft()" style="flex: 2;">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
+                <button class="btn-secondary" onclick="clearInputs()" style="flex: 1;">ОЧИСТИТЬ</button>
+                <button class="btn-secondary" style="flex: 1; cursor: default;">DOTA HELPER PRO</button>
             </div>
+
             <div id="results-container"></div>
         </main>
     </div>
