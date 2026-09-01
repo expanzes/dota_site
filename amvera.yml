@@ -1,0 +1,10 @@
+meta:
+  environment: python
+  toolchain:
+    name: pip
+    version: 3.10
+build:
+  requirementsPath: requirements.txt
+run:
+  scriptName: main.py
+  command: gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:80 main:app
