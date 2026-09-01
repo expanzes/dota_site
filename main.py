@@ -23,7 +23,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth.router, prefix="/api")
 app.include_router(draft.router, prefix="/api")
 
-STATIC_VERSION = os.getenv("RENDER_GIT_COMMIT", "dev")[:8]
+# Для Amvera используем версию "prod" или время, чтобы сбрасывать кэш
+STATIC_VERSION = "2.0.1"
 
 def serve_page(file_name: str, module_name: str = None):
     file_path = f"static/{file_name}"
@@ -36,12 +37,13 @@ def serve_page(file_name: str, module_name: str = None):
     if module_name:
         css_links += f'\n    <link rel="stylesheet" href="/static/css/{module_name}.css?v={STATIC_VERSION}">'
     
-    # Заменяем временную метку на реальные CSS
+    # Заменяем временную метку на реальные CSS ссылки
     html = html.replace('<link rel="stylesheet" href="/static/css/styles.css">', css_links)
     
-    # Прокидываем версии в JS
+    # Прокидываем версии в JS файлы для обновления кэша
     for js in ["auth.js", "favorites.js", "draft.js", "invoker.js"]:
         html = html.replace(f'/static/js/{js}"', f'/static/js/{js}?v={STATIC_VERSION}"')
+        
     return HTMLResponse(content=html)
 
 @app.get("/")
