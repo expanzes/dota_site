@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -23,26 +23,22 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth.router, prefix="/api")
 app.include_router(draft.router, prefix="/api")
 
-# Меняй эту цифру, если хочешь мгновенно обновить дизайн у всех пользователей
-VERSION = "3.1.0"
+STATIC_VERSION = "1.0.0"
 
 def serve_page(file_name: str, module_name: str = None):
     file_path = f"static/{file_name}"
     with open(file_path, "r", encoding="utf-8") as f:
         html = f.read()
     
-    # Собираем СТРОГИЙ порядок стилей
-    css = f'<link rel="stylesheet" href="/static/css/global.css?v={VERSION}">'
+    css_links = f'<link rel="stylesheet" href="/static/css/global.css?v={STATIC_VERSION}">'
+    css_links += f'\n    <link rel="stylesheet" href="/static/css/header.css?v={STATIC_VERSION}">'
     if module_name:
-        css += f'\n    <link rel="stylesheet" href="/static/css/{module_name}.css?v={VERSION}">'
+        css_links += f'\n    <link rel="stylesheet" href="/static/css/{module_name}.css?v={STATIC_VERSION}">'
     
-    # Заменяем метку на готовый пак стилей
-    html = html.replace('<link rel="stylesheet" href="/static/css/styles.css">', css)
+    html = html.replace('<link rel="stylesheet" href="/static/css/styles.css">', css_links)
     
-    # Прописываем версию для всех JS
     for js in ["auth.js", "favorites.js", "draft.js", "invoker.js"]:
-        html = html.replace(f'/static/js/{js}"', f'/static/js/{js}?v={VERSION}"')
-        
+        html = html.replace(f'/static/js/{js}"', f'/static/js/{js}?v={STATIC_VERSION}"')
     return HTMLResponse(content=html)
 
 @app.get("/")
