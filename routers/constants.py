@@ -63,5 +63,55 @@ HERO_POSITIONS = {
     "Vengeful Spirit": [4, 5], "Warlock": [5], "Windranger": [4], "Winter Wyvern": [4, 5], "Witch Doctor": [5]
 }
 
+# Псевдонимы героев для поиска
+HERO_ALIASES = {
+    "Anti-Mage": ["am", "ам", "антимаг", "магина"],
+    "Shadow Fiend": ["sf", "сф", "невермор", "nevermore"],
+    "Phantom Assassin": ["pa", "па", "фантомка", "мортра"],
+    "Phantom Lancer": ["pl", "пл", "лансер"],
+    "Crystal Maiden": ["cm", "цм", "рилай"],
+    "Queen of Pain": ["qop", "квопа", "акаша"],
+    "Wraith King": ["wk", "вк", "папич", "leoric"],
+    "Nature's Prophet": ["np", "фурион", "фура"],
+    "Outworld Destroyer": ["od", "од", "дестр"],
+    "Dragon Knight": ["dk", "дк"],
+    "Chaos Knight": ["ck", "цк"],
+    "Terrorblade": ["tb", "тб"],
+    "Templar Assassin": ["ta", "та", "ланая"],
+    "Spirit Breaker": ["sb", "бара", "баратрум"],
+    "Earthshaker": ["es", "шейкер"],
+    "Earth Spirit": ["земеля"],
+    "Ember Spirit": ["эмбер"],
+    "Storm Spirit": ["шторм"],
+    "Faceless Void": ["fv", "воид", "купол"],
+    "Bloodseeker": ["bs", "бс", "сикер"],
+    "Bounty Hunter": ["bh", "бх"],
+    "Windranger": ["wr", "вр", "виндраннер"],
+    "Witch Doctor": ["wd", "вд", "вичдоктор"],
+    "Sand King": ["sk", "ск", "скорпион"],
+    "Centaur Warrunner": ["кентавр", "кент"],
+    "Bristleback": ["bb", "брист", "еж"],
+    "Pudge": ["пудж", "мясо", "падж"],
+    "Invoker": ["инвокер", "вокер"],
+    "Mirana": ["потма"],
+    "Clockwerk": ["клок"],
+    "Timbersaw": ["тимбер"],
+    "Tinker": ["тинкер"],
+    "Sniper": ["снайпер", "дед"],
+    "Zeus": ["зевс"],
+    "Lifestealer": ["ls", "гуля", "наикс"],
+    "Slark": ["сларк", "рыба"],
+    "Juggernaut": ["джаггер", "юно"],
+    "Morphling": ["морф"],
+    "Sven": ["свен"],
+    "Tiny": ["тини"],
+    "Axe": ["акс"],
+    "Viper": ["вайпер"],
+    "Slardar": ["селедка"],
+    "Largo": ["лягушка", "ларго"],
+    "Lone Druid": ["мишка", "лд"],
+    "Kez": ["кез", "птица"]
+}
+
 ILLUSION_HERO_NAMES = ["Naga Siren", "Phantom Lancer", "Terrorblade", "Chaos Knight", "Meepo"]
 ILLUSION_KILLERS = ["Axe", "Earthshaker", "Sven", "Leshrac", "Legion Commander", "Sand King"]
