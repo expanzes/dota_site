@@ -40,40 +40,88 @@ main { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
 .tooltip-text::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -8px; border-width: 8px; border-style: solid; border-color: var(--border-color) transparent transparent transparent; }
 .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
 
-/* --- УМЕНЬШЕННЫЙ ДИЗАЙН РЕЗУЛЬТАТОВ --- */
 .results-section { margin-top: 30px; padding: 15px 20px; background: rgba(18, 21, 30, 0.4); border-radius: 15px; border: 1px solid var(--border-color); }
 .role-title { font-size: 1.3rem; font-weight: 900; color: white; border-left: 4px solid var(--accent-red); padding-left: 12px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
 
 .top-picks-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
 .alt-picks-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
-.result-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; position: relative; transition: transform 0.2s, box-shadow 0.2s; }
+/* ГОРИЗОНТАЛЬНАЯ КАРТОЧКА (Фото слева, текст справа) */
+.result-card { 
+    display: flex; 
+    flex-direction: row; 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-color); 
+    border-radius: 10px; 
+    overflow: hidden; 
+    transition: transform 0.2s, box-shadow 0.2s; 
+    align-items: stretch; 
+}
 .result-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); z-index: 2; }
 
-/* Уменьшенные плашки */
-.card-badge { text-align: center; font-size: 0.8rem; font-weight: 900; text-transform: uppercase; padding: 6px 0; color: #000; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); position: absolute; top: 0; left: 0; right: 0; z-index: 10; }
-.small-card .card-badge { font-size: 0.7rem; padding: 4px 0; }
+/* Левая часть (Фото + Плашка) */
+.card-left { 
+    width: 45%; 
+    display: flex; 
+    flex-direction: column; 
+    background: rgba(11, 13, 18, 0.8); 
+    border-right: 1px solid var(--border-color);
+}
+.card-badge { 
+    text-align: center; 
+    font-size: 0.75rem; 
+    font-weight: 900; 
+    text-transform: uppercase; 
+    padding: 6px 0; 
+    color: #000; 
+    letter-spacing: 0.5px; 
+    flex-shrink: 0;
+}
+.small-card .card-badge { font-size: 0.65rem; padding: 4px 0; }
 .badge-favorite { background: var(--accent-yellow); }
 .badge-top { background: var(--accent-green); }
 .badge-alt { background: var(--text-muted); color: #fff; }
 
-/* Уменьшенные картинки с фиксированной высотой */
-.result-card img { width: 100%; object-fit: cover; display: block; }
-.main-card img { height: 120px; }
-.small-card img { height: 80px; }
+/* Изображение - без обрезания */
+.card-left img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: contain; 
+    padding: 5px; 
+}
 
-/* Уменьшенные отступы текста */
-.card-info { padding: 10px; text-align: center; }
-.small-card .card-info { padding: 8px; }
+/* Правая часть (Текст) */
+.card-right { 
+    width: 55%; 
+    padding: 10px 12px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+}
+.small-card .card-right { padding: 8px; }
 
 .hero-name { font-weight: 900; font-size: 1.1rem; margin-bottom: 8px; }
 .small-card .hero-name { font-size: 0.95rem; margin-bottom: 6px; }
 
-.stats-box { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: 700; background: var(--bg-input); padding: 8px; border-radius: 6px; }
+.stats-box { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+    font-size: 0.85rem; 
+    font-weight: 700; 
+    background: var(--bg-input); 
+    padding: 8px; 
+    border-radius: 6px; 
+}
 .small-card .stats-box { font-size: 0.75rem; padding: 6px; }
 
 .stat-row { display: flex; justify-content: space-between; align-items: center; }
 .text-green { color: var(--accent-green); }
 .text-red { color: var(--accent-red); }
 
-.empty-card { border: 1px dashed var(--border-color); background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.85rem; min-height: 180px; }
+.empty-card { 
+    flex-direction: column; 
+    align-items: center; justify-content: center; text-align: center; 
+    color: var(--text-muted); padding: 20px; font-size: 0.85rem; min-height: 100px; 
+    border: 1px dashed var(--border-color); background: transparent; 
+}
