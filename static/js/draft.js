@@ -28,7 +28,7 @@ function setupCustomAutocomplete() {
 }
 
 function renderDropdown(input) {
-    const wrapper = input.parentElement; // .hero-slot
+    const wrapper = input.parentElement;
     document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
     
     const q = input.value.toLowerCase().trim();
@@ -88,7 +88,7 @@ async function analyzeDraft() {
     const enemyTeam = [1,2,3,4,5].map(i => document.getElementById(`enemy-${i}`).value).filter(v => v.trim() !== "");
     
     const container = document.getElementById('results-container');
-    container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px;">Анализ драфта...</p>';
+    container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:40px; font-size:1.2rem;"><i class="fas fa-spinner fa-spin"></i> Анализируем миллионы матчей...</p>';
 
     const savedUser = localStorage.getItem('dota_user');
     const user = savedUser ? JSON.parse(savedUser) : null;
@@ -109,26 +109,75 @@ async function analyzeDraft() {
     }
 }
 
+// Генератор HTML для одной карточки
+function buildCardHTML(hero, badgeText, badgeClass, cardTypeClass) {
+    if (!hero) {
+        return `
+            <div class="result-card ${cardTypeClass} empty-card">
+                <div><i class="fas fa-search" style="font-size: 2rem; margin-bottom:10px;"></i><br>Нет данных<br><span style="font-size:0.75rem;">(или нет любимого героя)</span></div>
+            </div>`;
+    }
+
+    const counterVal = hero.advantage.toFixed(1);
+    const counterSign = hero.advantage > 0 ? '+' : '';
+    const counterColorClass = hero.advantage >= 0 ? 'text-green' : 'text-red';
+
+    return `
+        <div class="result-card ${cardTypeClass}">
+            <div class="card-badge ${badgeClass}">${badgeText}</div>
+            <img src="${hero.img}" alt="${hero.name}">
+            <div class="card-info">
+                <div class="hero-name">${hero.name}</div>
+                <div class="stats-box">
+                    <div class="stat-row">
+                        <span>Винрейт:</span>
+                        <span class="text-green"><i class="fas fa-trophy"></i> ${hero.winrate.toFixed(1)}%</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Контрпик:</span>
+                        <span class="${counterColorClass}"><i class="fas fa-crosshairs"></i> ${counterSign}${counterVal}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function renderResults(results) {
     const container = document.getElementById('results-container');
     container.innerHTML = '';
+    
     results.forEach(item => {
-        const section = document.createElement('div');
-        section.className = 'results-section';
-        section.innerHTML = `<h3 style="border-left:4px solid var(--accent-red); padding-left:15px; margin-bottom:15px;">${item.role}</h3>`;
+        const d = item.data;
         
-        const grid = document.createElement('div');
-        grid.className = 'hero-cards-grid';
+        // Генерация двух главных карточек
+        const topFavHTML = buildCardHTML(d.top_favorite, "★ Любимый выбор", "badge-favorite", "main-card");
+        const topWinHTML = buildCardHTML(d.top_winrate, "🔥 Топ Винрейт", "badge-top", "main-card");
         
-        item.data.others.forEach(h => {
-            if(h) {
-                const card = document.createElement('div');
-                card.className = 'result-card';
-                card.innerHTML = `<img src="${h.img}"><div><b>${h.name}</b></div><div style="color:var(--accent-green)">${h.winrate}% Win</div>`;
-                grid.appendChild(card);
+        // Генерация 3-х альтернативных карточек
+        let altCardsHTML = '';
+        d.others.forEach((hero, index) => {
+            if (hero) {
+                altCardsHTML += buildCardHTML(hero, `Альтернатива #${index+1}`, "badge-alt", "small-card");
             }
         });
-        section.appendChild(grid);
+
+        // Сборка секции
+        const section = document.createElement('div');
+        section.className = 'results-section';
+        section.innerHTML = `
+            <h3 class="role-title">${item.role}</h3>
+            
+            <div class="top-picks-container">
+                ${topFavHTML}
+                ${topWinHTML}
+            </div>
+            
+            <div class="alt-picks-container">
+                ${altCardsHTML}
+            </div>
+        `;
+        
         container.appendChild(section);
     });
 }
