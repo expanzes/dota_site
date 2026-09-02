@@ -113,7 +113,7 @@ function buildCardHTML(hero, badgeText, badgeClass, cardTypeClass) {
     if (!hero) {
         return `
             <div class="result-card ${cardTypeClass} empty-card">
-                <i class="fas fa-search" style="font-size: 2rem; margin-bottom:10px;"></i>
+                <i class="fas fa-search" style="font-size: 1.5rem; margin-bottom:8px;"></i>
                 <div>Нет данных<br><span style="font-size:0.75rem;">(или нет любимого героя)</span></div>
             </div>`;
     }
@@ -124,9 +124,11 @@ function buildCardHTML(hero, badgeText, badgeClass, cardTypeClass) {
 
     return `
         <div class="result-card ${cardTypeClass}">
-            <div class="card-badge ${badgeClass}">${badgeText}</div>
-            <img src="${hero.img}" alt="${hero.name}">
-            <div class="card-info">
+            <div class="card-left">
+                <div class="card-badge ${badgeClass}">${badgeText}</div>
+                <img src="${hero.img}" alt="${hero.name}">
+            </div>
+            <div class="card-right">
                 <div class="hero-name">${hero.name}</div>
                 <div class="stats-box">
                     <div class="stat-row">
@@ -150,14 +152,12 @@ function renderResults(results) {
     results.forEach(item => {
         const d = item.data;
         
-        // ОБНОВЛЕНЫ НАЗВАНИЯ ПЛАШЕК
         const topFavHTML = buildCardHTML(d.top_favorite, "★ Любимый герой", "badge-favorite", "main-card");
         const topWinHTML = buildCardHTML(d.top_winrate, "🔥 Топ Винрейт", "badge-top", "main-card");
         
         let altCardsHTML = '';
         d.others.forEach((hero) => {
             if (hero) {
-                // ОБНОВЛЕНО НАЗВАНИЕ ПЛАШКИ
                 altCardsHTML += buildCardHTML(hero, "Хороший вариант", "badge-alt", "small-card");
             }
         });
