@@ -1,39 +1,53 @@
 # База данных всех 127 героев Dota 2
 
-# [Контроль, Стойкость, Инициация, Урон, Осада, Побег] (0-3)
+# Формат: [Контроль, Стойкость, Инициация, Урон, Осада, Побег, Жадность(0-3), Темп(1-3)]
 HERO_TAGS = {
-    "Abaddon": [1,3,1,1,1,1], "Alchemist": [1,2,1,2,3,1], "Ancient Apparition": [1,0,0,3,0,0], "Anti-Mage": [0,1,0,2,2,3],
-    "Arc Warden": [1,1,0,3,3,1], "Axe": [3,3,3,1,0,0], "Bane": [3,1,0,2,0,1], "Batrider": [3,1,3,2,0,2],
-    "Beastmaster": [2,2,3,1,3,0], "Bloodseeker": [2,1,2,2,1,1], "Bounty Hunter": [1,1,1,2,0,3], "Brewmaster": [2,3,3,2,1,2],
-    "Bristleback": [0,3,1,2,1,0], "Broodmother": [1,2,1,2,3,2], "Centaur Warrunner": [3,3,3,1,1,1], "Chaos Knight": [2,3,2,3,1,1],
-    "Chen": [1,1,1,1,3,0], "Clinkz": [0,1,1,3,3,2], "Clockwerk": [3,2,3,1,0,1], "Crystal Maiden": [3,0,1,2,0,0],
-    "Dark Seer": [1,2,2,1,1,2], "Dark Willow": [3,1,1,3,0,2], "Dawnbreaker": [2,3,2,2,1,1], "Dazzle": [1,1,0,2,1,1],
-    "Death Prophet": [1,2,1,2,3,1], "Disruptor": [3,0,1,2,0,0], "Doom": [2,3,2,2,0,1], "Dragon Knight": [3,3,2,2,2,0],
-    "Drow Ranger": [1,0,0,3,2,1], "Earth Spirit": [3,2,3,1,0,2], "Earthshaker": [3,1,3,2,0,1], "Elder Titan": [2,2,2,2,1,0],
-    "Ember Spirit": [1,1,2,2,0,3], "Enchantress": [1,1,1,2,2,1], "Enigma": [3,1,2,1,3,0], "Faceless Void": [3,2,3,2,1,2],
-    "Grimstroke": [2,0,1,2,0,1], "Gyrocopter": [1,1,1,3,1,1], "Hoodwink": [2,0,1,3,0,2], "Huskar": [0,3,1,3,1,0],
-    "Invoker": [2,1,2,3,1,2], "Io": [1,1,1,1,0,2], "Jakiro": [2,1,1,2,2,0], "Juggernaut": [0,1,1,2,3,2],
-    "Keeper of the Light": [1,0,1,3,1,2], "Kez": [1,1,2,3,1,3], "Kunkka": [3,2,3,2,1,1], "Legion Commander": [2,3,2,2,1,1],
-    "Leshrac": [1,1,1,3,3,1], "Lich": [2,0,1,3,0,0], "Lifestealer": [1,3,0,2,1,1], "Lina": [2,0,1,3,1,1],
-    "Lion": [3,0,2,3,0,0], "Lone Druid": [1,2,1,2,3,1], "Luna": [1,1,1,2,3,1], "Lycan": [0,2,3,2,3,1],
-    "Magnus": [3,2,3,1,0,1], "Marci": [2,2,2,2,0,2], "Mars": [3,3,3,1,1,1], "Medusa": [1,3,0,2,2,0],
-    "Meepo": [2,2,1,3,2,2], "Mirana": [2,0,1,2,1,2], "Monkey King": [2,1,2,2,1,2], "Morphling": [1,1,1,3,1,3],
-    "Muerta": [1,1,0,3,1,0], "Naga Siren": [2,2,1,1,3,2], "Nature's Prophet": [1,1,1,2,3,3], "Necrophos": [1,2,0,3,1,1],
-    "Night Stalker": [2,2,3,2,0,2], "Nyx Assassin": [3,0,2,3,0,2], "Ogre Magi": [2,3,1,2,1,0], "Omniknight": [1,2,1,2,0,0],
-    "Oracle": [2,0,0,2,0,1], "Outworld Destroyer": [2,1,1,3,1,1], "Pangolier": [2,1,3,2,0,3], "Phantom Assassin": [0,1,1,3,0,2],
-    "Phantom Lancer": [1,1,1,2,1,3], "Phoenix": [2,2,2,3,0,2], "Primal Beast": [2,3,3,2,0,2], "Puck": [2,1,3,2,0,3],
-    "Pudge": [2,3,2,2,0,1], "Pugna": [1,0,1,3,3,1], "Queen of Pain": [1,0,1,3,0,3], "Razor": [1,2,2,2,1,1],
-    "Riki": [2,1,1,3,0,3], "Ringmaster": [3,1,1,2,0,1], "Rubick": [2,0,1,2,0,1], "Sand King": [3,2,3,2,1,2],
-    "Shadow Demon": [2,0,1,1,0,1], "Shadow Fiend": [1,0,1,3,2,1], "Shadow Shaman": [3,1,1,2,3,0], "Silencer": [2,0,0,2,0,0],
-    "Skywrath Mage": [1,0,0,3,0,0], "Slardar": [3,2,3,2,0,1], "Slark": [1,2,1,1,0,3], "Snapfire": [2,1,1,3,1,1],
-    "Sniper": [1,0,0,3,2,1], "Spectre": [1,3,1,2,0,2], "Spirit Breaker": [3,2,3,1,0,2], "Storm Spirit": [1,1,3,3,0,3],
-    "Sven": [2,2,2,3,2,1], "Techies": [2,1,1,3,1,2], "Templar Assassin": [1,1,1,3,2,2], "Terrorblade": [0,1,1,2,3,2],
-    "Tidehunter": [3,3,3,1,1,0], "Timbersaw": [1,3,1,3,1,2], "Tinker": [1,1,2,3,0,2], "Tiny": [3,2,3,3,2,1],
-    "Treant Protector": [3,2,2,1,1,1], "Troll Warlord": [1,2,1,2,3,1], "Tusk": [3,1,2,2,1,2], "Underlord": [2,3,1,1,2,0],
-    "Undying": [2,3,1,1,0,0], "Ursa": [1,2,1,3,1,1], "Vengeful Spirit": [3,1,2,2,1,1], "Venomancer": [1,1,1,2,1,1],
-    "Viper": [2,2,0,3,1,0], "Visage": [2,2,1,2,3,1], "Void Spirit": [2,1,3,2,0,3], "Warlock": [2,1,1,2,1,0],
-    "Weaver": [1,1,1,2,1,3], "Windranger": [2,1,1,3,1,3], "Winter Wyvern": [3,1,1,2,1,2], "Witch Doctor": [2,1,1,3,0,0],
-    "Wraith King": [2,3,1,2,2,1], "Zeus": [1,0,0,3,0,0], "Largo": [1,3,2,1,0,1]
+    "Abaddon": [1,3,1,1,1,1, 1, 2], "Alchemist": [1,2,1,2,3,1, 3, 2], "Ancient Apparition": [1,0,0,3,0,0, 0, 1], "Anti-Mage": [0,1,0,2,2,3, 3, 3],
+    "Arc Warden": [1,1,0,3,3,1, 3, 3], "Axe": [3,3,3,1,0,0, 1, 2], "Bane": [3,1,0,2,0,1, 0, 1], "Batrider": [3,1,3,2,0,2, 1, 2],
+    "Beastmaster": [2,2,3,1,3,0, 1, 2], "Bloodseeker": [2,1,2,2,1,1, 2, 2], "Bounty Hunter": [1,1,1,2,0,3, 1, 1], "Brewmaster": [2,3,3,2,1,2, 1, 2],
+    "Bristleback": [0,3,1,2,1,0, 2, 2], "Broodmother": [1,2,1,2,3,2, 2, 2], "Centaur Warrunner": [3,3,3,1,1,1, 1, 2], "Chaos Knight": [2,3,2,3,1,1, 2, 2],
+    "Chen": [1,1,1,1,3,0, 0, 1], "Clinkz": [0,1,1,3,3,2, 2, 2], "Clockwerk": [3,2,3,1,0,1, 1, 1], "Crystal Maiden": [3,0,1,2,0,0, 0, 1],
+    "Dark Seer": [1,2,2,1,1,2, 1, 2], "Dark Willow": [3,1,1,3,0,2, 1, 2], "Dawnbreaker": [2,3,2,2,1,1, 1, 2], "Dazzle": [1,1,0,2,1,1, 0, 1],
+    "Death Prophet": [1,2,1,2,3,1, 2, 2], "Disruptor": [3,0,1,2,0,0, 0, 1], "Doom": [2,3,2,2,0,1, 2, 2], "Dragon Knight": [3,3,2,2,2,0, 2, 2],
+    "Drow Ranger": [1,0,0,3,2,1, 2, 3], "Earth Spirit": [3,2,3,1,0,2, 1, 1], "Earthshaker": [3,1,3,2,0,1, 1, 2], "Elder Titan": [2,2,2,2,1,0, 1, 2],
+    "Ember Spirit": [1,1,2,2,0,3, 2, 2], "Enchantress": [1,1,1,2,2,1, 1, 2], "Enigma": [3,1,2,1,3,0, 2, 2], "Faceless Void": [3,2,3,2,1,2, 3, 3],
+    "Grimstroke": [2,0,1,2,0,1, 0, 2], "Gyrocopter": [1,1,1,3,1,1, 2, 2], "Hoodwink": [2,0,1,3,0,2, 1, 2], "Huskar": [0,3,1,3,1,0, 2, 2],
+    "Invoker": [2,1,2,3,1,2, 3, 2], "Io": [1,1,1,1,0,2, 0, 2], "Jakiro": [2,1,1,2,2,0, 0, 1], "Juggernaut": [0,1,1,2,3,2, 2, 2],
+    "Keeper of the Light": [1,0,1,3,1,2, 1, 1], "Kez": [1,1,2,3,1,3, 2, 2], "Kunkka": [3,2,3,2,1,1, 2, 2], "Legion Commander": [2,3,2,2,1,1, 1, 2],
+    "Leshrac": [1,1,1,3,3,1, 2, 2], "Lich": [2,0,1,3,0,0, 0, 1], "Lifestealer": [1,3,0,2,1,1, 2, 2], "Lina": [2,0,1,3,1,1, 2, 2],
+    "Lion": [3,0,2,3,0,0, 0, 1], "Lone Druid": [1,2,1,2,3,1, 3, 2], "Luna": [1,1,1,2,3,1, 3, 3], "Lycan": [0,2,3,2,3,1, 2, 2],
+    "Magnus": [3,2,3,1,0,1, 1, 2], "Marci": [2,2,2,2,0,2, 1, 2], "Mars": [3,3,3,1,1,1, 1, 2], "Medusa": [1,3,0,2,2,0, 3, 3],
+    "Meepo": [2,2,1,3,2,2, 3, 2], "Mirana": [2,0,1,2,1,2, 1, 2], "Monkey King": [2,1,2,2,1,2, 2, 2], "Morphling": [1,1,1,3,1,3, 3, 3],
+    "Muerta": [1,1,0,3,1,0, 3, 3], "Naga Siren": [2,2,1,1,3,2, 3, 3], "Nature's Prophet": [1,1,1,2,3,3, 2, 2], "Necrophos": [1,2,0,3,1,1, 2, 2],
+    "Night Stalker": [2,2,3,2,0,2, 1, 2], "Nyx Assassin": [3,0,2,3,0,2, 1, 1], "Ogre Magi": [2,3,1,2,1,0, 0, 1], "Omniknight": [1,2,1,2,0,0, 1, 2],
+    "Oracle": [2,0,0,2,0,1, 0, 1], "Outworld Destroyer": [2,1,1,3,1,1, 2, 2], "Pangolier": [2,1,3,2,0,3, 2, 2], "Phantom Assassin": [0,1,1,3,0,2, 3, 3],
+    "Phantom Lancer": [1,1,1,2,1,3, 3, 3], "Phoenix": [2,2,2,3,0,2, 1, 2], "Primal Beast": [2,3,3,2,0,2, 1, 2], "Puck": [2,1,3,2,0,3, 2, 2],
+    "Pudge": [2,3,2,2,0,1, 1, 2], "Pugna": [1,0,1,3,3,1, 1, 2], "Queen of Pain": [1,0,1,3,0,3, 2, 2], "Razor": [1,2,2,2,1,1, 2, 2],
+    "Riki": [2,1,1,3,0,3, 2, 2], "Ringmaster": [3,1,1,2,0,1, 0, 2], "Rubick": [2,0,1,2,0,1, 1, 2], "Sand King": [3,2,3,2,1,2, 1, 2],
+    "Shadow Demon": [2,0,1,1,0,1, 0, 1], "Shadow Fiend": [1,0,1,3,2,1, 3, 2], "Shadow Shaman": [3,1,1,2,3,0, 0, 1], "Silencer": [2,0,0,2,0,0, 0, 2],
+    "Skywrath Mage": [1,0,0,3,0,0, 1, 2], "Slardar": [3,2,3,2,0,1, 1, 2], "Slark": [1,2,1,1,0,3, 2, 3], "Snapfire": [2,1,1,3,1,1, 1, 2],
+    "Sniper": [1,0,0,3,2,1, 2, 3], "Spectre": [1,3,1,2,0,2, 3, 3], "Spirit Breaker": [3,2,3,1,0,2, 1, 2], "Storm Spirit": [1,1,3,3,0,3, 3, 3],
+    "Sven": [2,2,2,3,2,1, 3, 2], "Techies": [2,1,1,3,1,2, 1, 2], "Templar Assassin": [1,1,1,3,2,2, 3, 2], "Terrorblade": [0,1,1,2,3,2, 3, 3],
+    "Tidehunter": [3,3,3,1,1,0, 1, 2], "Timbersaw": [1,3,1,3,1,2, 2, 2], "Tinker": [1,1,2,3,0,2, 3, 3], "Tiny": [3,2,3,3,2,1, 2, 2],
+    "Treant Protector": [3,2,2,1,1,1, 0, 1], "Troll Warlord": [1,2,1,2,3,1, 3, 3], "Tusk": [3,1,2,2,1,2, 1, 1], "Underlord": [2,3,1,1,2,0, 1, 2],
+    "Undying": [2,3,1,1,0,0, 0, 1], "Ursa": [1,2,1,3,1,1, 2, 2], "Vengeful Spirit": [3,1,2,2,1,1, 0, 2], "Venomancer": [1,1,1,2,1,1, 1, 2],
+    "Viper": [2,2,0,3,1,0, 2, 2], "Visage": [2,2,1,2,3,1, 2, 2], "Void Spirit": [2,1,3,2,0,3, 2, 2], "Warlock": [2,1,1,2,1,0, 0, 2],
+    "Weaver": [1,1,1,2,1,3, 2, 3], "Windranger": [2,1,1,3,1,3, 2, 2], "Winter Wyvern": [3,1,1,2,1,2, 0, 2], "Witch Doctor": [2,1,1,3,0,0, 0, 1],
+    "Wraith King": [2,3,1,2,2,1, 3, 3], "Zeus": [1,0,0,3,0,0, 2, 2], "Largo": [1,3,2,1,0,1, 1, 2]
+}
+
+# Прямые синергии героев (комбо)
+HERO_COMBOS = {
+    "Faceless Void": ["Invoker", "Phoenix", "Jakiro", "Skywrath Mage", "Witch Doctor", "Snapfire"],
+    "Legion Commander": ["Skywrath Mage", "Invoker", "Zeus", "Nature's Prophet", "Grimstroke"],
+    "Magnus": ["Juggernaut", "Phantom Assassin", "Sven", "Anti-Mage", "Troll Warlord", "Ember Spirit"],
+    "Dark Seer": ["Spirit Breaker", "Riki", "Bounty Hunter", "Earthshaker", "Sven", "Faceless Void"],
+    "Huskar": ["Oracle", "Dazzle", "Omniknight"],
+    "Io": ["Gyrocopter", "Bristleback", "Leshrac", "Ursa", "Chaos Knight", "Luna"],
+    "Grimstroke": ["Doom", "Legion Commander", "Lich", "Lion", "Phantom Assassin", "Juggernaut", "Weaver"],
+    "Enigma": ["Tidehunter", "Earthshaker", "Warlock", "Faceless Void", "Venomancer"],
+    "Bloodseeker": ["Zeus", "Invoker", "Nature's Prophet", "Spectre", "Spirit Breaker"],
+    "Crystal Maiden": ["Juggernaut", "Ursa", "Slark"]
 }
 
 HERO_POSITIONS = {
@@ -63,7 +77,6 @@ HERO_POSITIONS = {
     "Vengeful Spirit": [4, 5], "Warlock": [5], "Windranger": [4], "Winter Wyvern": [4, 5], "Witch Doctor": [5]
 }
 
-# Псевдонимы героев для поиска
 HERO_ALIASES = {
     "Anti-Mage": ["am", "ам", "антимаг", "магина"],
     "Shadow Fiend": ["sf", "сф", "невермор", "nevermore"],
