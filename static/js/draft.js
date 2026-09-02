@@ -109,7 +109,6 @@ async function analyzeDraft() {
     }
 }
 
-// Генератор HTML для одной карточки с процентом контрпика
 function buildCardHTML(hero, badgeText, badgeClass, cardTypeClass) {
     if (!hero) {
         return `
@@ -151,19 +150,18 @@ function renderResults(results) {
     results.forEach(item => {
         const d = item.data;
         
-        // Генерация двух главных карточек
-        const topFavHTML = buildCardHTML(d.top_favorite, "★ Любимый выбор", "badge-favorite", "main-card");
+        // ОБНОВЛЕНЫ НАЗВАНИЯ ПЛАШЕК
+        const topFavHTML = buildCardHTML(d.top_favorite, "★ Любимый герой", "badge-favorite", "main-card");
         const topWinHTML = buildCardHTML(d.top_winrate, "🔥 Топ Винрейт", "badge-top", "main-card");
         
-        // Генерация 3-х альтернативных карточек
         let altCardsHTML = '';
-        d.others.forEach((hero, index) => {
+        d.others.forEach((hero) => {
             if (hero) {
-                altCardsHTML += buildCardHTML(hero, `Альтернатива #${index+1}`, "badge-alt", "small-card");
+                // ОБНОВЛЕНО НАЗВАНИЕ ПЛАШКИ
+                altCardsHTML += buildCardHTML(hero, "Хороший вариант", "badge-alt", "small-card");
             }
         });
 
-        // Сборка всей секции
         const section = document.createElement('div');
         section.className = 'results-section';
         section.innerHTML = `
