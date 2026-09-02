@@ -11,7 +11,7 @@
     <div id="main-app">
         <header>
             <div class="header-left">
-                <div class="logo" onclick="window.location.href='/'">Dota 2 Helper</div>
+                <div class="logo" onclick="window.location.href='/'">DOTA HELPER</div>
                 <nav class="main-nav">
                     <button class="nav-link active" onclick="window.location.href='/drafts'">АНАЛИЗ ДРАФТОВ</button>
                     <button class="nav-link" onclick="window.location.href='/fantasy'">ФЕНТАЗИ ПОМОЩНИК</button>
@@ -54,6 +54,17 @@
             <div class="actions-row">
                 <button class="btn-primary" onclick="analyzeDraft()" style="flex: 2;">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
                 <button class="btn-secondary" onclick="clearInputs()" style="flex: 1;">ОЧИСТИТЬ</button>
+                
+                <div class="tooltip-container" style="flex: 1;">
+                    <button class="btn-secondary" style="width: 100%; cursor: help;">КАК ЭТО РАБОТАЕТ?</button>
+                    <div class="tooltip-text">
+                        <b>Алгоритм на базе OpenDota</b><br><br>
+                        Система анализирует миллионы матчей и подбирает героев с наибольшим шансом на победу.<br><br>
+                        • <b>Враги:</b> Ищем лучших контрпиков против выбранных соперников.<br>
+                        • <b>Союзники:</b> Оцениваем синергию команды (хватает ли вам контроля, урона и инициации).<br>
+                        • На основе этих данных мы предлагаем идеальных героев на свободные роли.
+                    </div>
+                </div>
             </div>
 
             <div id="results-container"></div>
