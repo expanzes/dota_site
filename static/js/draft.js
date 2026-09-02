@@ -109,12 +109,13 @@ async function analyzeDraft() {
     }
 }
 
-// Генератор HTML для одной карточки
+// Генератор HTML для одной карточки с процентом контрпика
 function buildCardHTML(hero, badgeText, badgeClass, cardTypeClass) {
     if (!hero) {
         return `
             <div class="result-card ${cardTypeClass} empty-card">
-                <div><i class="fas fa-search" style="font-size: 2rem; margin-bottom:10px;"></i><br>Нет данных<br><span style="font-size:0.75rem;">(или нет любимого героя)</span></div>
+                <i class="fas fa-search" style="font-size: 2rem; margin-bottom:10px;"></i>
+                <div>Нет данных<br><span style="font-size:0.75rem;">(или нет любимого героя)</span></div>
             </div>`;
     }
 
@@ -162,7 +163,7 @@ function renderResults(results) {
             }
         });
 
-        // Сборка секции
+        // Сборка всей секции
         const section = document.createElement('div');
         section.className = 'results-section';
         section.innerHTML = `
