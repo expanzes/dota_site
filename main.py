@@ -23,7 +23,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth.router, prefix="/api")
 app.include_router(draft.router, prefix="/api")
 
-STATIC_VERSION = "1.0.0"
+# ИЗМЕНЕНА ВЕРСИЯ КЭША ДЛЯ ОБНОВЛЕНИЯ CSS/JS
+STATIC_VERSION = "1.0.1"
 
 def serve_page(file_name: str, module_name: str = None):
     file_path = f"static/{file_name}"
