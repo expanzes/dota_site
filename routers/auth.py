@@ -1,4 +1,4 @@
-import os, random, bcrypt, psycopg2, httpx
+import os, random, bcrypt, psycopg2, httpx, re
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from pydantic import BaseModel
@@ -26,6 +26,10 @@ def to_account_id(steam64):
     try: return int(steam64) - 76561197960265728
     except: return steam64
 
+def is_valid_username(name: str) -> bool:
+    """Проверка: 3-15 символов, англ. буквы, цифры, подчеркивание, одиночные пробелы"""
+    return bool(re.match(r"^(?!.*  )(?!.* $)(?!^ )[a-zA-Z0-9_ ]{3,15}$", name))
+
 def ensure_tables_exist():
     try:
         with get_db_connection() as conn:
@@ -48,7 +52,6 @@ def ensure_tables_exist():
                         favorite_ids INTEGER[]
                     );
                 """)
-                # НОВАЯ ТАБЛИЦА: ДРУЗЬЯ
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS friendships (
                         user_id1 VARCHAR(10) REFERENCES users(site_id),
@@ -98,7 +101,6 @@ async def logout(request: Request):
 async def steam_login(request: Request):
     return_to = f"https://{MY_DOMAIN}/api/auth/steam/callback"
     realm = f"https://{MY_DOMAIN}"
-    
     url = (f"https://steamcommunity.com/openid/login?openid.ns=http://specs.openid.net/auth/2.0&"
            f"openid.mode=checkid_setup&openid.return_to={return_to}&openid.realm={realm}&"
            f"openid.identity=http://specs.openid.net/auth/2.0/identifier_select&"
@@ -138,8 +140,12 @@ async def steam_callback(request: Request):
                 else:
                     sid = generate_site_id()
                     username = s_data["personaname"]
+                    if not is_valid_username(username):
+                        username = f"Player_{sid[:5]}"
+                        
                     cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
-                    if cur.fetchone(): username = f"{username}_{sid[:4]}"
+                    if cur.fetchone(): username = f"Player_{sid[:7]}"
+                    
                     cur.execute("INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier) VALUES (%s, %s, %s, %s, %s)", 
                                (sid, username, steam_id, s_data["avatarfull"], rank))
                 conn.commit()
@@ -173,15 +179,22 @@ async def get_me(request: Request):
                                 rank = new_rank
                 except: pass
 
+            username = u[1]
+            needs_rename = not is_valid_username(username) or username.startswith("Player_")
+
             return {
-                "logged_in": True, "site_id": u[0], "username": u[1], 
+                "logged_in": True, "site_id": u[0], "username": username, 
                 "avatar": u[2], "rank": rank, "invoker_score": u[4], 
-                "is_premium": u[5], "steam_linked": bool(u[6])
+                "is_premium": u[5], "steam_linked": bool(u[6]),
+                "needs_rename": needs_rename
             }
 
 @router.post("/register")
 async def register(data: AuthModel, request: Request):
     try:
+        if not is_valid_username(data.username):
+            raise HTTPException(status_code=400, detail="Формат: 3-15 символов, только англ. буквы, цифры, '_' и одиночные пробелы")
+            
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT 1 FROM users WHERE username = %s", (data.username,))
@@ -207,6 +220,8 @@ async def login(data: AuthModel, request: Request):
 
 @router.post("/update-username")
 async def update_username(data: UpdateUsernameModel):
+    if not is_valid_username(data.new_username):
+        raise HTTPException(status_code=400, detail="Неверный формат никнейма")
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -242,10 +257,6 @@ async def save_favorites(data: FavoriteModel):
             conn.commit()
     return {"status": "ok"}
 
-# ==========================================
-# НОВЫЙ БЛОК: СИСТЕМА ДРУЗЕЙ И ЧУЖИЕ ПРОФИЛИ
-# ==========================================
-
 @router.get("/user/{site_id}")
 async def get_user_profile(site_id: str):
     with get_db_connection() as conn:
@@ -263,17 +274,13 @@ async def get_user_profile(site_id: str):
 async def search_users(q: str, request: Request):
     sess = request.session.get("user")
     if not sess or not q.strip(): return []
-    
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT site_id, username, avatar_url, rank_tier 
-                FROM users 
-                WHERE username ILIKE %s AND site_id != %s 
-                LIMIT 10
+                FROM users WHERE username ILIKE %s AND site_id != %s LIMIT 10
             """, (f"%{q}%", sess["site_id"]))
             rows = cur.fetchall()
-            
             results = []
             for r in rows:
                 cur.execute("""
@@ -281,17 +288,12 @@ async def search_users(q: str, request: Request):
                     WHERE (user_id1 = %s AND user_id2 = %s) OR (user_id1 = %s AND user_id2 = %s)
                 """, (sess["site_id"], r[0], r[0], sess["site_id"]))
                 f_row = cur.fetchone()
-                
                 f_status = "none"
                 if f_row:
                     if f_row[0] == "accepted": f_status = "friends"
                     elif f_row[1] == sess["site_id"]: f_status = "sent"
                     else: f_status = "received"
-                        
-                results.append({
-                    "site_id": r[0], "username": r[1], 
-                    "avatar": r[2], "rank": r[3], "friend_status": f_status
-                })
+                results.append({"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "friend_status": f_status})
     return results
 
 @router.post("/friends/request")
@@ -303,9 +305,7 @@ async def send_friend_request(data: FriendActionModel, request: Request):
             cur.execute("SELECT status FROM friendships WHERE (user_id1 = %s AND user_id2 = %s) OR (user_id1 = %s AND user_id2 = %s)", 
                         (sess["site_id"], data.target_id, data.target_id, sess["site_id"]))
             if cur.fetchone(): return {"status": "already_exists"}
-            
-            cur.execute("INSERT INTO friendships (user_id1, user_id2, status) VALUES (%s, %s, 'pending')", 
-                        (sess["site_id"], data.target_id))
+            cur.execute("INSERT INTO friendships (user_id1, user_id2, status) VALUES (%s, %s, 'pending')", (sess["site_id"], data.target_id))
             conn.commit()
     return {"status": "ok"}
 
@@ -315,8 +315,7 @@ async def accept_friend_request(data: FriendActionModel, request: Request):
     if not sess: raise HTTPException(401)
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("UPDATE friendships SET status = 'accepted' WHERE user_id1 = %s AND user_id2 = %s", 
-                        (data.target_id, sess["site_id"]))
+            cur.execute("UPDATE friendships SET status = 'accepted' WHERE user_id1 = %s AND user_id2 = %s", (data.target_id, sess["site_id"]))
             conn.commit()
     return {"status": "ok"}
 
@@ -335,31 +334,23 @@ async def reject_friend_request(data: FriendActionModel, request: Request):
 async def get_friends_list(request: Request):
     sess = request.session.get("user")
     if not sess: return {"friends": [], "pending": []}
-    
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            # Получаем принятых друзей
             cur.execute("""
-                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier 
-                FROM friendships f
+                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier FROM friendships f
                 JOIN users u ON (u.site_id = f.user_id1 OR u.site_id = f.user_id2)
-                WHERE (f.user_id1 = %s OR f.user_id2 = %s) 
-                AND f.status = 'accepted' AND u.site_id != %s
+                WHERE (f.user_id1 = %s OR f.user_id2 = %s) AND f.status = 'accepted' AND u.site_id != %s
             """, (sess["site_id"], sess["site_id"], sess["site_id"]))
             friends = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3]} for r in cur.fetchall()]
             
-            # Получаем входящие заявки
             cur.execute("""
-                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier 
-                FROM friendships f
+                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier FROM friendships f
                 JOIN users u ON u.site_id = f.user_id1
                 WHERE f.user_id2 = %s AND f.status = 'pending'
             """, (sess["site_id"],))
             pending = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3]} for r in cur.fetchall()]
-            
     return {"friends": friends, "pending": pending}
 
-# --- ОБНОВЛЕННЫЙ ЭНДПОИНТ МАТЧЕЙ (ПОДДЕРЖИВАЕТ ЧУЖИЕ ПРОФИЛИ) ---
 @router.get("/recent-matches")
 async def get_recent_matches(request: Request, site_id: Optional[str] = None):
     target_id = site_id
@@ -397,7 +388,6 @@ async def get_recent_matches(request: Request, site_id: Optional[str] = None):
                 duration = m.get("duration", 0)
                 gpm = m.get("gold_per_min", 0)
                 net_worth = int(gpm * (duration / 60))
-                
                 is_radiant = m.get("player_slot", 0) < 128
                 is_win = (m.get("radiant_win") and is_radiant) or (not m.get("radiant_win") and not is_radiant)
                 
