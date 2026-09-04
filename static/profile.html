@@ -18,6 +18,7 @@
             </nav>
         </div>
         <div class="user-panel">
+            <!-- КЛИКАБЕЛЬНЫЙ НИКНЕЙМ В ШАПКЕ -->
             <span id="user-display-name" class="user-badge" onclick="window.location.href='/profile'" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--accent-yellow)'" onmouseout="this.style.color=''">...</span>
             <button class="btn-friends" onclick="toggleSidebar()"><i class="fas fa-user-friends"></i> ДРУЗЬЯ</button>
             <button class="btn-logout" onclick="logout()">Выйти</button>
@@ -173,7 +174,10 @@
         }
 
         function renderProfileData(user) {
-            document.getElementById('display-username').innerText = user.username;
+            // Если есть премиум, добавляем корону к никнейму
+            const premiumHtml = user.is_premium ? ' <i class="fas fa-crown premium-icon" title="Premium Пользователь"></i>' : '';
+            
+            document.getElementById('display-username').innerHTML = user.username + premiumHtml;
             document.getElementById('display-site-id').innerText = user.site_id;
             document.getElementById('display-score').innerText = user.invoker_score;
             document.getElementById('profile-avatar').src = user.avatar || "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png";
@@ -195,7 +199,10 @@
             const me = await meRes.json();
             if (!me.logged_in) { window.location.href = '/'; return; }
             mySiteId = me.site_id;
-            document.getElementById('user-display-name').innerText = me.username;
+            
+            // Корона в шапке
+            const myPremiumHtml = me.is_premium ? ' <i class="fas fa-crown premium-icon" title="Premium"></i>' : '';
+            document.getElementById('user-display-name').innerHTML = me.username + myPremiumHtml;
             
             const urlParams = new URLSearchParams(window.location.search);
             targetSiteId = urlParams.get('id');
@@ -241,16 +248,15 @@
                 display.classList.toggle('hidden');
                 icon.classList.toggle('hidden');
                 warning.style.display = 'none';
-                document.getElementById('new-username-input').value = display.innerText;
+                
+                // Чтобы в инпут не попал HTML-код короны, чистим его
+                const cleanName = display.innerText.trim();
+                document.getElementById('new-username-input').value = cleanName;
             }
         }
 
         async function saveNewName() {
-            // .trim() автоматически удалит случайные пробелы в начале и в конце,
-            // чтобы пользователю не выдавало ошибку из-за пустяка
             const newName = document.getElementById('new-username-input').value.trim();
-            
-            // Новое регулярное выражение (запрет двух пробелов подряд)
             const regex = /^(?!.*  )(?!.* $)(?!^ )[a-zA-Z0-9_ ]{3,15}$/;
             
             if (!regex.test(newName)) {
@@ -281,12 +287,16 @@
             } else if (type === 'friend') {
                 actionsHtml = `<button class="action-btn btn-reject" title="Удалить" onclick="event.stopPropagation(); actionFriend('reject', '${u.site_id}')"><i class="fas fa-user-minus"></i></button>`;
             }
+            
+            // КОРОНА ДЛЯ СПИСКА ДРУЗЕЙ
+            const premiumHtml = u.is_premium ? ' <i class="fas fa-crown premium-icon"></i>' : '';
+            
             return `
                 <div class="friend-item" onclick="window.location.href='/profile?id=${u.site_id}'">
                     <div class="friend-info">
                         <img src="${u.avatar || 'https://via.placeholder.com/40'}" class="friend-avatar">
                         <div class="friend-name-box">
-                            <span class="friend-name">${u.username}</span>
+                            <span class="friend-name">${u.username}${premiumHtml}</span>
                             <span class="friend-rank-text">${getRankText(u.rank)}</span>
                         </div>
                     </div>
