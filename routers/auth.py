@@ -85,11 +85,8 @@ async def logout(request: Request):
     request.session.clear()
     return {"status": "ok"}
 
-# --- STEAM LOGIN (ОБНОВЛЕНО ПОД ДОМЕН) ---
-
 @router.get("/login/steam")
 async def steam_login(request: Request):
-    # Принудительно используем HTTPS и твой новый домен
     return_to = f"https://{MY_DOMAIN}/api/auth/steam/callback"
     realm = f"https://{MY_DOMAIN}"
     
@@ -108,10 +105,8 @@ async def steam_callback(request: Request):
         account_id = to_account_id(steam_id)
 
         async with httpx.AsyncClient() as client:
-            # Данные из Steam
             res = await client.get(f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={STEAM_API_KEY}&steamids={steam_id}", timeout=15.0)
             s_data = res.json()["response"]["players"][0]
-            # Ранг из OpenDota
             od = await client.get(f"https://api.opendota.com/api/players/{account_id}", timeout=5.0)
             rank = od.json().get("rank_tier", 0) if od.status_code == 200 else 0
 
@@ -123,18 +118,15 @@ async def steam_callback(request: Request):
                 existing = cur.fetchone()
 
                 if current_session:
-                    # Привязка Steam к текущему аккаунту (если вошли по паролю)
                     sid = current_session["site_id"]
                     cur.execute("UPDATE users SET steam_id = %s, avatar_url = %s, rank_tier = %s WHERE site_id = %s", 
                                (steam_id, s_data["avatarfull"], rank, sid))
                     username = current_session["username"]
                 elif existing:
-                    # Обычный вход для старого юзера
                     sid, username = existing[0], existing[1]
                     cur.execute("UPDATE users SET avatar_url = %s, rank_tier = %s WHERE site_id = %s", 
                                (s_data["avatarfull"], rank, sid))
                 else:
-                    # Новый пользователь через Steam
                     sid = generate_site_id()
                     username = s_data["personaname"]
                     cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
@@ -159,7 +151,7 @@ async def get_me(request: Request):
             if not u: return {"logged_in": False}
             
             rank = u[3]
-            if rank == 0 and u[6]: # Обновление ранга "на лету"
+            if rank == 0 and u[6]:
                 try:
                     acc_id = to_account_id(u[6])
                     async with httpx.AsyncClient() as client:
@@ -240,3 +232,60 @@ async def save_favorites(data: FavoriteModel):
             cur.execute("INSERT INTO favorites (user_id, favorite_ids) VALUES (%s, %s) ON CONFLICT (user_id) DO UPDATE SET favorite_ids = EXCLUDED.favorite_ids", (data.user_id, data.favorite_ids))
             conn.commit()
     return {"status": "ok"}
+
+# --- НОВЫЙ ЭНДПОИНТ ДЛЯ ПОСЛЕДНИХ МАТЧЕЙ ---
+@router.get("/recent-matches")
+async def get_recent_matches(request: Request):
+    sess = request.session.get("user")
+    if not sess: return []
+    
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT steam_id FROM users WHERE site_id = %s", (sess["site_id"],))
+            u = cur.fetchone()
+            if not u or not u[0]: return []
+            steam_id = u[0]
+            
+    account_id = to_account_id(steam_id)
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            # Получаем героев для красивых картинок
+            heroes_res = await client.get("https://api.opendota.com/api/heroes", timeout=5.0)
+            heroes_dict = {h["id"]: h for h in heroes_res.json()} if heroes_res.status_code == 200 else {}
+            
+            # Получаем матчи
+            res = await client.get(f"https://api.opendota.com/api/players/{account_id}/recentMatches", timeout=10.0)
+            if res.status_code != 200: return []
+            data = res.json()[:10]
+            
+            matches = []
+            for m in data:
+                hero_data = heroes_dict.get(m.get("hero_id"))
+                hero_img = ""
+                if hero_data:
+                    img_name = hero_data["name"].replace("npc_dota_hero_", "")
+                    hero_img = f"https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/{img_name}.png"
+                
+                duration = m.get("duration", 0)
+                gpm = m.get("gold_per_min", 0)
+                # Нетворс = GPM * (Минуты)
+                net_worth = int(gpm * (duration / 60))
+                
+                # Логика победы (Radiant < 128, Dire >= 128)
+                is_radiant = m.get("player_slot", 0) < 128
+                is_win = (m.get("radiant_win") and is_radiant) or (not m.get("radiant_win") and not is_radiant)
+                
+                matches.append({
+                    "match_id": m.get("match_id"),
+                    "hero_img": hero_img,
+                    "kills": m.get("kills", 0),
+                    "deaths": m.get("deaths", 0),
+                    "assists": m.get("assists", 0),
+                    "net_worth": net_worth,
+                    "duration": duration,
+                    "is_win": is_win
+                })
+            return matches
+        except:
+            return []
