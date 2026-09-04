@@ -24,18 +24,14 @@
         </div>
     </header>
 
-    <!-- БОКОВОЕ МЕНЮ -->
     <div id="friends-sidebar" class="friends-sidebar">
         <div class="sidebar-header">
             <h3>Социальная сеть</h3>
             <button class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
         </div>
         <input type="text" id="friend-search-input" class="search-input" placeholder="Найти по нику..." oninput="handleSearch()">
-        
         <div id="sidebar-content">
-            <!-- Здесь будут результаты поиска или списки друзей -->
             <div id="search-results" style="display: none;"></div>
-            
             <div id="default-lists">
                 <div id="pending-list" style="display: none;"></div>
                 <div id="friends-list"></div>
@@ -49,12 +45,25 @@
 
             <img id="profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; border: 4px solid var(--accent-red); object-fit: cover;">
 
-            <div style="text-align: center;">
-                <h2 id="display-username" style="font-size: 2.5rem; font-weight: 900; display: inline-block;">...</h2>
-                <i class="fas fa-pencil-alt edit-icon owner-only" onclick="toggleEditName()"></i>
-                <div id="edit-name-form" class="hidden owner-only" style="margin-top: 10px;">
-                    <input type="text" id="new-username-input" style="background: var(--bg-input); border: 2px solid var(--border-color); color: white; padding: 15px 25px; border-radius: 12px;">
-                    <button class="btn-ok" onclick="saveNewName()">OK</button>
+            <div style="text-align: center; width: 100%;">
+                <h2 id="display-username" style="font-size: 2.5rem; font-weight: 900; display: inline-block; margin-bottom: 0;">...</h2>
+                <i id="edit-name-icon" class="fas fa-pencil-alt edit-icon owner-only" onclick="toggleEditName()"></i>
+                
+                <div id="edit-name-form" class="hidden owner-only" style="margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <div id="rename-warning" style="display: none; color: var(--accent-yellow); font-weight: 900; font-size: 1rem; text-transform: uppercase;">
+                        <i class="fas fa-exclamation-triangle"></i> Пожалуйста, смените никнейм для корректного отображения!
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                        <input type="text" id="new-username-input" placeholder="Введите новый ник..." maxlength="15" 
+                               title="Только английские буквы, цифры, подчеркивание и одиночные пробелы (3-15 символов)"
+                               style="background: var(--bg-input); border: 2px solid var(--border-color); color: white; padding: 15px 25px; border-radius: 12px; font-size: 1.2rem; font-weight: bold; width: 250px; text-align: center; outline: none;">
+                        <button class="btn-ok" onclick="saveNewName()">OK</button>
+                    </div>
+                    
+                    <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; margin-top: 5px;">
+                        *От 3 до 15 символов. Разрешены только английские буквы, цифры, " _ " и одиночные пробелы.
+                    </div>
                 </div>
             </div>
 
@@ -88,7 +97,6 @@
         </div>
     </main>
 
-    <!-- Модалка любимых героев -->
     <div id="fav-modal" class="modal-overlay hidden owner-only">
         <div class="modal-card">
             <h3>Ваши любимые герои</h3>
@@ -108,7 +116,6 @@
         let mySiteId = "";
         let targetSiteId = null;
         let searchTimeout = null;
-
         const rankNames = ["Unranked", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
 
         function getRankText(rankVal) {
@@ -162,9 +169,7 @@
                         </div>
                     `;
                 });
-            } catch (e) {
-                list.innerHTML = '<div style="text-align:center; color:var(--text-muted);">Ошибка загрузки.</div>';
-            }
+            } catch (e) { list.innerHTML = '<div style="text-align:center; color:var(--text-muted);">Ошибка загрузки.</div>'; }
         }
 
         function renderProfileData(user) {
@@ -186,69 +191,83 @@
         }
 
         async function initPage() {
-            // 1. Получаем данные владельца (сессия)
             const meRes = await fetch('/api/me');
             const me = await meRes.json();
             if (!me.logged_in) { window.location.href = '/'; return; }
             mySiteId = me.site_id;
-            
-            // Настраиваем шапку (Шапка всегда твоя)
             document.getElementById('user-display-name').innerText = me.username;
             
-            // 2. Проверяем, чей профиль мы смотрим
             const urlParams = new URLSearchParams(window.location.search);
             targetSiteId = urlParams.get('id');
 
             if (targetSiteId && targetSiteId !== mySiteId) {
-                // ЧУЖОЙ ПРОФИЛЬ (Read-Only)
                 document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'none');
                 document.getElementById('back-to-my-profile').style.display = 'block';
-                
                 try {
                     const targetRes = await fetch(`/api/user/${targetSiteId}`);
                     if (targetRes.ok) {
                         const targetUser = await targetRes.json();
                         renderProfileData(targetUser);
                         if (targetUser.steam_linked) loadRecentMatches(targetSiteId);
-                    } else {
-                        alert("Пользователь не найден");
-                        window.location.href = '/profile';
-                    }
+                    } else window.location.href = '/profile';
                 } catch(e) { window.location.href = '/profile'; }
             } else {
-                // СВОЙ ПРОФИЛЬ
                 renderProfileData(me);
                 if (me.steam_linked) {
                     document.getElementById('steam-link-btn').classList.add('hidden');
                     loadRecentMatches(null);
                 }
+                if (me.needs_rename) {
+                    toggleEditName(true);
+                }
             }
             loadFriendsList();
         }
 
-        function toggleEditName() {
-            document.getElementById('display-username').classList.toggle('hidden');
-            document.getElementById('edit-name-form').classList.toggle('hidden');
-            document.getElementById('new-username-input').value = document.getElementById('display-username').innerText;
+        function toggleEditName(forceOpen = false) {
+            const form = document.getElementById('edit-name-form');
+            const display = document.getElementById('display-username');
+            const icon = document.getElementById('edit-name-icon');
+            const warning = document.getElementById('rename-warning');
+            
+            if (forceOpen) {
+                form.classList.remove('hidden');
+                display.classList.add('hidden');
+                icon.classList.add('hidden');
+                warning.style.display = 'block';
+                document.getElementById('new-username-input').value = "";
+            } else {
+                form.classList.toggle('hidden');
+                display.classList.toggle('hidden');
+                icon.classList.toggle('hidden');
+                warning.style.display = 'none';
+                document.getElementById('new-username-input').value = display.innerText;
+            }
         }
 
         async function saveNewName() {
-            const newName = document.getElementById('new-username-input').value;
+            // .trim() автоматически удалит случайные пробелы в начале и в конце,
+            // чтобы пользователю не выдавало ошибку из-за пустяка
+            const newName = document.getElementById('new-username-input').value.trim();
+            
+            // Новое регулярное выражение (запрет двух пробелов подряд)
+            const regex = /^(?!.*  )(?!.* $)(?!^ )[a-zA-Z0-9_ ]{3,15}$/;
+            
+            if (!regex.test(newName)) {
+                alert("Ошибка: Никнейм должен быть от 3 до 15 символов. Разрешены только английские буквы, цифры, '_' и одиночные пробелы.");
+                return;
+            }
+
             const res = await fetch('/api/update-username', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ site_id: mySiteId, new_username: newName })
             });
+            
             if (res.ok) window.location.href = '/profile';
-            else alert("Никнейм занят!");
+            else alert("Такой никнейм уже занят!");
         }
 
-        // ==========================================
-        // ЛОГИКА БОКОВОГО МЕНЮ И ДРУЗЕЙ
-        // ==========================================
-        function toggleSidebar() {
-            document.getElementById('friends-sidebar').classList.toggle('open');
-            loadFriendsList();
-        }
+        function toggleSidebar() { document.getElementById('friends-sidebar').classList.toggle('open'); loadFriendsList(); }
 
         function buildUserCard(u, type) {
             let actionsHtml = '';
@@ -258,14 +277,10 @@
                 else if (u.friend_status === 'received') actionsHtml = `<button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('accept', '${u.site_id}')"><i class="fas fa-check"></i></button>`;
                 else actionsHtml = `<button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('request', '${u.site_id}')"><i class="fas fa-user-plus"></i></button>`;
             } else if (type === 'pending') {
-                actionsHtml = `
-                    <button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('accept', '${u.site_id}')"><i class="fas fa-check"></i></button>
-                    <button class="action-btn btn-reject" onclick="event.stopPropagation(); actionFriend('reject', '${u.site_id}')"><i class="fas fa-times"></i></button>
-                `;
+                actionsHtml = `<button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('accept', '${u.site_id}')"><i class="fas fa-check"></i></button><button class="action-btn btn-reject" onclick="event.stopPropagation(); actionFriend('reject', '${u.site_id}')"><i class="fas fa-times"></i></button>`;
             } else if (type === 'friend') {
                 actionsHtml = `<button class="action-btn btn-reject" title="Удалить" onclick="event.stopPropagation(); actionFriend('reject', '${u.site_id}')"><i class="fas fa-user-minus"></i></button>`;
             }
-
             return `
                 <div class="friend-item" onclick="window.location.href='/profile?id=${u.site_id}'">
                     <div class="friend-info">
@@ -276,28 +291,21 @@
                         </div>
                     </div>
                     <div class="friend-actions">${actionsHtml}</div>
-                </div>
-            `;
+                </div>`;
         }
 
         async function loadFriendsList() {
             const res = await fetch('/api/friends/list');
             const data = await res.json();
-            
             const pendingDiv = document.getElementById('pending-list');
             if (data.pending && data.pending.length > 0) {
                 pendingDiv.style.display = 'block';
-                pendingDiv.innerHTML = `<div class="friend-section-title">Входящие заявки</div>` + 
-                                       data.pending.map(u => buildUserCard(u, 'pending')).join('');
-            } else { pendingDiv.style.display = 'none'; }
+                pendingDiv.innerHTML = `<div class="friend-section-title">Входящие заявки</div>` + data.pending.map(u => buildUserCard(u, 'pending')).join('');
+            } else pendingDiv.style.display = 'none';
 
             const friendsDiv = document.getElementById('friends-list');
-            if (data.friends && data.friends.length > 0) {
-                friendsDiv.innerHTML = `<div class="friend-section-title">Ваши друзья</div>` + 
-                                       data.friends.map(u => buildUserCard(u, 'friend')).join('');
-            } else {
-                friendsDiv.innerHTML = `<div class="friend-section-title">Ваши друзья</div><div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Список пуст. Найдите друзей через поиск!</div>`;
-            }
+            if (data.friends && data.friends.length > 0) friendsDiv.innerHTML = `<div class="friend-section-title">Ваши друзья</div>` + data.friends.map(u => buildUserCard(u, 'friend')).join('');
+            else friendsDiv.innerHTML = `<div class="friend-section-title">Ваши друзья</div><div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Список пуст. Найдите друзей через поиск!</div>`;
         }
 
         function handleSearch() {
@@ -305,34 +313,18 @@
             const q = document.getElementById('friend-search-input').value.trim();
             const resDiv = document.getElementById('search-results');
             const defDiv = document.getElementById('default-lists');
-
-            if (q.length < 2) {
-                resDiv.style.display = 'none';
-                defDiv.style.display = 'block';
-                return;
-            }
-
+            if (q.length < 2) { resDiv.style.display = 'none'; defDiv.style.display = 'block'; return; }
             searchTimeout = setTimeout(async () => {
                 const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
                 const users = await res.json();
-                
-                resDiv.style.display = 'block';
-                defDiv.style.display = 'none';
-                
-                if (users.length === 0) {
-                    resDiv.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding: 20px;">Ничего не найдено</div>`;
-                } else {
-                    resDiv.innerHTML = `<div class="friend-section-title">Результаты поиска</div>` + 
-                                       users.map(u => buildUserCard(u, 'search')).join('');
-                }
+                resDiv.style.display = 'block'; defDiv.style.display = 'none';
+                if (users.length === 0) resDiv.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding: 20px;">Ничего не найдено</div>`;
+                else resDiv.innerHTML = `<div class="friend-section-title">Результаты поиска</div>` + users.map(u => buildUserCard(u, 'search')).join('');
             }, 300);
         }
 
         async function actionFriend(action, id) {
-            await fetch(`/api/friends/${action}`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ target_id: id })
-            });
+            await fetch(`/api/friends/${action}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target_id: id }) });
             const q = document.getElementById('friend-search-input').value.trim();
             if (q.length >= 2) handleSearch(); else loadFriendsList();
         }
