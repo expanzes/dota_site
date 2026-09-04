@@ -24,7 +24,7 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(draft.router, prefix="/api")
 
 # ВЕРСИЯ КЭША ОБНОВЛЕНА ДО 1.0.2
-STATIC_VERSION = "1.0.2"
+STATIC_VERSION = "1.0.3"
 
 def serve_page(file_name: str, module_name: str = None):
     file_path = f"static/{file_name}"
