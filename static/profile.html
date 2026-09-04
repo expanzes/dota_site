@@ -340,6 +340,16 @@
         }
 
         window.onload = initPage;
+        // Закрытие бокового меню при клике вне его области
+        document.addEventListener('click', (event) => {
+            const sidebar = document.getElementById('friends-sidebar');
+            const btnFriends = document.querySelector('.btn-friends');
+            
+            // Если сайдбар открыт, а клик был НЕ по сайдбару и НЕ по кнопке "Друзья"
+            if (sidebar.classList.contains('open') && !sidebar.contains(event.target) && !btnFriends.contains(event.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
     </script>
 </body>
 </html>
