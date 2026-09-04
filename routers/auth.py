@@ -27,7 +27,6 @@ def to_account_id(steam64):
     except: return steam64
 
 def is_valid_username(name: str) -> bool:
-    """Проверка: 3-15 символов, англ. буквы, цифры, подчеркивание, одиночные пробелы"""
     return bool(re.match(r"^(?!.*  )(?!.* $)(?!^ )[a-zA-Z0-9_ ]{3,15}$", name))
 
 def ensure_tables_exist():
@@ -261,13 +260,14 @@ async def save_favorites(data: FavoriteModel):
 async def get_user_profile(site_id: str):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, steam_id FROM users WHERE site_id = %s", (site_id,))
+            # ДОБАВЛЕН is_premium
+            cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, steam_id, is_premium FROM users WHERE site_id = %s", (site_id,))
             u = cur.fetchone()
             if not u: raise HTTPException(404, "User not found")
             return {
                 "site_id": u[0], "username": u[1], 
                 "avatar": u[2], "rank": u[3], "invoker_score": u[4], 
-                "steam_linked": bool(u[5])
+                "steam_linked": bool(u[5]), "is_premium": bool(u[6])
             }
 
 @router.get("/users/search")
@@ -277,7 +277,7 @@ async def search_users(q: str, request: Request):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT site_id, username, avatar_url, rank_tier 
+                SELECT site_id, username, avatar_url, rank_tier, is_premium 
                 FROM users WHERE username ILIKE %s AND site_id != %s LIMIT 10
             """, (f"%{q}%", sess["site_id"]))
             rows = cur.fetchall()
@@ -293,7 +293,7 @@ async def search_users(q: str, request: Request):
                     if f_row[0] == "accepted": f_status = "friends"
                     elif f_row[1] == sess["site_id"]: f_status = "sent"
                     else: f_status = "received"
-                results.append({"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "friend_status": f_status})
+                results.append({"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "is_premium": bool(r[4]), "friend_status": f_status})
     return results
 
 @router.post("/friends/request")
@@ -337,18 +337,18 @@ async def get_friends_list(request: Request):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier FROM friendships f
+                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier, u.is_premium FROM friendships f
                 JOIN users u ON (u.site_id = f.user_id1 OR u.site_id = f.user_id2)
                 WHERE (f.user_id1 = %s OR f.user_id2 = %s) AND f.status = 'accepted' AND u.site_id != %s
             """, (sess["site_id"], sess["site_id"], sess["site_id"]))
-            friends = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3]} for r in cur.fetchall()]
+            friends = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "is_premium": bool(r[4])} for r in cur.fetchall()]
             
             cur.execute("""
-                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier FROM friendships f
+                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier, u.is_premium FROM friendships f
                 JOIN users u ON u.site_id = f.user_id1
                 WHERE f.user_id2 = %s AND f.status = 'pending'
             """, (sess["site_id"],))
-            pending = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3]} for r in cur.fetchall()]
+            pending = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "is_premium": bool(r[4])} for r in cur.fetchall()]
     return {"friends": friends, "pending": pending}
 
 @router.get("/recent-matches")
