@@ -8,14 +8,12 @@ router = APIRouter()
 DATABASE_URL = os.getenv("DATABASE_URL")
 STEAM_API_KEY = os.getenv("STEAM_API_KEY")
 
-# ТВОЙ НОВЫЙ ДОМЕН
 MY_DOMAIN = "dotahelper.ru"
 
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL)
 
 def generate_site_id():
-    """Генерирует уникальный 10-значный ID"""
     return ''.join([str(random.randint(0, 9)) for _ in range(10)])
 
 def hash_password(pw: str): 
@@ -25,7 +23,6 @@ def verify_password(pw: str, h: str):
     return bcrypt.checkpw(pw.encode(), h.encode())
 
 def to_account_id(steam64):
-    """Конвертация SteamID64 в Account ID для OpenDota"""
     try: return int(steam64) - 76561197960265728
     except: return steam64
 
@@ -49,6 +46,15 @@ def ensure_tables_exist():
                     CREATE TABLE IF NOT EXISTS favorites (
                         user_id VARCHAR(10) PRIMARY KEY REFERENCES users(site_id),
                         favorite_ids INTEGER[]
+                    );
+                """)
+                # НОВАЯ ТАБЛИЦА: ДРУЗЬЯ
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS friendships (
+                        user_id1 VARCHAR(10) REFERENCES users(site_id),
+                        user_id2 VARCHAR(10) REFERENCES users(site_id),
+                        status VARCHAR(20) DEFAULT 'pending',
+                        PRIMARY KEY (user_id1, user_id2)
                     );
                 """)
                 conn.commit()
@@ -79,6 +85,9 @@ class UpdateUsernameModel(BaseModel):
 class ScoreModel(BaseModel):
     username: str
     score: int
+
+class FriendActionModel(BaseModel):
+    target_id: str
 
 @router.post("/logout")
 async def logout(request: Request):
@@ -233,15 +242,135 @@ async def save_favorites(data: FavoriteModel):
             conn.commit()
     return {"status": "ok"}
 
-# --- НОВЫЙ ЭНДПОИНТ ДЛЯ ПОСЛЕДНИХ МАТЧЕЙ ---
-@router.get("/recent-matches")
-async def get_recent_matches(request: Request):
+# ==========================================
+# НОВЫЙ БЛОК: СИСТЕМА ДРУЗЕЙ И ЧУЖИЕ ПРОФИЛИ
+# ==========================================
+
+@router.get("/user/{site_id}")
+async def get_user_profile(site_id: str):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, steam_id FROM users WHERE site_id = %s", (site_id,))
+            u = cur.fetchone()
+            if not u: raise HTTPException(404, "User not found")
+            return {
+                "site_id": u[0], "username": u[1], 
+                "avatar": u[2], "rank": u[3], "invoker_score": u[4], 
+                "steam_linked": bool(u[5])
+            }
+
+@router.get("/users/search")
+async def search_users(q: str, request: Request):
     sess = request.session.get("user")
-    if not sess: return []
+    if not sess or not q.strip(): return []
     
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT steam_id FROM users WHERE site_id = %s", (sess["site_id"],))
+            cur.execute("""
+                SELECT site_id, username, avatar_url, rank_tier 
+                FROM users 
+                WHERE username ILIKE %s AND site_id != %s 
+                LIMIT 10
+            """, (f"%{q}%", sess["site_id"]))
+            rows = cur.fetchall()
+            
+            results = []
+            for r in rows:
+                cur.execute("""
+                    SELECT status, user_id1 FROM friendships 
+                    WHERE (user_id1 = %s AND user_id2 = %s) OR (user_id1 = %s AND user_id2 = %s)
+                """, (sess["site_id"], r[0], r[0], sess["site_id"]))
+                f_row = cur.fetchone()
+                
+                f_status = "none"
+                if f_row:
+                    if f_row[0] == "accepted": f_status = "friends"
+                    elif f_row[1] == sess["site_id"]: f_status = "sent"
+                    else: f_status = "received"
+                        
+                results.append({
+                    "site_id": r[0], "username": r[1], 
+                    "avatar": r[2], "rank": r[3], "friend_status": f_status
+                })
+    return results
+
+@router.post("/friends/request")
+async def send_friend_request(data: FriendActionModel, request: Request):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT status FROM friendships WHERE (user_id1 = %s AND user_id2 = %s) OR (user_id1 = %s AND user_id2 = %s)", 
+                        (sess["site_id"], data.target_id, data.target_id, sess["site_id"]))
+            if cur.fetchone(): return {"status": "already_exists"}
+            
+            cur.execute("INSERT INTO friendships (user_id1, user_id2, status) VALUES (%s, %s, 'pending')", 
+                        (sess["site_id"], data.target_id))
+            conn.commit()
+    return {"status": "ok"}
+
+@router.post("/friends/accept")
+async def accept_friend_request(data: FriendActionModel, request: Request):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE friendships SET status = 'accepted' WHERE user_id1 = %s AND user_id2 = %s", 
+                        (data.target_id, sess["site_id"]))
+            conn.commit()
+    return {"status": "ok"}
+
+@router.post("/friends/reject")
+async def reject_friend_request(data: FriendActionModel, request: Request):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM friendships WHERE (user_id1 = %s AND user_id2 = %s) OR (user_id1 = %s AND user_id2 = %s)", 
+                        (sess["site_id"], data.target_id, data.target_id, sess["site_id"]))
+            conn.commit()
+    return {"status": "ok"}
+
+@router.get("/friends/list")
+async def get_friends_list(request: Request):
+    sess = request.session.get("user")
+    if not sess: return {"friends": [], "pending": []}
+    
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            # Получаем принятых друзей
+            cur.execute("""
+                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier 
+                FROM friendships f
+                JOIN users u ON (u.site_id = f.user_id1 OR u.site_id = f.user_id2)
+                WHERE (f.user_id1 = %s OR f.user_id2 = %s) 
+                AND f.status = 'accepted' AND u.site_id != %s
+            """, (sess["site_id"], sess["site_id"], sess["site_id"]))
+            friends = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3]} for r in cur.fetchall()]
+            
+            # Получаем входящие заявки
+            cur.execute("""
+                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier 
+                FROM friendships f
+                JOIN users u ON u.site_id = f.user_id1
+                WHERE f.user_id2 = %s AND f.status = 'pending'
+            """, (sess["site_id"],))
+            pending = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3]} for r in cur.fetchall()]
+            
+    return {"friends": friends, "pending": pending}
+
+# --- ОБНОВЛЕННЫЙ ЭНДПОИНТ МАТЧЕЙ (ПОДДЕРЖИВАЕТ ЧУЖИЕ ПРОФИЛИ) ---
+@router.get("/recent-matches")
+async def get_recent_matches(request: Request, site_id: Optional[str] = None):
+    target_id = site_id
+    if not target_id:
+        sess = request.session.get("user")
+        if not sess: return []
+        target_id = sess["site_id"]
+        
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT steam_id FROM users WHERE site_id = %s", (target_id,))
             u = cur.fetchone()
             if not u or not u[0]: return []
             steam_id = u[0]
@@ -250,11 +379,9 @@ async def get_recent_matches(request: Request):
     
     async with httpx.AsyncClient() as client:
         try:
-            # Получаем героев для красивых картинок
             heroes_res = await client.get("https://api.opendota.com/api/heroes", timeout=5.0)
             heroes_dict = {h["id"]: h for h in heroes_res.json()} if heroes_res.status_code == 200 else {}
             
-            # Получаем матчи
             res = await client.get(f"https://api.opendota.com/api/players/{account_id}/recentMatches", timeout=10.0)
             if res.status_code != 200: return []
             data = res.json()[:10]
@@ -269,10 +396,8 @@ async def get_recent_matches(request: Request):
                 
                 duration = m.get("duration", 0)
                 gpm = m.get("gold_per_min", 0)
-                # Нетворс = GPM * (Минуты)
                 net_worth = int(gpm * (duration / 60))
                 
-                # Логика победы (Radiant < 128, Dire >= 128)
                 is_radiant = m.get("player_slot", 0) < 128
                 is_win = (m.get("radiant_win") and is_radiant) or (not m.get("radiant_win") and not is_radiant)
                 
