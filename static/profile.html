@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой Профиль — Dota 2 Helper</title>
+    <title>Профиль — Dota 2 Helper</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -19,56 +19,77 @@
         </div>
         <div class="user-panel">
             <span id="user-display-name" class="user-badge">...</span>
+            <button class="btn-friends" onclick="toggleSidebar()"><i class="fas fa-user-friends"></i> ДРУЗЬЯ</button>
             <button class="btn-logout" onclick="logout()">Выйти</button>
         </div>
     </header>
 
+    <!-- БОКОВОЕ МЕНЮ -->
+    <div id="friends-sidebar" class="friends-sidebar">
+        <div class="sidebar-header">
+            <h3>Социальная сеть</h3>
+            <button class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
+        </div>
+        <input type="text" id="friend-search-input" class="search-input" placeholder="Найти по нику..." oninput="handleSearch()">
+        
+        <div id="sidebar-content">
+            <!-- Здесь будут результаты поиска или списки друзей -->
+            <div id="search-results" style="display: none;"></div>
+            
+            <div id="default-lists">
+                <div id="pending-list" style="display: none;"></div>
+                <div id="friends-list"></div>
+            </div>
+        </div>
+    </div>
+
     <main>
         <div class="profile-container">
-            <img id="profile-avatar" src="" style="width:110px; height:110px; border-radius:50%; border: 4px solid var(--accent-red); object-fit: cover;">
+            <button id="back-to-my-profile" onclick="window.location.href='/profile'"><i class="fas fa-arrow-left"></i> Вернуться в свой профиль</button>
+
+            <img id="profile-avatar" src="" style="width:120px; height:120px; border-radius:50%; border: 4px solid var(--accent-red); object-fit: cover;">
 
             <div style="text-align: center;">
-                <h2 id="display-username" style="font-size: 2.2rem; font-weight: 900; display: inline-block;">...</h2>
-                <i class="fas fa-pencil-alt" onclick="toggleEditName()" style="cursor: pointer; color: var(--text-muted); margin-left: 10px;"></i>
-                <div id="edit-name-form" class="hidden" style="margin-top: 10px;">
-                    <input type="text" id="new-username-input" style="background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 8px; border-radius: 5px;">
-                    <button class="btn-primary" onclick="saveNewName()" style="padding: 8px 15px; min-width: auto;">OK</button>
+                <h2 id="display-username" style="font-size: 2.5rem; font-weight: 900; display: inline-block;">...</h2>
+                <i class="fas fa-pencil-alt edit-icon owner-only" onclick="toggleEditName()"></i>
+                <div id="edit-name-form" class="hidden owner-only" style="margin-top: 10px;">
+                    <input type="text" id="new-username-input" style="background: var(--bg-input); border: 2px solid var(--border-color); color: white; padding: 15px 25px; border-radius: 12px;">
+                    <button class="btn-ok" onclick="saveNewName()">OK</button>
                 </div>
             </div>
 
-            <div style="background: var(--bg-input); padding: 5px 15px; border-radius: 20px; font-family: monospace; font-size: 0.8rem; border: 1px solid var(--border-color);">
+            <div class="site-id-badge">
                 ID: <span id="display-site-id">0000000000</span>
             </div>
 
             <div class="profile-info-grid">
                 <div class="info-item">
                     <span class="info-label">РАНГ</span>
-                    <img id="rank-medal" src="" style="width: 55px; height: 55px; display: none;">
+                    <img id="rank-medal" src="" style="width: 75px; height: 75px; display: none;">
                     <span id="display-rank" class="info-value">...</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">РЕКОРД INVOKER</span>
-                    <div style="height: 55px; display: flex; align-items: center;">
+                    <div style="height: 75px; display: flex; align-items: center;">
                         <span id="display-score" class="info-value">0</span>
                     </div>
                 </div>
             </div>
 
-            <!-- НОВЫЙ БЛОК ПОСЛЕДНИХ МАТЧЕЙ -->
             <div id="recent-matches-container" style="width: 100%; margin-top: 10px; display: none;">
                 <h3 style="text-align: left; margin-bottom: 15px; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Последние игры</h3>
-                <div id="matches-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                <div id="matches-list"></div>
             </div>
 
-            <button class="btn-yellow" onclick="openFavModal()">★ ВЫБРАТЬ ЛЮБИМЫХ ГЕРОЕВ</button>
-            
-            <button id="steam-link-btn" class="btn-secondary" onclick="window.location.href='/api/login/steam'" style="width: 100%;">
+            <button class="btn-yellow owner-only" onclick="openFavModal()">★ ВЫБРАТЬ ЛЮБИМЫХ ГЕРОЕВ</button>
+            <button id="steam-link-btn" class="btn-secondary owner-only" onclick="window.location.href='/api/login/steam'" style="width: 100%;">
                 <i class="fab fa-steam"></i> ПРИВЯЗАТЬ STEAM
             </button>
         </div>
     </main>
 
-    <div id="fav-modal" class="modal-overlay hidden">
+    <!-- Модалка любимых героев -->
+    <div id="fav-modal" class="modal-overlay hidden owner-only">
         <div class="modal-card">
             <h3>Ваши любимые герои</h3>
             <input type="text" id="fav-search-input" placeholder="Поиск героя..." oninput="filterFavHeroes()" 
@@ -84,20 +105,37 @@
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/favorites.js"></script>
     <script>
-        let userSiteId = "";
+        let mySiteId = "";
+        let targetSiteId = null;
+        let searchTimeout = null;
 
-        async function loadRecentMatches() {
+        const rankNames = ["Unranked", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
+
+        function getRankText(rankVal) {
+            if (!rankVal || rankVal === 0) return "Hidden";
+            const medalIndex = Math.floor(rankVal / 10);
+            const stars = rankVal % 10;
+            return medalIndex === 8 ? "Immortal" : `${rankNames[medalIndex]} [${stars}]`;
+        }
+        
+        function getRankImg(rankVal) {
+            if (!rankVal || rankVal === 0) return "";
+            return `https://www.opendota.com/assets/images/dota2/rank_icons/rank_icon_${Math.floor(rankVal / 10)}.png`;
+        }
+
+        async function loadRecentMatches(targetId) {
             const container = document.getElementById('recent-matches-container');
             const list = document.getElementById('matches-list');
             list.innerHTML = '<div style="text-align:center; padding: 20px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Загрузка матчей...</div>';
             container.style.display = 'block';
 
             try {
-                const res = await fetch('/api/recent-matches');
+                const url = targetId ? `/api/recent-matches?site_id=${targetId}` : '/api/recent-matches';
+                const res = await fetch(url);
                 const matches = await res.json();
 
                 if (!matches || matches.length === 0) {
-                    list.innerHTML = '<div style="text-align:center; padding: 10px; color:var(--text-muted);">Игры не найдены. Сыграйте матч!</div>';
+                    list.innerHTML = '<div style="text-align:center; padding: 10px; color:var(--text-muted);">Игры не найдены.</div>';
                     return;
                 }
 
@@ -110,70 +148,196 @@
                     const durStr = `${mins}:${secs.toString().padStart(2, '0')}`;
                     const netStr = (m.net_worth / 1000).toFixed(1) + 'k';
 
-                    const row = document.createElement('div');
-                    row.className = 'match-row';
-                    row.innerHTML = `
-                        <div class="match-left">
-                            <span class="match-result ${resClass}">${resText}</span>
-                            <img src="${m.hero_img || 'https://via.placeholder.com/50x30'}" class="match-hero-img">
-                        </div>
-                        <div class="match-center">${m.kills} / ${m.deaths} / ${m.assists}</div>
-                        <div class="match-right">
-                            <span class="match-networth">${netStr} <i class="fas fa-coins" style="font-size:0.75rem;"></i></span>
-                            <span>${durStr}</span>
+                    list.innerHTML += `
+                        <div class="match-row">
+                            <div class="match-left">
+                                <span class="match-result ${resClass}">${resText}</span>
+                                <img src="${m.hero_img || 'https://via.placeholder.com/70x40'}" class="match-hero-img">
+                            </div>
+                            <div class="match-center">${m.kills} / ${m.deaths} / ${m.assists}</div>
+                            <div class="match-right">
+                                <span class="match-networth">${netStr} <i class="fas fa-coins" style="font-size:0.8rem;"></i></span>
+                                <span><i class="far fa-clock"></i> ${durStr}</span>
+                            </div>
                         </div>
                     `;
-                    list.appendChild(row);
                 });
             } catch (e) {
-                list.innerHTML = '<div style="text-align:center; color:var(--text-muted);">Ошибка загрузки данных из OpenDota.</div>';
+                list.innerHTML = '<div style="text-align:center; color:var(--text-muted);">Ошибка загрузки.</div>';
             }
         }
 
-        async function loadProfile() {
-            const res = await fetch('/api/me');
-            const user = await res.json();
-            if (!user.logged_in) { window.location.href = '/'; return; }
-            userSiteId = user.site_id;
+        function renderProfileData(user) {
             document.getElementById('display-username').innerText = user.username;
-            document.getElementById('user-display-name').innerText = user.username;
             document.getElementById('display-site-id').innerText = user.site_id;
             document.getElementById('display-score').innerText = user.invoker_score;
             document.getElementById('profile-avatar').src = user.avatar || "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png";
             
-            if (user.steam_linked) {
-                document.getElementById('steam-link-btn').classList.add('hidden');
-                loadRecentMatches(); // ВЫЗОВ НОВОЙ ФУНКЦИИ ПРИ ПРИВЯЗАННОМ STEAM
-            }
-            
-            const rankNames = ["Unranked", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
             const medalImg = document.getElementById('rank-medal');
             const rankVal = document.getElementById('display-rank');
             if (user.rank > 0) {
-                const medalIndex = Math.floor(user.rank / 10);
-                const stars = user.rank % 10;
-                medalImg.src = `https://www.opendota.com/assets/images/dota2/rank_icons/rank_icon_${medalIndex}.png`;
+                medalImg.src = getRankImg(user.rank);
                 medalImg.style.display = 'block';
-                rankVal.innerText = medalIndex === 8 ? "Immortal" : `${rankNames[medalIndex]} [${stars}]`;
+                rankVal.innerText = getRankText(user.rank);
             } else {
-                rankVal.innerText = user.steam_linked ? "Hidden" : "Link Steam";
+                medalImg.style.display = 'none';
+                rankVal.innerText = "Hidden";
             }
         }
+
+        async function initPage() {
+            // 1. Получаем данные владельца (сессия)
+            const meRes = await fetch('/api/me');
+            const me = await meRes.json();
+            if (!me.logged_in) { window.location.href = '/'; return; }
+            mySiteId = me.site_id;
+            
+            // Настраиваем шапку (Шапка всегда твоя)
+            document.getElementById('user-display-name').innerText = me.username;
+            
+            // 2. Проверяем, чей профиль мы смотрим
+            const urlParams = new URLSearchParams(window.location.search);
+            targetSiteId = urlParams.get('id');
+
+            if (targetSiteId && targetSiteId !== mySiteId) {
+                // ЧУЖОЙ ПРОФИЛЬ (Read-Only)
+                document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'none');
+                document.getElementById('back-to-my-profile').style.display = 'block';
+                
+                try {
+                    const targetRes = await fetch(`/api/user/${targetSiteId}`);
+                    if (targetRes.ok) {
+                        const targetUser = await targetRes.json();
+                        renderProfileData(targetUser);
+                        if (targetUser.steam_linked) loadRecentMatches(targetSiteId);
+                    } else {
+                        alert("Пользователь не найден");
+                        window.location.href = '/profile';
+                    }
+                } catch(e) { window.location.href = '/profile'; }
+            } else {
+                // СВОЙ ПРОФИЛЬ
+                renderProfileData(me);
+                if (me.steam_linked) {
+                    document.getElementById('steam-link-btn').classList.add('hidden');
+                    loadRecentMatches(null);
+                }
+            }
+            loadFriendsList();
+        }
+
         function toggleEditName() {
             document.getElementById('display-username').classList.toggle('hidden');
             document.getElementById('edit-name-form').classList.toggle('hidden');
             document.getElementById('new-username-input').value = document.getElementById('display-username').innerText;
         }
+
         async function saveNewName() {
             const newName = document.getElementById('new-username-input').value;
             const res = await fetch('/api/update-username', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ site_id: userSiteId, new_username: newName })
+                body: JSON.stringify({ site_id: mySiteId, new_username: newName })
             });
-            if (res.ok) location.reload();
+            if (res.ok) window.location.href = '/profile';
             else alert("Никнейм занят!");
         }
-        window.onload = loadProfile;
+
+        // ==========================================
+        // ЛОГИКА БОКОВОГО МЕНЮ И ДРУЗЕЙ
+        // ==========================================
+        function toggleSidebar() {
+            document.getElementById('friends-sidebar').classList.toggle('open');
+            loadFriendsList();
+        }
+
+        function buildUserCard(u, type) {
+            let actionsHtml = '';
+            if (type === 'search') {
+                if (u.friend_status === 'friends') actionsHtml = `<span class="status-text">В друзьях</span>`;
+                else if (u.friend_status === 'sent') actionsHtml = `<span class="status-text">Заявка отправлена</span>`;
+                else if (u.friend_status === 'received') actionsHtml = `<button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('accept', '${u.site_id}')"><i class="fas fa-check"></i></button>`;
+                else actionsHtml = `<button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('request', '${u.site_id}')"><i class="fas fa-user-plus"></i></button>`;
+            } else if (type === 'pending') {
+                actionsHtml = `
+                    <button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('accept', '${u.site_id}')"><i class="fas fa-check"></i></button>
+                    <button class="action-btn btn-reject" onclick="event.stopPropagation(); actionFriend('reject', '${u.site_id}')"><i class="fas fa-times"></i></button>
+                `;
+            } else if (type === 'friend') {
+                actionsHtml = `<button class="action-btn btn-reject" title="Удалить" onclick="event.stopPropagation(); actionFriend('reject', '${u.site_id}')"><i class="fas fa-user-minus"></i></button>`;
+            }
+
+            return `
+                <div class="friend-item" onclick="window.location.href='/profile?id=${u.site_id}'">
+                    <div class="friend-info">
+                        <img src="${u.avatar || 'https://via.placeholder.com/40'}" class="friend-avatar">
+                        <div class="friend-name-box">
+                            <span class="friend-name">${u.username}</span>
+                            <span class="friend-rank-text">${getRankText(u.rank)}</span>
+                        </div>
+                    </div>
+                    <div class="friend-actions">${actionsHtml}</div>
+                </div>
+            `;
+        }
+
+        async function loadFriendsList() {
+            const res = await fetch('/api/friends/list');
+            const data = await res.json();
+            
+            const pendingDiv = document.getElementById('pending-list');
+            if (data.pending && data.pending.length > 0) {
+                pendingDiv.style.display = 'block';
+                pendingDiv.innerHTML = `<div class="friend-section-title">Входящие заявки</div>` + 
+                                       data.pending.map(u => buildUserCard(u, 'pending')).join('');
+            } else { pendingDiv.style.display = 'none'; }
+
+            const friendsDiv = document.getElementById('friends-list');
+            if (data.friends && data.friends.length > 0) {
+                friendsDiv.innerHTML = `<div class="friend-section-title">Ваши друзья</div>` + 
+                                       data.friends.map(u => buildUserCard(u, 'friend')).join('');
+            } else {
+                friendsDiv.innerHTML = `<div class="friend-section-title">Ваши друзья</div><div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Список пуст. Найдите друзей через поиск!</div>`;
+            }
+        }
+
+        function handleSearch() {
+            clearTimeout(searchTimeout);
+            const q = document.getElementById('friend-search-input').value.trim();
+            const resDiv = document.getElementById('search-results');
+            const defDiv = document.getElementById('default-lists');
+
+            if (q.length < 2) {
+                resDiv.style.display = 'none';
+                defDiv.style.display = 'block';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
+                const users = await res.json();
+                
+                resDiv.style.display = 'block';
+                defDiv.style.display = 'none';
+                
+                if (users.length === 0) {
+                    resDiv.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding: 20px;">Ничего не найдено</div>`;
+                } else {
+                    resDiv.innerHTML = `<div class="friend-section-title">Результаты поиска</div>` + 
+                                       users.map(u => buildUserCard(u, 'search')).join('');
+                }
+            }, 300);
+        }
+
+        async function actionFriend(action, id) {
+            await fetch(`/api/friends/${action}`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ target_id: id })
+            });
+            const q = document.getElementById('friend-search-input').value.trim();
+            if (q.length >= 2) handleSearch(); else loadFriendsList();
+        }
+
+        window.onload = initPage;
     </script>
 </body>
 </html>
