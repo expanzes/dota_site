@@ -161,3 +161,15 @@
 .fav-hero-card img { width: 100%; border-radius: 4px; margin-bottom: 5px; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- ПЛАШКИ ПОСЛЕДНИХ МАТЧЕЙ --- */
+.match-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 10px 15px; border-radius: 12px; border: 1px solid var(--border-color); }
+.match-row:hover { border-color: rgba(255, 255, 255, 0.1); }
+.match-left { display: flex; align-items: center; gap: 15px; width: 35%; }
+.match-hero-img { width: 50px; height: 30px; object-fit: cover; border-radius: 4px; }
+.match-result { font-weight: 900; font-size: 1.1rem; width: 20px; text-align: center; }
+.match-result.win { color: var(--accent-green); }
+.match-result.loss { color: var(--accent-red); }
+.match-center { text-align: center; font-weight: 800; font-size: 1.1rem; width: 30%; letter-spacing: 1px; }
+.match-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; width: 35%; font-size: 0.8rem; color: var(--text-muted); font-weight: 700; gap: 2px; }
+.match-networth { color: var(--accent-yellow); font-size: 0.95rem; }
