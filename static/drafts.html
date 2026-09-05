@@ -54,32 +54,28 @@
             <!-- ВЫРОВНЕННЫЙ БЛОК КНОПОК -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; margin-top: 20px;">
                 
-                <!-- Левая кнопка (строго под Моей командой) -->
+                <!-- Левая кнопка -->
                 <button id="btn-analyze" class="btn-primary" style="width: 100%; padding: 18px; font-size: 1.1rem;" onclick="analyzeDraft()">ПРОАНАЛИЗИРОВАТЬ ДРАФТ</button>
                 
-                <!-- Правые кнопки (строго под Командой противника) -->
+                <!-- Правые кнопки -->
                 <div style="display: flex; gap: 20px;">
                     <button id="btn-clear" class="btn-secondary" style="flex: 1; padding: 18px; font-size: 1.1rem;" onclick="clearInputs()">ОЧИСТИТЬ</button>
                     
                     <div class="tooltip-container" style="flex: 1; display: flex; position: relative;">
                         <button class="btn-secondary" style="width: 100%; padding: 18px; font-size: 1.1rem; cursor: help;">КАК ЭТО РАБОТАЕТ?</button>
                         
-                        <!-- ИСПРАВЛЕННАЯ ПОДСКАЗКА -->
-                        <div class="tooltip-text" style="width: 420px; max-width: 90vw; bottom: 120%; right: 0; padding: 25px; text-align: justify; font-size: 0.95rem; line-height: 1.6; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 15px 50px rgba(0,0,0,0.9); z-index: 1000;">
-                            <div style="text-align: center; font-size: 1.2rem; font-weight: 900; margin-bottom: 15px; color: white;">
+                        <!-- КОМПАКТНАЯ ПОДСКАЗКА -->
+                        <div class="tooltip-text" style="width: 450px; max-width: 90vw; bottom: 120%; right: 0; padding: 20px 25px; text-align: justify; font-size: 0.95rem; line-height: 1.5; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); box-shadow: 0 15px 50px rgba(0,0,0,0.9); z-index: 1000;">
+                            <div style="text-align: center; font-size: 1.1rem; font-weight: 900; margin-bottom: 12px; color: white;">
                                 Алгоритм на базе OpenDota
                             </div>
                             
                             <p style="margin-bottom: 10px; margin-top: 0;">
-                                Система анализирует миллионы матчей, чтобы рассчитать идеальный драфт. Итоговый результат формируется на основе сложной математической модели, которая учитывает сразу несколько ключевых факторов, а не просто базовый винрейт.
-                            </p>
-                            
-                            <p style="margin-bottom: 10px; margin-top: 0;">
-                                Сначала алгоритм вычисляет преимущество против вражеского пика, делая жесткий упор на сильных контргероев для каждой линии. Параллельно оценивается синергия вашей команды: система проверяет, хватает ли вам контроля, инициации, магического урона, и штрафует за слишком «жадный» состав.
+                                Итоговый результат строится на математической модели, а не простом винрейте. Мы анализируем силу контрпиков на линиях и общую синергию команды (контроль, урон, баланс «жадности»).
                             </p>
                             
                             <p style="margin-bottom: 0; margin-top: 0;">
-                                В финальную выдачу попадают только лучшие из лучших — алгоритм безжалостно отсекает варианты с ожидаемым шансом на победу ниже 48%. А если ваш профильный герой не контрится врагами и отлично вписывается в игру, система начислит ему дополнительный бонус и выделит специальной отметкой.
+                                Система отсекает героев с шансом на победу ниже 48%. А если ваш <b>любимый герой</b> отлично вписывается в игру и не контрится врагами — он получит бонус и будет выделен в списке.
                             </p>
                         </div>
                     </div>
