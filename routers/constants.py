@@ -61,7 +61,7 @@ HERO_POSITIONS = {
     "Kunkka": [2, 3], "Leshrac": [2], "Lina": [2], "Necrophos": [1, 2, 3], "Outworld Destroyer": [2],
     "Pangolier": [2, 3], "Puck": [2], "Queen of Pain": [2], "Shadow Fiend": [1, 2], "Storm Spirit": [2],
     "Tinker": [2], "Void Spirit": [2], "Zeus": [2, 4], "Batrider": [2, 3, 4], "Primal Beast": [2, 3],
-    "Abaddon": [3, 4, 5], "Axe": [3], "Beastmaster": [1, 3], "Brewmaster": [3], "Bristleback": [3],
+    "Abaddon": [3, 4, 5], "Axe": [3], "Beastmaster": [2, 3], "Brewmaster": [3], "Bristleback": [3],
     "Centaur Warrunner": [3], "Dark Seer": [3], "Dawnbreaker": [3, 4], "Doom": [3], "Dragon Knight": [2, 3],
     "Earthshaker": [2, 3, 4], "Elder Titan": [3, 4, 5], "Enigma": [3, 4], "Largo": [3, 4, 5], "Legion Commander": [3],
     "Lycan": [3], "Magnus": [2, 3], "Marci": [3, 4], "Mars": [3], "Night Stalker": [3], "Omniknight": [3, 5],
