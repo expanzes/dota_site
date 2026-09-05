@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
     <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
-<link rel="manifest" href="/static/favicons/site.webmanifest">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
+    <link rel="manifest" href="/static/favicons/site.webmanifest">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DH Профиль</title>
@@ -88,8 +88,10 @@
             <div class="profile-info-grid">
                 <div class="info-item">
                     <span class="info-label">РАНГ</span>
-                    <img id="rank-medal" src="" style="width: 75px; height: 75px; display: none;">
-                    <span id="display-rank" class="info-value">...</span>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; height: 75px;">
+                        <img id="rank-medal" src="" style="width: 75px; height: 75px; object-fit: contain; display: none;">
+                        <span id="display-rank" class="info-value" style="margin: 0;">...</span>
+                    </div>
                 </div>
                 <div class="info-item">
                     <span class="info-label">РЕКОРД INVOKER</span>
@@ -130,18 +132,27 @@
         let mySiteId = "";
         let targetSiteId = null;
         let searchTimeout = null;
-        const rankNames = ["Unranked", "Herald", "Guardian", "Crusader", "Archon", "Legend", "Ancient", "Divine", "Immortal"];
 
-        function getRankText(rankVal) {
-            if (!rankVal || rankVal === 0) return "Hidden";
-            const medalIndex = Math.floor(rankVal / 10);
-            const stars = rankVal % 10;
-            return medalIndex === 8 ? "Immortal" : `${rankNames[medalIndex]} [${stars}]`;
-        }
-        
-        function getRankImg(rankVal) {
-            if (!rankVal || rankVal === 0) return "";
-            return `https://www.opendota.com/assets/images/dota2/rank_icons/rank_icon_${Math.floor(rankVal / 10)}.png`;
+        function getRankData(rankVal, leaderboardRank, mmrEstimate) {
+            if (!rankVal || rankVal === 0) {
+                return { src: `/static/ranks/0.png`, mmr: "Скрыт" };
+            }
+
+            let imgId = rankVal;
+            
+            // Обработка Титанов
+            if (rankVal === 80) {
+                if (!leaderboardRank) imgId = 81; // Обычный Титан
+                else if (leaderboardRank <= 10) imgId = 85; 
+                else if (leaderboardRank <= 100) imgId = 84; 
+                else if (leaderboardRank <= 1000) imgId = 83; 
+                else imgId = 82; 
+            }
+
+            return { 
+                src: `/static/ranks/${imgId}.png`, 
+                mmr: mmrEstimate || "Скрыт"
+            };
         }
 
         async function loadRecentMatches(targetId) {
@@ -193,7 +204,6 @@
             document.getElementById('display-score').innerText = user.invoker_score;
             document.getElementById('profile-avatar').src = user.avatar || "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png";
             
-            // Отрисовка статуса В сети / Не в сети
             const statusEl = document.getElementById('display-online-status');
             if (user.is_online) {
                 statusEl.innerText = "В СЕТИ";
@@ -205,13 +215,23 @@
 
             const medalImg = document.getElementById('rank-medal');
             const rankVal = document.getElementById('display-rank');
-            if (user.rank > 0) {
-                medalImg.src = getRankImg(user.rank);
-                medalImg.style.display = 'block';
-                rankVal.innerText = getRankText(user.rank);
+            
+            const rankData = getRankData(user.rank, user.leaderboard_rank, user.mmr_estimate);
+            
+            medalImg.src = rankData.src;
+            medalImg.style.display = 'block';
+            
+            rankVal.innerText = rankData.mmr;
+            
+            if (rankData.mmr !== "Скрыт") {
+                rankVal.style.color = "#FFD700";
+                rankVal.style.textShadow = "0 2px 15px rgba(255, 215, 0, 0.4)";
+                rankVal.style.fontWeight = "900";
+                rankVal.style.fontSize = "2.2rem";
             } else {
-                medalImg.style.display = 'none';
-                rankVal.innerText = "Hidden";
+                rankVal.style.color = "#888";
+                rankVal.style.textShadow = "none";
+                rankVal.style.fontSize = "1rem";
             }
         }
 
@@ -251,9 +271,6 @@
             loadFriendsList();
         }
 
-        // ==========================================
-        // ЗАГРУЗКА И СЖАТИЕ АВАТАРА КЛИЕНТОМ
-        // ==========================================
         async function handleAvatarUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -273,13 +290,11 @@
                     canvas.height = size;
                     const ctx = canvas.getContext('2d');
 
-                    // Обрезаем по центру в идеальный квадрат
                     const minSide = Math.min(img.width, img.height);
                     const sx = (img.width - minSide) / 2;
                     const sy = (img.height - minSide) / 2;
                     ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
 
-                    // Сжимаем в легкий WebP/JPEG (весит ~20КБ)
                     const base64Data = canvas.toDataURL('image/jpeg', 0.85);
 
                     try {
@@ -367,7 +382,7 @@
                         <img src="${u.avatar || 'https://via.placeholder.com/44'}" class="friend-avatar">
                         <div class="friend-name-box">
                             <span class="friend-name">${u.username}${premiumHtml}</span>
-                            <span class="friend-rank-text">${getRankText(u.rank)}</span>
+                            <span class="friend-rank-text">MMR: ${u.mmr_estimate || "Скрыт"}</span>
                             <span class="${statusClass}" style="font-size: 0.75rem;">${statusText}</span>
                         </div>
                     </div>
@@ -412,7 +427,6 @@
 
         window.onload = initPage;
 
-        // ЗАКРЫТИЕ МЕНЮ ПО КЛИКУ СНАРУЖИ
         document.addEventListener('click', (event) => {
             const sidebar = document.getElementById('friends-sidebar');
             const btnFriends = document.querySelector('.btn-friends');
@@ -421,7 +435,6 @@
             }
         });
 
-        // ФОНОВЫЙ СИГНАЛ АКТИВНОСТИ КАЖДЫЕ 60 СЕКУНД
         setInterval(() => {
             fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
         }, 60000);
