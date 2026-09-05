@@ -115,4 +115,48 @@
 .match-networth { color: var(--accent-yellow); font-size: 1.05rem; font-weight: 900; }
 
 /* --- БОКОВОЕ МЕНЮ ДРУЗЕЙ --- */
-.btn-friends { background: transparent; border: 1px solid var(--border-color); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-family:
+.btn-friends { background: transparent; border: 1px solid var(--border-color); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-family: inherit; }
+.btn-friends:hover { background: var(--bg-input); color: var(--accent-yellow); border-color: var(--accent-yellow); }
+
+.friends-sidebar { 
+    position: fixed; top: 0; right: -380px; width: 380px; height: 100vh; 
+    background: var(--bg-card); border-left: 1px solid var(--border-color); 
+    box-shadow: -10px 0 30px rgba(0,0,0,0.8); transition: right 0.3s ease; 
+    z-index: 10000; display: flex; flex-direction: column; padding: 25px; overflow-y: auto; 
+}
+.friends-sidebar.open { right: 0; }
+
+.sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.sidebar-header h3 { font-size: 1.3rem; font-weight: 900; text-transform: uppercase; margin: 0; }
+.close-sidebar { background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+.close-sidebar:hover { color: var(--accent-red); }
+
+.search-input { width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 12px 15px; border-radius: 10px; margin-bottom: 20px; font-family: inherit; font-size: 0.95rem; outline: none; }
+.search-input:focus { border-color: var(--accent-yellow); }
+
+.friend-section-title { font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin: 15px 0 10px 0; letter-spacing: 1px; }
+
+.friend-item { 
+    display: flex; align-items: center; justify-content: space-between; 
+    background: var(--bg-input); padding: 12px; border-radius: 10px; 
+    margin-bottom: 8px; border: 1px solid var(--border-color); transition: 0.2s; cursor: pointer; 
+}
+.friend-item:hover { border-color: var(--accent-yellow); transform: translateY(-2px); }
+
+.friend-info { display: flex; align-items: center; gap: 12px; }
+.friend-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color); }
+.friend-name-box { display: flex; flex-direction: column; gap: 2px; }
+.friend-name { font-weight: 800; font-size: 0.95rem; color: white; }
+.friend-rank-text { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+
+.friend-actions { display: flex; gap: 8px; }
+.action-btn { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 1rem; cursor: pointer; transition: 0.2s; padding: 6px 10px; }
+.btn-add:hover { background: var(--accent-green); border-color: var(--accent-green); color: black; }
+.btn-reject:hover { background: var(--accent-red); border-color: var(--accent-red); color: white; }
+.status-text { font-size: 0.75rem; color: var(--text-muted); font-weight: 800; background: var(--bg-card); padding: 5px 8px; border-radius: 5px; }
+
+#back-to-my-profile { display: none; margin-bottom: 20px; background: var(--bg-input); color: white; border: 1px solid var(--border-color); padding: 10px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; text-align: center; }
+#back-to-my-profile:hover { background: var(--accent-red); }
+
+/* ЗНАЧОК ПРЕМИУМА */
+.premium-icon { color: var(--accent-yellow); margin-left: 8px; font-size: 0.8em; text-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
