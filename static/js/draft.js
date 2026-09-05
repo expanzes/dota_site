@@ -130,21 +130,24 @@ function renderResults(results) {
             const advColor = hero.advantage > 0 ? 'var(--accent-green)' : 'var(--accent-red)';
             const advSign = hero.advantage > 0 ? '+' : '';
             
-            // Если герой в избранном, добавляем желтую плашку
-            const favBanner = hero.is_favorite 
-                ? `<div style="background: var(--accent-yellow); color: #000; font-weight: 900; text-align: center; padding: 6px; font-size: 0.8rem; text-transform: uppercase; border-radius: 8px 8px 0 0; letter-spacing: 1px;"><i class="fas fa-star"></i> Любимый герой</div>` 
+            // Компактный бейджик внутри карточки рядом с именем
+            const favBadge = hero.is_favorite 
+                ? `<span style="background: var(--accent-yellow); color: #000; font-size: 0.7rem; font-weight: 900; padding: 3px 8px; border-radius: 6px; margin-left: 10px; text-transform: uppercase; vertical-align: middle;"><i class="fas fa-star"></i> Любимый</span>` 
                 : '';
             
-            // Скругляем углы картинки в зависимости от наличия плашки
-            const borderRadius = hero.is_favorite ? '0 0 8px 8px' : '8px';
+            // Стилизация самой карточки (желтая рамка слева для любимого героя)
+            const cardStyle = hero.is_favorite 
+                ? 'border: 1px solid var(--accent-yellow); border-left: 4px solid var(--accent-yellow);' 
+                : 'border: 1px solid var(--border-color); border-left: 4px solid transparent;';
 
             cardsHtml += `
-                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; transition: 0.2s;">
-                    ${favBanner}
+                <div style="background: var(--bg-card); ${cardStyle} border-radius: 8px; margin-bottom: 12px; transition: 0.2s;">
                     <div style="display: flex; padding: 12px; gap: 15px; align-items: center;">
-                        <img src="${hero.img}" style="width: 80px; height: 45px; object-fit: cover; border-radius: ${borderRadius}; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                        <img src="${hero.img}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                         <div style="display: flex; flex-direction: column; justify-content: center; width: 100%;">
-                            <div style="font-weight: 900; font-size: 1.1rem; margin-bottom: 5px; color: white;">${hero.name}</div>
+                            <div style="font-weight: 900; font-size: 1.1rem; margin-bottom: 5px; color: white; display: flex; align-items: center;">
+                                ${hero.name} ${favBadge}
+                            </div>
                             <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
                                 <span>Винрейт: <span style="color: var(--accent-green);"><i class="fas fa-trophy"></i> ${hero.winrate.toFixed(1)}%</span></span>
                                 <span>Контрпик: <span style="color: ${advColor};"><i class="fas fa-crosshairs"></i> ${advSign}${hero.advantage.toFixed(1)}%</span></span>
@@ -155,7 +158,7 @@ function renderResults(results) {
             `;
         });
 
-        // Формируем заголовок роли с красным акцентом слева
+        // Формируем заголовок роли
         section.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                 <div style="width: 4px; height: 20px; background: var(--accent-red); border-radius: 2px;"></div>
