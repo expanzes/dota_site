@@ -55,7 +55,7 @@ HERO_POSITIONS = {
     "Clinkz": [2], "Drow Ranger": [1], "Faceless Void": [1], "Gyrocopter": [1], "Juggernaut": [1],
     "Kez": [1, 2], "Lifestealer": [1], "Lone Druid": [1, 2], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
     "Morphling": [1, 2], "Muerta": [1], "Naga Siren": [1], "Nature's Prophet": [1, 2, 4], "Phantom Assassin": [1],
-    "Phantom Lancer": [1], "Razor": [1, 2, 3], "Riki": [1], "Slark": [1], "Sniper": [1, 2], "Spectre": [1],
+    "Phantom Lancer": [1], "Razor": [2, 3], "Riki": [1], "Slark": [1], "Sniper": [1, 2], "Spectre": [1],
     "Sven": [1], "Templar Assassin": [1], "Terrorblade": [1], "Tiny": [1, 2, 4], "Troll Warlord": [1],
     "Ursa": [1], "Weaver": [1, 4], "Wraith King": [1, 3], "Ember Spirit": [2], "Invoker": [2], 
     "Kunkka": [2, 3], "Leshrac": [2], "Lina": [2], "Necrophos": [1, 2, 3], "Outworld Destroyer": [2],
