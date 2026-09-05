@@ -53,11 +53,9 @@ async def get_matchups_data(hero_id: int):
         except: return []
     return []
 
-# --- НОВЫЙ МОДУЛЬ: ПРЕДИКТОР ВРАЖЕСКИХ РОЛЕЙ ---
 def predict_enemy_roles(enemy_names):
     assigned = {}
     unassigned = [h.title() for h in enemy_names]
-    # Сначала расставляем тех, у кого меньше всего возможных ролей (например, Антимаг почти всегда поз 1)
     unassigned.sort(key=lambda h: len(HERO_POSITIONS.get(h, [1,2,3,4,5])))
     
     for h in unassigned:
@@ -68,7 +66,6 @@ def predict_enemy_roles(enemy_names):
                 placed = True
                 break
         if not placed:
-            # Если идеальных вариантов не осталось, ставим на любую свободную
             for r in [1,2,3,4,5]:
                 if r not in assigned.values():
                     assigned[h] = r
@@ -97,7 +94,6 @@ async def analyze_perfect(payload: DraftRequest):
         picked = {v.lower() for v in payload.my_team.values() if v} | {n.lower() for n in payload.enemy_team}
         picked_allies = [v.title() for v in payload.my_team.values() if v]
 
-        # Считаем текущую синергию и жадность союзников (8 параметров)
         team_tags = [0] * 8
         for ally in picked_allies:
             if ally in HERO_TAGS:
@@ -107,13 +103,11 @@ async def analyze_perfect(payload: DraftRequest):
 
         base_wr = {hs["localized_name"]: (hs.get("8_win", 0)/hs.get("8_pick", 1)*100) if hs.get("8_pick", 0) > 35 else (hs.get("7_win", 1)/hs.get("7_pick", 1)*100) for hs in h_stats if "localized_name" in hs}
 
-        # Предикт вражеских ролей для анализа лайнинга
         enemy_roles = predict_enemy_roles(payload.enemy_team)
         enemy_ids = [name_to_id[n.lower()] for n in payload.enemy_team if n.lower() in name_to_id]
         enemies_results = await asyncio.gather(*(get_matchups_data(eid) for eid in enemy_ids))
         enemy_has_killer = any(en.title() in ILLUSION_KILLERS for en in payload.enemy_team)
 
-        # Предварительно считаем "чистый" винрейт каждого героя против каждого врага для скорости
         adv_matrix = {}
         for i, m_list in enumerate(enemies_results):
             en_id = enemy_ids[i]
@@ -121,7 +115,6 @@ async def analyze_perfect(payload: DraftRequest):
                 h_id = m["hero_id"]
                 if h_id not in adv_matrix: adv_matrix[h_id] = {}
                 if m["games_played"] > 10:
-                    # Винрейт кандидата против этого врага
                     adv_matrix[h_id][en_id] = (1 - (m["wins"] / m["games_played"])) * 100
 
         fav_ids = []
@@ -132,16 +125,14 @@ async def analyze_perfect(payload: DraftRequest):
         used_recommendations = set()
         final_results = []
 
-        # Считаем кандидатов ДЛЯ КАЖДОЙ РОЛИ ОТДЕЛЬНО (учитывая линии)
         for r_k, r_t in ROLES.items():
             if payload.my_team.get(r_k): continue
             pos = int(r_k[-1])
             
-            # Кто стоит против нас на линии?
             lane_enemies = []
-            if pos == 1: lane_enemies = [3, 4] # Керри стоит против Тройки и Четверки
-            elif pos == 2: lane_enemies = [2, 4] # Мидер стоит против Мидера (и ганги от Четверки)
-            elif pos == 3: lane_enemies = [1, 5] # Тройка против Керри и Пятерки
+            if pos == 1: lane_enemies = [3, 4]
+            elif pos == 2: lane_enemies = [2, 4]
+            elif pos == 3: lane_enemies = [1, 5]
             elif pos == 4: lane_enemies = [1, 5]
             elif pos == 5: lane_enemies = [3, 4]
 
@@ -149,10 +140,8 @@ async def analyze_perfect(payload: DraftRequest):
             for h in h_list:
                 name = h["name"]
                 if name.lower() in picked: continue
-                # Жесткий фильтр: предлагаем только тех, кто может играть на этой роли
                 if pos not in HERO_POSITIONS.get(name, []): continue
 
-                # 1. Расчет контрпика (с умножением на 1.5 для оппонентов по линии)
                 advs, worst = [], 0
                 for en_id, en_name in zip(enemy_ids, payload.enemy_team):
                     en_pos = enemy_roles.get(en_name.title(), 0)
@@ -169,7 +158,6 @@ async def analyze_perfect(payload: DraftRequest):
                 avg_adv = sum(advs)/len(advs) if advs else 0
                 counter_rating = (avg_adv * 0.4) + (worst * 0.6)
                 
-                # 2. Бонусы и Штрафы
                 role_bn = 0
                 greed_penalty = 0
                 combo_bonus = 0
@@ -177,47 +165,52 @@ async def analyze_perfect(payload: DraftRequest):
 
                 if name in HERO_TAGS:
                     t = HERO_TAGS[name]
-                    # Синергия контроля/урона
                     if team_tags[0] < 5: role_bn += t[0] * 1.5 
                     if team_tags[1] < 4: role_bn += t[1] * 2.5 
                     if team_tags[2] < 4: role_bn += t[2] * 2.0 
                     if team_tags[4] < 3: role_bn += t[4] * 1.5 
                     
-                    # Проверка на "Жадность"
                     cand_greed = t[6]
                     if current_team_greed + cand_greed > 7:
                         greed_penalty = -((current_team_greed + cand_greed - 7) * 3.0)
 
-                # Проверка на Прямые Комбо
                 for ally in picked_allies:
                     if name in HERO_COMBOS.get(ally, []) or ally in HERO_COMBOS.get(name, []):
                         combo_bonus += 4.0
 
-                final_wr = max(5.0, min(95.0, base_wr.get(name, 50) + counter_rating + role_bn + greed_penalty + combo_bonus + pnlty))
+                # ЛОГИКА ЛЮБИМЫХ ГЕРОЕВ
+                is_fav = h["id"] in fav_ids
+                fav_bonus = 0
+                if is_fav and counter_rating >= -2.0:
+                    fav_bonus = 3.5 # Бонус дается только если герой не законтрен
+
+                final_wr = max(5.0, min(95.0, base_wr.get(name, 50) + counter_rating + role_bn + greed_penalty + combo_bonus + pnlty + fav_bonus))
+                
                 role_candidates.append({
                     "id": h["id"], "name": name, "img": img_map.get(name), 
-                    "winrate": round(final_wr, 1), "advantage": round(counter_rating, 1)
+                    "winrate": round(final_wr, 1), "advantage": round(counter_rating, 1),
+                    "is_favorite": is_fav
                 })
 
-            # Сортируем от лучшего к худшему
-            role_candidates.sort(key=lambda x: -x["winrate"])
+            # ЖЕСТКИЙ ФИЛЬТР (отсекаем все, что ниже 48% винрейта)
+            filtered_candidates = [c for c in role_candidates if c["winrate"] >= 48.0]
+            if len(filtered_candidates) < 5:
+                filtered_candidates = role_candidates # Если пик совсем плохой, возвращаем весь список
+
+            filtered_candidates.sort(key=lambda x: -x["winrate"])
             
-            def pick_hero(candidates, favs=None):
-                for c in candidates:
-                    if c["id"] not in used_recommendations:
-                        if favs is None or c["id"] in favs:
-                            used_recommendations.add(c["id"])
-                            return c
-                return None
+            top_5 = []
+            for c in filtered_candidates:
+                if c["id"] not in used_recommendations:
+                    used_recommendations.add(c["id"])
+                    top_5.append(c)
+                    if len(top_5) == 5:
+                        break
 
-            # Отбираем 5 уникальных героев для интерфейса
-            top_fav = pick_hero(role_candidates, fav_ids)
-            top_win = pick_hero(role_candidates)
-            others = [pick_hero(role_candidates) for _ in range(3)]
-
+            # ТЕПЕРЬ СЕРВЕР ОТДАЕТ ПРОСТО МАССИВ ИЗ 5 ГЕРОЕВ
             final_results.append({
                 "role": r_t, 
-                "data": {"top_favorite": top_fav, "top_winrate": top_win, "others": others}
+                "candidates": top_5
             })
             
         return {"results": final_results}
