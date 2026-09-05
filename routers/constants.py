@@ -51,30 +51,30 @@ HERO_COMBOS = {
 }
 
 HERO_POSITIONS = {
-    "Anti-Mage": [1], "Arc Warden": [1, 2], "Bloodseeker": [1, 2], "Chaos Knight": [1],
-    "Clinkz": [1, 2], "Drow Ranger": [1], "Faceless Void": [1], "Gyrocopter": [1], "Juggernaut": [1],
-    "Kez": [1, 2], "Lifestealer": [1], "Lone Druid": [1, 2, 3], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
-    "Morphling": [1, 2], "Muerta": [1], "Naga Siren": [1], "Nature's Prophet": [1, 2, 3, 4], "Phantom Assassin": [1],
+    "Anti-Mage": [1], "Arc Warden": [2], "Bloodseeker": [1], "Chaos Knight": [1],
+    "Clinkz": [2], "Drow Ranger": [1], "Faceless Void": [1], "Gyrocopter": [1], "Juggernaut": [1],
+    "Kez": [1, 2], "Lifestealer": [1], "Lone Druid": [1, 2], "Luna": [1], "Medusa": [1], "Meepo": [1, 2],
+    "Morphling": [1, 2], "Muerta": [1], "Naga Siren": [1], "Nature's Prophet": [1, 2, 4], "Phantom Assassin": [1],
     "Phantom Lancer": [1], "Razor": [1, 2, 3], "Riki": [1], "Slark": [1], "Sniper": [1, 2], "Spectre": [1],
-    "Sven": [1], "Templar Assassin": [1, 2], "Terrorblade": [1], "Tiny": [2, 4], "Troll Warlord": [1],
+    "Sven": [1], "Templar Assassin": [1], "Terrorblade": [1], "Tiny": [1, 2, 4], "Troll Warlord": [1],
     "Ursa": [1], "Weaver": [1, 4], "Wraith King": [1, 3], "Ember Spirit": [2], "Invoker": [2], 
-    "Kunkka": [2, 3], "Leshrac": [2], "Lina": [2], "Necrophos": [2, 3], "Outworld Destroyer": [2],
+    "Kunkka": [2, 3], "Leshrac": [2], "Lina": [2], "Necrophos": [1, 2, 3], "Outworld Destroyer": [2],
     "Pangolier": [2, 3], "Puck": [2], "Queen of Pain": [2], "Shadow Fiend": [1, 2], "Storm Spirit": [2],
-    "Tinker": [2], "Void Spirit": [2], "Zeus": [2], "Batrider": [2, 3, 4], "Primal Beast": [2, 3],
-    "Abaddon": [3, 4, 5], "Axe": [3], "Beastmaster": [3], "Brewmaster": [3], "Bristleback": [3],
+    "Tinker": [2], "Void Spirit": [2], "Zeus": [2, 4], "Batrider": [2, 3, 4], "Primal Beast": [2, 3],
+    "Abaddon": [3, 4, 5], "Axe": [3], "Beastmaster": [1, 3], "Brewmaster": [3], "Bristleback": [3],
     "Centaur Warrunner": [3], "Dark Seer": [3], "Dawnbreaker": [3, 4], "Doom": [3], "Dragon Knight": [2, 3],
-    "Earthshaker": [3, 4], "Elder Titan": [3, 4, 5], "Enigma": [3, 4], "Largo": [3, 4, 5], "Legion Commander": [3],
+    "Earthshaker": [2, 3, 4], "Elder Titan": [3, 4, 5], "Enigma": [3, 4], "Largo": [3, 4, 5], "Legion Commander": [3],
     "Lycan": [3], "Magnus": [2, 3], "Marci": [3, 4], "Mars": [3], "Night Stalker": [3], "Omniknight": [3, 5],
-    "Pudge": [3, 4], "Sand King": [3], "Slardar": [3], "Spirit Breaker": [3, 4], "Tidehunter": [3],
+    "Pudge": [3, 4, 5], "Sand King": [3], "Slardar": [3], "Spirit Breaker": [3, 4], "Tidehunter": [3],
     "Timbersaw": [2, 3], "Underlord": [3], "Venomancer": [3, 4, 5], "Viper": [2, 3], "Visage": [2, 3],
     "Ancient Apparition": [4, 5], "Bane": [5], "Bounty Hunter": [4], "Chen": [5], "Clockwerk": [4],
     "Crystal Maiden": [5], "Dark Willow": [4, 5], "Dazzle": [5], "Disruptor": [5], "Earth Spirit": [4],
     "Enchantress": [4, 5], "Grimstroke": [4, 5], "Hoodwink": [4], "Io": [4, 5], "Jakiro": [5],
-    "Keeper of the Light": [4], "Lich": [5], "Lion": [4, 5], "Mirana": [4], "Nyx Assassin": [4],
-    "Ogre Magi": [5], "Oracle": [5], "Phoenix": [4, 5], "Pugna": [4, 5], "Ringmaster": [4, 5],
-    "Rubick": [4], "Shadow Demon": [5], "Shadow Shaman": [5], "Silencer": [5], "Skywrath Mage": [4, 5],
-    "Snapfire": [4, 5], "Techies": [4], "Treant Protector": [4, 5], "Tusk": [4], "Undying": [5],
-    "Vengeful Spirit": [4, 5], "Warlock": [5], "Windranger": [4], "Winter Wyvern": [4, 5], "Witch Doctor": [5]
+    "Keeper of the Light": [2, 4, 5], "Lich": [5], "Lion": [4, 5], "Mirana": [4, 5], "Nyx Assassin": [4],
+    "Ogre Magi": [4, 5], "Oracle": [4, 5], "Phoenix": [4, 5], "Pugna": [4, 5], "Ringmaster": [4, 5],
+    "Rubick": [4], "Shadow Demon": [4, 5], "Shadow Shaman": [5], "Silencer": [4, 5], "Skywrath Mage": [4, 5],
+    "Snapfire": [2, 4, 5], "Techies": [4], "Treant Protector": [4, 5], "Tusk": [4], "Undying": [4, 5],
+    "Vengeful Spirit": [4, 5], "Warlock": [5], "Windranger": [1, 4], "Winter Wyvern": [4, 5], "Witch Doctor": [4, 5]
 }
 
 HERO_ALIASES = {
