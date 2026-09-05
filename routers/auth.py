@@ -27,7 +27,7 @@ def to_account_id(steam64):
     except: return steam64
 
 def is_valid_username(name: str) -> bool:
-    return bool(re.match(r"^(?!.*  )(?!.* $)(?!^ )[a-zA-Z0-9_ ]{3,15}$", name))
+    return bool(re.match(r"^(?!.* )(?!.* $)(?!^ )[a-zA-Z0-9_ ]{3,15}$", name))
 
 def ensure_tables_exist():
     try:
@@ -42,9 +42,13 @@ def ensure_tables_exist():
                         avatar_url TEXT,
                         rank_tier INTEGER DEFAULT 0,
                         invoker_high_score INTEGER DEFAULT 0,
-                        is_premium BOOLEAN DEFAULT FALSE
+                        is_premium BOOLEAN DEFAULT FALSE,
+                        last_seen TIMESTAMP DEFAULT NOW()
                     );
                 """)
+                # Автоматическое добавление колонки, если таблица уже существовала
+                cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT NOW();")
+                
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS favorites (
                         user_id VARCHAR(10) PRIMARY KEY REFERENCES users(site_id),
@@ -84,6 +88,9 @@ class UpdateUsernameModel(BaseModel):
     site_id: str
     new_username: str
 
+class AvatarModel(BaseModel):
+    avatar_base64: str
+
 class ScoreModel(BaseModel):
     username: str
     score: int
@@ -94,6 +101,16 @@ class FriendActionModel(BaseModel):
 @router.post("/logout")
 async def logout(request: Request):
     request.session.clear()
+    return {"status": "ok"}
+
+@router.post("/heartbeat")
+async def heartbeat(request: Request):
+    sess = request.session.get("user")
+    if not sess: return {"status": "guest"}
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET last_seen = NOW() WHERE site_id = %s", (sess["site_id"],))
+            conn.commit()
     return {"status": "ok"}
 
 @router.get("/login/steam")
@@ -129,12 +146,12 @@ async def steam_callback(request: Request):
 
                 if current_session:
                     sid = current_session["site_id"]
-                    cur.execute("UPDATE users SET steam_id = %s, avatar_url = %s, rank_tier = %s WHERE site_id = %s", 
+                    cur.execute("UPDATE users SET steam_id = %s, avatar_url = %s, rank_tier = %s, last_seen = NOW() WHERE site_id = %s", 
                                (steam_id, s_data["avatarfull"], rank, sid))
                     username = current_session["username"]
                 elif existing:
                     sid, username = existing[0], existing[1]
-                    cur.execute("UPDATE users SET avatar_url = %s, rank_tier = %s WHERE site_id = %s", 
+                    cur.execute("UPDATE users SET avatar_url = %s, rank_tier = %s, last_seen = NOW() WHERE site_id = %s", 
                                (s_data["avatarfull"], rank, sid))
                 else:
                     sid = generate_site_id()
@@ -145,7 +162,7 @@ async def steam_callback(request: Request):
                     cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
                     if cur.fetchone(): username = f"Player_{sid[:7]}"
                     
-                    cur.execute("INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier) VALUES (%s, %s, %s, %s, %s)", 
+                    cur.execute("INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier, last_seen) VALUES (%s, %s, %s, %s, %s, NOW())", 
                                (sid, username, steam_id, s_data["avatarfull"], rank))
                 conn.commit()
 
@@ -160,6 +177,10 @@ async def get_me(request: Request):
     if not sess: return {"logged_in": False}
     with get_db_connection() as conn:
         with conn.cursor() as cur:
+            # Обновляем активность владельца
+            cur.execute("UPDATE users SET last_seen = NOW() WHERE site_id = %s", (sess["site_id"],))
+            conn.commit()
+            
             cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, is_premium, steam_id FROM users WHERE site_id = %s", (sess["site_id"],))
             u = cur.fetchone()
             if not u: return {"logged_in": False}
@@ -185,7 +206,7 @@ async def get_me(request: Request):
                 "logged_in": True, "site_id": u[0], "username": username, 
                 "avatar": u[2], "rank": rank, "invoker_score": u[4], 
                 "is_premium": u[5], "steam_linked": bool(u[6]),
-                "needs_rename": needs_rename
+                "needs_rename": needs_rename, "is_online": True
             }
 
 @router.post("/register")
@@ -199,7 +220,7 @@ async def register(data: AuthModel, request: Request):
                 cur.execute("SELECT 1 FROM users WHERE username = %s", (data.username,))
                 if cur.fetchone(): raise HTTPException(status_code=400, detail="Никнейм занят")
                 sid = generate_site_id()
-                cur.execute("INSERT INTO users (site_id, username, password_hash) VALUES (%s, %s, %s)", 
+                cur.execute("INSERT INTO users (site_id, username, password_hash, last_seen) VALUES (%s, %s, %s, NOW())", 
                            (sid, data.username, hash_password(data.password)))
                 conn.commit()
                 request.session["user"] = {"site_id": sid, "username": data.username}
@@ -214,6 +235,8 @@ async def login(data: AuthModel, request: Request):
             row = cur.fetchone()
             if not row or not row[2] or not verify_password(data.password, row[2]):
                 raise HTTPException(400, "Неверные данные")
+            cur.execute("UPDATE users SET last_seen = NOW() WHERE site_id = %s", (row[0],))
+            conn.commit()
             request.session["user"] = {"site_id": row[0], "username": row[1]}
             return {"site_id": row[0], "username": row[1]}
 
@@ -228,6 +251,18 @@ async def update_username(data: UpdateUsernameModel):
                 conn.commit()
         return {"status": "ok"}
     except: raise HTTPException(400, "Никнейм занят")
+
+@router.post("/update-avatar")
+async def update_avatar(data: AvatarModel, request: Request):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401, "Не авторизован")
+    if len(data.avatar_base64) > 500_000:
+        raise HTTPException(400, "Размер изображения слишком большой")
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET avatar_url = %s WHERE site_id = %s", (data.avatar_base64, sess["site_id"]))
+            conn.commit()
+    return {"status": "ok"}
 
 @router.get("/user-stats")
 async def get_stats(username: str):
@@ -260,14 +295,18 @@ async def save_favorites(data: FavoriteModel):
 async def get_user_profile(site_id: str):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            # ДОБАВЛЕН is_premium
-            cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, steam_id, is_premium FROM users WHERE site_id = %s", (site_id,))
+            cur.execute("""
+                SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, steam_id, is_premium,
+                       (last_seen > NOW() - INTERVAL '3 minutes') AS is_online
+                FROM users WHERE site_id = %s
+            """, (site_id,))
             u = cur.fetchone()
             if not u: raise HTTPException(404, "User not found")
             return {
                 "site_id": u[0], "username": u[1], 
                 "avatar": u[2], "rank": u[3], "invoker_score": u[4], 
-                "steam_linked": bool(u[5]), "is_premium": bool(u[6])
+                "steam_linked": bool(u[5]), "is_premium": bool(u[6]),
+                "is_online": bool(u[7])
             }
 
 @router.get("/users/search")
@@ -277,7 +316,8 @@ async def search_users(q: str, request: Request):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT site_id, username, avatar_url, rank_tier, is_premium 
+                SELECT site_id, username, avatar_url, rank_tier, is_premium,
+                       (last_seen > NOW() - INTERVAL '3 minutes') AS is_online
                 FROM users WHERE username ILIKE %s AND site_id != %s LIMIT 10
             """, (f"%{q}%", sess["site_id"]))
             rows = cur.fetchall()
@@ -293,7 +333,10 @@ async def search_users(q: str, request: Request):
                     if f_row[0] == "accepted": f_status = "friends"
                     elif f_row[1] == sess["site_id"]: f_status = "sent"
                     else: f_status = "received"
-                results.append({"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "is_premium": bool(r[4]), "friend_status": f_status})
+                results.append({
+                    "site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], 
+                    "is_premium": bool(r[4]), "is_online": bool(r[5]), "friend_status": f_status
+                })
     return results
 
 @router.post("/friends/request")
@@ -337,18 +380,22 @@ async def get_friends_list(request: Request):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier, u.is_premium FROM friendships f
+                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier, u.is_premium,
+                       (u.last_seen > NOW() - INTERVAL '3 minutes') AS is_online
+                FROM friendships f
                 JOIN users u ON (u.site_id = f.user_id1 OR u.site_id = f.user_id2)
                 WHERE (f.user_id1 = %s OR f.user_id2 = %s) AND f.status = 'accepted' AND u.site_id != %s
             """, (sess["site_id"], sess["site_id"], sess["site_id"]))
-            friends = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "is_premium": bool(r[4])} for r in cur.fetchall()]
+            friends = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "is_premium": bool(r[4]), "is_online": bool(r[5])} for r in cur.fetchall()]
             
             cur.execute("""
-                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier, u.is_premium FROM friendships f
+                SELECT u.site_id, u.username, u.avatar_url, u.rank_tier, u.is_premium,
+                       (u.last_seen > NOW() - INTERVAL '3 minutes') AS is_online
+                FROM friendships f
                 JOIN users u ON u.site_id = f.user_id1
                 WHERE f.user_id2 = %s AND f.status = 'pending'
             """, (sess["site_id"],))
-            pending = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "is_premium": bool(r[4])} for r in cur.fetchall()]
+            pending = [{"site_id": r[0], "username": r[1], "avatar": r[2], "rank": r[3], "is_premium": bool(r[4]), "is_online": bool(r[5])} for r in cur.fetchall()]
     return {"friends": friends, "pending": pending}
 
 @router.get("/recent-matches")
@@ -388,6 +435,7 @@ async def get_recent_matches(request: Request, site_id: Optional[str] = None):
                 duration = m.get("duration", 0)
                 gpm = m.get("gold_per_min", 0)
                 net_worth = int(gpm * (duration / 60))
+                
                 is_radiant = m.get("player_slot", 0) < 128
                 is_win = (m.get("radiant_win") and is_radiant) or (not m.get("radiant_win") and not is_radiant)
                 
