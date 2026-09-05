@@ -109,72 +109,59 @@ async function analyzeDraft() {
     }
 }
 
-function buildCardHTML(hero, badgeText, badgeClass, cardTypeClass) {
-    if (!hero) {
-        return `
-            <div class="result-card ${cardTypeClass} empty-card">
-                <i class="fas fa-search" style="font-size: 1.5rem; margin-bottom:8px;"></i>
-                <div>Нет данных<br><span style="font-size:0.75rem;">(или нет любимого героя)</span></div>
-            </div>`;
-    }
-
-    const counterVal = hero.advantage.toFixed(1);
-    const counterSign = hero.advantage > 0 ? '+' : '';
-    const counterColorClass = hero.advantage >= 0 ? 'text-green' : 'text-red';
-
-    return `
-        <div class="result-card ${cardTypeClass}">
-            <div class="card-left">
-                <div class="card-badge ${badgeClass}">${badgeText}</div>
-                <img src="${hero.img}" alt="${hero.name}">
-            </div>
-            <div class="card-right">
-                <div class="hero-name">${hero.name}</div>
-                <div class="stats-box">
-                    <div class="stat-row">
-                        <span>Винрейт:</span>
-                        <span class="text-green"><i class="fas fa-trophy"></i> ${hero.winrate.toFixed(1)}%</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>Контрпик:</span>
-                        <span class="${counterColorClass}"><i class="fas fa-crosshairs"></i> ${counterSign}${counterVal}%</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
+// НОВАЯ ЛОГИКА ОТРИСОВКИ РЕЗУЛЬТАТОВ
 function renderResults(results) {
     const container = document.getElementById('results-container');
     container.innerHTML = '';
     
-    results.forEach(item => {
-        const d = item.data;
-        
-        const topFavHTML = buildCardHTML(d.top_favorite, "★ Любимый герой", "badge-favorite", "main-card");
-        const topWinHTML = buildCardHTML(d.top_winrate, "🔥 Топ Винрейт", "badge-top", "main-card");
-        
-        let altCardsHTML = '';
-        d.others.forEach((hero) => {
-            if (hero) {
-                altCardsHTML += buildCardHTML(hero, "Хороший вариант", "badge-alt", "small-card");
-            }
-        });
+    if (!results || results.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Не удалось подобрать героев. Проверьте правильность введенных данных.</div>';
+        return;
+    }
 
+    results.forEach(item => {
         const section = document.createElement('div');
         section.className = 'results-section';
+        section.style.marginBottom = '30px';
+        
+        let cardsHtml = '';
+        
+        item.candidates.forEach(hero => {
+            const advColor = hero.advantage > 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+            const advSign = hero.advantage > 0 ? '+' : '';
+            
+            // Если герой в избранном, добавляем желтую плашку
+            const favBanner = hero.is_favorite 
+                ? `<div style="background: var(--accent-yellow); color: #000; font-weight: 900; text-align: center; padding: 6px; font-size: 0.8rem; text-transform: uppercase; border-radius: 8px 8px 0 0; letter-spacing: 1px;"><i class="fas fa-star"></i> Любимый герой</div>` 
+                : '';
+            
+            // Скругляем углы картинки в зависимости от наличия плашки
+            const borderRadius = hero.is_favorite ? '0 0 8px 8px' : '8px';
+
+            cardsHtml += `
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; transition: 0.2s;">
+                    ${favBanner}
+                    <div style="display: flex; padding: 12px; gap: 15px; align-items: center;">
+                        <img src="${hero.img}" style="width: 80px; height: 45px; object-fit: cover; border-radius: ${borderRadius}; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                        <div style="display: flex; flex-direction: column; justify-content: center; width: 100%;">
+                            <div style="font-weight: 900; font-size: 1.1rem; margin-bottom: 5px; color: white;">${hero.name}</div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
+                                <span>Винрейт: <span style="color: var(--accent-green);"><i class="fas fa-trophy"></i> ${hero.winrate.toFixed(1)}%</span></span>
+                                <span>Контрпик: <span style="color: ${advColor};"><i class="fas fa-crosshairs"></i> ${advSign}${hero.advantage.toFixed(1)}%</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Формируем заголовок роли с красным акцентом слева
         section.innerHTML = `
-            <h3 class="role-title">${item.role}</h3>
-            
-            <div class="top-picks-container">
-                ${topFavHTML}
-                ${topWinHTML}
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <div style="width: 4px; height: 20px; background: var(--accent-red); border-radius: 2px;"></div>
+                <h3 style="color: white; font-weight: 900; font-size: 1.1rem; text-transform: uppercase; margin: 0;">${item.role}</h3>
             </div>
-            
-            <div class="alt-picks-container">
-                ${altCardsHTML}
-            </div>
+            ${cardsHtml}
         `;
         
         container.appendChild(section);
