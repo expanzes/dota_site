@@ -52,6 +52,10 @@ async def get_home(request: Request):
 async def get_auth_page(): 
     return serve_page("auth.html")
 
+@app.get("/auth/steam/finish")
+async def get_steam_finish(): 
+    return serve_page("steam_register.html")
+
 @app.get("/drafts")
 async def get_drafts(): return serve_page("drafts.html", "drafts")
 
