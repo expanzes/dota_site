@@ -160,3 +160,57 @@
 
 /* ЗНАЧОК ПРЕМИУМА */
 .premium-icon { color: var(--accent-yellow); margin-left: 8px; font-size: 0.8em; text-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
+
+/* --- ИСПРАВЛЕНИЕ СЛОТОВ ГЕРОЕВ --- */
+.fav-heroes-container {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 5px;
+}
+
+.fav-hero-slot {
+    width: 75px;
+    height: 75px;
+    background: var(--bg-input, #111);
+    border: 2px dashed var(--border-color, #333);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.fav-hero-slot:hover {
+    border-color: var(--accent-yellow, #FFD700);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.fav-hero-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* --- ИСПРАВЛЕНИЕ БЕЗОПАСНОСТИ --- */
+.sec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-input, #111);
+    padding: 15px 25px;
+    border-radius: 16px;
+    margin-top: 15px;
+    border: 1px solid var(--border-color, #333);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sec-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+}
