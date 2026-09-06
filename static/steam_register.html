@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Привязка Steam — Dota Helper</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .auth-page-wrapper { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+        .auth-card { background: var(--bg-secondary, #1a1a1a); padding: 30px; border-radius: 15px; width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .auth-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--bg-input, #222); color: white; box-sizing: border-box; }
+    </style>
+</head>
+<body id="body-dark">
+    <div class="auth-page-wrapper">
+        <div class="auth-card" id="main-box">
+            <h2 style="color: var(--accent-yellow); margin-bottom: 20px;">Завершение привязки Steam</h2>
+            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Придумайте логин, введите вашу почту и создайте пароль для входа.</p>
+            
+            <div id="auth-error" style="color: #ff4444; margin-bottom: 10px; display: none; font-size: 0.9rem;"></div>
+            
+            <input type="text" id="steam-username" class="auth-input" placeholder="Логин (Никнейм)">
+            <input type="email" id="steam-email" class="auth-input" placeholder="E-mail">
+            <input type="password" id="steam-password" class="auth-input" placeholder="Пароль">
+            
+            <button class="btn-primary" onclick="submitSteamAuth()" style="width: 100%; margin-top: 15px;">ПРОДОЛЖИТЬ</button>
+        </div>
+
+        <div class="auth-card" id="verify-box" style="display: none;">
+            <h2>Подтверждение почты</h2>
+            <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">Мы отправили 6-значный код на вашу почту.</p>
+            <div id="verify-error" style="color: #ff4444; margin-bottom: 10px; display: none; font-size: 0.9rem;"></div>
+            
+            <input type="text" id="verify-code" class="auth-input" placeholder="000000" maxlength="6" style="text-align: center; font-size: 2rem; letter-spacing: 10px;">
+            <button class="btn-primary" onclick="submitVerification()" style="width: 100%; margin-top: 15px;">АКТИВИРОВАТЬ</button>
+        </div>
+    </div>
+
+    <script>
+        let pendingUsername = '';
+
+        async function submitSteamAuth() {
+            const username = document.getElementById('steam-username').value.trim();
+            const email = document.getElementById('steam-email').value.trim();
+            const password = document.getElementById('steam-password').value;
+            const errorBox = document.getElementById('auth-error');
+
+            if (!username || !email || !password) {
+                errorBox.innerText = "Заполните все поля!";
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/register/steam', {
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await res.json();
+
+                if (res.ok) {
+                    pendingUsername = data.username;
+                    document.getElementById('main-box').style.display = 'none';
+                    document.getElementById('verify-box').style.display = 'block';
+                } else {
+                    errorBox.innerText = data.detail || "Ошибка";
+                    errorBox.style.display = 'block';
+                }
+            } catch (e) {
+                errorBox.innerText = "Ошибка соединения с сервером";
+                errorBox.style.display = 'block';
+            }
+        }
+
+        async function submitVerification() {
+            const code = document.getElementById('verify-code').value.trim();
+            const errorBox = document.getElementById('verify-error');
+            
+            if (code.length !== 6) {
+                errorBox.innerText = "Код должен содержать 6 цифр";
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/verify`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: pendingUsername, code})
+                });
+                if (res.ok) {
+                    window.location.href = '/profile';
+                } else {
+                    const err = await res.json();
+                    errorBox.innerText = err.detail || "Неверный код";
+                    errorBox.style.display = 'block';
+                }
+            } catch(e) {
+                errorBox.innerText = "Ошибка соединения";
+                errorBox.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
