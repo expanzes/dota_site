@@ -258,8 +258,8 @@ async def get_me(request: Request):
             cur.execute("UPDATE users SET last_seen = NOW() WHERE site_id = %s", (sess["site_id"],))
             conn.commit()
             
-            cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, is_premium, steam_id FROM users WHERE site_id = %s", (sess["site_id"],))
-            u = cur.fetchone()
+cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, is_premium, steam_id, email FROM users WHERE site_id = %s", (sess["site_id"],))
+u = cur.fetchone()
             if not u: return {"logged_in": False}
             
             rank = u[3]
@@ -280,11 +280,12 @@ async def get_me(request: Request):
             needs_rename = not is_valid_username(username) or username.startswith("Player_")
 
             return {
-                "logged_in": True, "site_id": u[0], "username": username, 
-                "avatar": u[2], "rank": rank, "invoker_score": u[4], 
-                "is_premium": u[5], "steam_linked": bool(u[6]),
-                "needs_rename": needs_rename, "is_online": True
-            }
+    "logged_in": True, "site_id": u[0], "username": username, 
+    "avatar": u[2], "rank": rank, "invoker_score": u[4], 
+    "is_premium": u[5], "steam_linked": bool(u[6]),
+    "needs_rename": needs_rename, "is_online": True,
+    "email": u[7] # Добавили вывод почты
+}
 
 @router.post("/register")
 async def register(data: RegisterModel, background_tasks: BackgroundTasks):
