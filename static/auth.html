@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход — Dota Helper</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .auth-page-wrapper { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+        .auth-card { background: var(--bg-secondary, #1a1a1a); padding: 30px; border-radius: 15px; width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .auth-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--bg-input, #222); color: white; box-sizing: border-box; }
+        .auth-tabs { display: flex; margin-bottom: 20px; }
+        .auth-tab { flex: 1; padding: 10px; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; color: var(--text-muted, #888); transition: 0.2s; }
+        .auth-tab.active { border-bottom: 2px solid var(--accent-yellow, #FFD700); color: var(--accent-yellow, #FFD700); }
+    </style>
+</head>
+<body id="body-dark">
+    <div class="auth-page-wrapper">
+        <div class="auth-card" id="main-auth-box">
+            <h2 style="margin-bottom: 20px;">DOTA HELPER</h2>
+            <div class="auth-tabs">
+                <div id="tab-login" class="auth-tab active" onclick="switchAuthMode('login')">Вход</div>
+                <div id="tab-register" class="auth-tab" onclick="switchAuthMode('register')">Регистрация</div>
+            </div>
+            
+            <div id="auth-error" style="color: #ff4444; margin-bottom: 10px; display: none; font-size: 0.9rem;"></div>
+            
+            <input type="text" id="auth-username" class="auth-input" placeholder="Логин (Никнейм)">
+            <div id="email-group" style="display: none;">
+                <input type="email" id="auth-email" class="auth-input" placeholder="E-mail">
+            </div>
+            <input type="password" id="auth-password" class="auth-input" placeholder="Пароль">
+            
+            <button class="btn-primary" onclick="submitAuth()" style="width: 100%; margin-top: 15px;">ПРОДОЛЖИТЬ</button>
+            
+            <div style="margin: 20px 0; color: #666; font-size: 0.8rem;">ИЛИ</div>
+            
+            <button class="btn-secondary" onclick="loginWithSteam()" style="width: 100%;">
+                <i class="fab fa-steam"></i> ВОЙТИ ЧЕРЕЗ STEAM
+            </button>
+        </div>
+
+        <div class="auth-card" id="verify-box" style="display: none;">
+            <h2>Подтверждение</h2>
+            <p style="color: #aaa; margin-bottom: 15px; font-size: 0.9rem;">Мы отправили 6-значный код на вашу почту.</p>
+            <div id="verify-error" style="color: #ff4444; margin-bottom: 10px; display: none; font-size: 0.9rem;"></div>
+            
+            <input type="text" id="verify-code" class="auth-input" placeholder="000000" maxlength="6" style="text-align: center; font-size: 2rem; letter-spacing: 10px;">
+            <button class="btn-primary" onclick="submitVerification()" style="width: 100%; margin-top: 15px;">АКТИВИРОВАТЬ</button>
+        </div>
+    </div>
+
+    <script src="/static/js/auth.js"></script>
+</body>
+</html>
