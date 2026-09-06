@@ -71,5 +71,34 @@
 
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/invoker.js"></script>
+    <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const res = await fetch('/api/me');
+            const user = await res.json();
+            
+            if (user.logged_in) {
+                // Скрипт ищет твой ID с 26-й строки
+                const headerUsername = document.getElementById('user-display-name');
+                if (headerUsername) {
+                    let nameHtml = user.username;
+                    if (user.is_premium) {
+                        nameHtml += ' <i class="fas fa-crown" style="color: #FFD700; margin-left: 5px;" title="Premium"></i>';
+                    }
+                    headerUsername.innerHTML = nameHtml;
+                }
+            } else {
+                window.location.href = '/auth';
+            }
+        } catch (e) {
+            console.error("Ошибка загрузки профиля:", e);
+        }
+    });
+
+    async function logout() {
+        try { await fetch('/api/logout', { method: 'POST' }); } catch (e) {}
+        window.location.href = '/auth';
+    }
+</script>
 </body>
 </html>
