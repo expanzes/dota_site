@@ -1,549 +1,167 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
-    <link rel="manifest" href="/static/favicons/site.webmanifest">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DH Профиль</title>
+    <title>Профиль — Dota Helper</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .profile-container { max-width: 800px; margin: 40px auto; padding: 20px; background: var(--bg-secondary); border-radius: 15px; text-align: center; }
+        .avatar-lg { width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--accent-yellow); object-fit: cover; margin-bottom: 15px; }
+        .site-id-badge { background: var(--bg-input); padding: 5px 15px; border-radius: 20px; color: var(--text-muted); font-size: 0.9rem; display: inline-block; margin-top: 10px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-card { background: var(--bg-secondary); padding: 30px; border-radius: 12px; width: 350px; text-align: center; }
+        .hidden { display: none !important; }
+    </style>
 </head>
-<body id="body-profile">
+<body id="body-dark">
+
     <header>
         <div class="header-left">
             <div class="logo" onclick="window.location.href='/'">DOTA HELPER</div>
             <nav class="main-nav">
                 <button class="nav-link" onclick="window.location.href='/drafts'">АНАЛИЗ ДРАФТОВ</button>
-                <button class="nav-link" onclick="window.location.href='/fantasy'">ФЕНТАЗИ ПОМОЩНИК</button>
-                <button class="nav-link" onclick="window.location.href='/invoker'">ТРЕНАЖЁР ИНВОКЕР</button>
             </nav>
         </div>
         <div class="user-panel">
-            <span id="user-display-name" class="user-badge" onclick="window.location.href='/profile'" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--accent-yellow)'" onmouseout="this.style.color=''">...</span>
-            <button class="btn-friends" onclick="toggleSidebar()"><i class="fas fa-user-friends"></i> ДРУЗЬЯ</button>
             <button class="btn-logout" onclick="logout()">Выйти</button>
         </div>
     </header>
 
-    <div id="friends-sidebar" class="friends-sidebar">
-        <div class="sidebar-header">
-            <h3>Социальная сеть</h3>
-            <button class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
+    <div class="profile-container">
+        <img id="prof-avatar" src="/static/images/default_avatar.png" class="avatar-lg">
+        <h1 id="prof-username">Загрузка...</h1>
+        <div class="site-id-badge">ID: <span id="prof-site-id">---</span></div>
+        
+        <div style="margin-top: 20px;">
+            <button class="btn-secondary" onclick="window.location.href='/api/login/steam'" id="btn-link-steam">Привязать Steam</button>
         </div>
-        <input type="text" id="friend-search-input" class="search-input" placeholder="Найти по нику..." oninput="handleSearch()">
-        <div id="sidebar-content">
-            <div id="search-results" style="display: none;"></div>
-            <div id="default-lists">
-                <div id="pending-list" style="display: none;"></div>
-                <div id="friends-list"></div>
+
+        <!-- Настройки безопасности -->
+        <div class="security-settings" style="margin-top: 30px; background: var(--bg-input); padding: 20px; border-radius: 12px; text-align: left;">
+            <h3 style="margin-bottom: 15px; font-size: 1rem; color: var(--text-muted); text-transform: uppercase;">Настройки безопасности</h3>
+
+            <div style="margin-bottom: 15px;">
+                <span style="color: #888; font-size: 0.85rem;">Привязанный E-mail</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 8px; margin-top: 5px;">
+                    <span id="display-email" style="font-weight: bold; word-break: break-all;">Загрузка...</span>
+                    <button class="btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;" onclick="openSecurityModal('email')">Изменить</button>
+                </div>
+            </div>
+
+            <div>
+                <span style="color: #888; font-size: 0.85rem;">Пароль</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 8px; margin-top: 5px;">
+                    <span style="font-weight: bold; letter-spacing: 2px;">********</span>
+                    <button class="btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;" onclick="openSecurityModal('password')">Изменить</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <main>
-        <div class="profile-container">
-            <button id="back-to-my-profile" onclick="window.location.href='/profile'"><i class="fas fa-arrow-left"></i> Вернуться в свой профиль</button>
-
-            <div class="avatar-wrapper">
-                <img id="profile-avatar" src="" alt="avatar">
-                <label for="avatar-input" class="avatar-edit-overlay owner-only" title="Сменить аватар">
-                    <i class="fas fa-camera"></i>
-                </label>
-                <input type="file" id="avatar-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
-            </div>
-
-            <div id="status-container" style="margin-top: -15px;">
-                <span id="display-online-status" class="status-text-online">В СЕТИ</span>
-            </div>
-
-            <div style="text-align: center; width: 100%;">
-                <h2 id="display-username" style="font-size: 2.5rem; font-weight: 900; display: inline-block; margin-bottom: 0;">...</h2>
-                <i id="edit-name-icon" class="fas fa-pencil-alt edit-icon owner-only" onclick="toggleEditName()"></i>
-                
-                <div id="edit-name-form" class="hidden owner-only" style="margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                    <div id="rename-warning" style="display: none; color: var(--accent-yellow); font-weight: 900; font-size: 1rem; text-transform: uppercase;">
-                        <i class="fas fa-exclamation-triangle"></i> Пожалуйста, смените никнейм для корректного отображения!
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
-                        <input type="text" id="new-username-input" placeholder="Введите новый ник..." maxlength="15" 
-                               title="Только английские буквы, цифры, подчеркивание и одиночные пробелы (3-15 символов)"
-                               style="background: var(--bg-input); border: 2px solid var(--border-color); color: white; padding: 15px 25px; border-radius: 12px; font-size: 1.2rem; font-weight: bold; width: 250px; text-align: center; outline: none;">
-                        <button class="btn-ok" onclick="saveNewName()">OK</button>
-                    </div>
-                    
-                    <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; margin-top: 5px;">
-                        *От 3 до 15 символов. Разрешены только английские буквы, цифры, " _ " и одиночные пробелы.
-                    </div>
-                </div>
-            </div>
-
-            <div class="site-id-badge">
-                ID: <span id="display-site-id">0000000000</span>
-            </div>
-
-<div class="security-settings owner-only" style="margin-top: 20px; background: var(--bg-input); padding: 15px; border-radius: 12px; width: 100%; text-align: left;">
-    <h3 style="margin-bottom: 15px; font-size: 1rem; color: var(--text-muted); text-transform: uppercase;">Настройки безопасности</h3>
-
-    <div style="margin-bottom: 15px;">
-        <span style="color: #888; font-size: 0.85rem;">Привязанный E-mail</span>
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 8px; margin-top: 5px;">
-            <span id="display-email" style="font-weight: bold; word-break: break-all;">...</span>
-            <button class="btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;" onclick="openSecurityModal('email')">Изменить</button>
-        </div>
-    </div>
-
-    <div>
-        <span style="color: #888; font-size: 0.85rem;">Пароль</span>
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 8px; margin-top: 5px;">
-            <span style="font-weight: bold; letter-spacing: 2px;">********</span>
-            <button class="btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;" onclick="openSecurityModal('password')">Изменить</button>
-        </div>
-    </div>
-</div>
-            
-            <div class="profile-info-grid">
-                <div class="info-item">
-                    <span class="info-label">РАНГ</span>
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; height: 75px;">
-                        <img id="rank-medal" src="" style="width: 75px; height: 75px; object-fit: contain; display: none;">
-                        <span id="display-rank" class="info-value" style="margin: 0;">...</span>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">РЕКОРД INVOKER</span>
-                    <div style="height: 75px; display: flex; align-items: center;">
-                        <span id="display-score" class="info-value">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <div id="recent-matches-container" style="width: 100%; margin-top: 10px; display: none;">
-                <h3 style="text-align: left; margin-bottom: 15px; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Последние игры</h3>
-                <div id="matches-list"></div>
-            </div>
-
-            <button class="btn-yellow owner-only" onclick="openFavModal()">★ ВЫБРАТЬ ЛЮБИМЫХ ГЕРОЕВ</button>
-            <button id="steam-link-btn" class="btn-secondary owner-only" onclick="window.location.href='/api/login/steam'" style="width: 100%;">
-                <i class="fab fa-steam"></i> ПРИВЯЗАТЬ STEAM
-            </button>
-        </div>
-    </main>
-
-    <div id="fav-modal" class="modal-overlay hidden owner-only">
+    <!-- Модальное окно для смены данных -->
+    <div id="security-modal" class="modal-overlay hidden">
         <div class="modal-card">
-            <h3>Ваши любимые герои</h3>
-            <input type="text" id="fav-search-input" placeholder="Поиск героя..." oninput="filterFavHeroes()" 
-                   style="background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 10px; width: 100%; margin: 15px 0;">
-            <div id="fav-heroes-container" class="fav-heroes-grid"></div>
-            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px;">
-                <button class="btn-secondary" onclick="closeFavModal()">Отмена</button>
-                <button class="btn-primary" onclick="saveFavorites()">Сохранить</button>
+            <h3 id="sec-modal-title">Изменение данных</h3>
+            <div id="sec-step-1">
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Мы отправим код подтверждения на вашу текущую почту.</p>
+                <button class="btn-primary" style="width: 100%;" onclick="requestSecurityCode()">Получить код</button>
             </div>
+            <div id="sec-step-2" class="hidden">
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Введите код из письма и новые данные.</p>
+                <input type="text" id="sec-code" placeholder="000000" maxlength="6" style="background: #111; color: white; padding: 10px; border-radius: 8px; width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 10px; border: 1px solid #333;">
+                
+                <input type="email" id="sec-new-email" placeholder="Новый E-mail" style="background: #111; color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; border: 1px solid #333; box-sizing: border-box;" class="hidden">
+                <input type="password" id="sec-new-password" placeholder="Новый пароль" style="background: #111; color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; border: 1px solid #333; box-sizing: border-box;" class="hidden">
+                
+                <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="submitSecurityChange()">Сохранить</button>
+            </div>
+            <div id="sec-error" style="color: #ff4444; margin-top: 10px; display: none; font-size: 0.9rem;"></div>
+            <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="closeSecurityModal()">Отмена</button>
         </div>
     </div>
 
-    <script src="/static/js/auth.js"></script>
-    <script src="/static/js/favorites.js"></script>
     <script>
-        let mySiteId = "";
-        let targetSiteId = null;
-        let searchTimeout = null;
+        let currentSecurityMode = '';
 
-        function getRankData(rankVal, leaderboardRank, mmrEstimate) {
-            if (!rankVal || rankVal === 0) {
-                return { src: `/static/ranks/0.png`, mmr: "Скрыт" };
-            }
-
-            let imgId = rankVal;
-            
-            // Обработка Титанов
-            if (rankVal === 80) {
-                if (!leaderboardRank) imgId = 81; // Обычный Титан
-                else if (leaderboardRank <= 10) imgId = 85; 
-                else if (leaderboardRank <= 100) imgId = 84; 
-                else if (leaderboardRank <= 1000) imgId = 83; 
-                else imgId = 82; 
-            }
-
-            return { 
-                src: `/static/ranks/${imgId}.png`, 
-                mmr: mmrEstimate || "Скрыт"
-            };
-        }
-
-        async function loadRecentMatches(targetId) {
-            const container = document.getElementById('recent-matches-container');
-            const list = document.getElementById('matches-list');
-            list.innerHTML = '<div style="text-align:center; padding: 20px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Загрузка матчей...</div>';
-            container.style.display = 'block';
-
+        window.addEventListener('DOMContentLoaded', async () => {
             try {
-                const url = targetId ? `/api/recent-matches?site_id=${targetId}` : '/api/recent-matches';
-                const res = await fetch(url);
-                const matches = await res.json();
-
-                if (!matches || matches.length === 0) {
-                    list.innerHTML = '<div style="text-align:center; padding: 10px; color:var(--text-muted);">Игры не найдены.</div>';
+                const res = await fetch('/api/me');
+                const user = await res.json();
+                if (!user.logged_in) {
+                    window.location.href = '/auth';
                     return;
                 }
-
-                list.innerHTML = '';
-                matches.forEach(m => {
-                    const resClass = m.is_win ? 'win' : 'loss';
-                    const resText = m.is_win ? 'W' : 'L';
-                    const mins = Math.floor(m.duration / 60);
-                    const secs = m.duration % 60;
-                    const durStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-                    const netStr = (m.net_worth / 1000).toFixed(1) + 'k';
-
-                    list.innerHTML += `
-                        <div class="match-row">
-                            <div class="match-left">
-                                <span class="match-result ${resClass}">${resText}</span>
-                                <img src="${m.hero_img || 'https://via.placeholder.com/70x40'}" class="match-hero-img">
-                            </div>
-                            <div class="match-center">${m.kills} / ${m.deaths} / ${m.assists}</div>
-                            <div class="match-right">
-                                <span class="match-networth">${netStr} <i class="fas fa-coins" style="font-size:0.8rem;"></i></span>
-                                <span><i class="far fa-clock"></i> ${durStr}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-            } catch (e) { list.innerHTML = '<div style="text-align:center; color:var(--text-muted);">Ошибка загрузки.</div>'; }
-        }
-
-        function renderProfileData(user) {
-            const premiumHtml = user.is_premium ? ' <i class="fas fa-crown premium-icon" title="Premium Пользователь"></i>' : '';
-            document.getElementById('display-username').innerHTML = user.username + premiumHtml;
-            document.getElementById('display-site-id').innerText = user.site_id;
-            document.getElementById('display-score').innerText = user.invoker_score;
-            document.getElementById('profile-avatar').src = user.avatar || "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png";
-            
-            const statusEl = document.getElementById('display-online-status');
-
-            // Добавь эту строчку внутрь renderProfileData:
-if (document.getElementById('display-email')) {
-    document.getElementById('display-email').innerText = user.email || 'Не привязана';
-}
-            
-            if (user.is_online) {
-                statusEl.innerText = "В СЕТИ";
-                statusEl.className = "status-text-online";
-            } else {
-                statusEl.innerText = "НЕ В СЕТИ";
-                statusEl.className = "status-text-offline";
-            }
-
-            const medalImg = document.getElementById('rank-medal');
-            const rankVal = document.getElementById('display-rank');
-            
-            const rankData = getRankData(user.rank, user.leaderboard_rank, user.mmr_estimate);
-            
-            medalImg.src = rankData.src;
-            medalImg.style.display = 'block';
-            
-            rankVal.innerText = rankData.mmr;
-            
-            if (rankData.mmr !== "Скрыт") {
-                rankVal.style.color = "#FFD700";
-                rankVal.style.textShadow = "0 2px 15px rgba(255, 215, 0, 0.4)";
-                rankVal.style.fontWeight = "900";
-                rankVal.style.fontSize = "2.2rem";
-            } else {
-                rankVal.style.color = "#888";
-                rankVal.style.textShadow = "none";
-                rankVal.style.fontSize = "1rem";
-            }
-        }
-
-        async function initPage() {
-            const meRes = await fetch('/api/me');
-            const me = await meRes.json();
-            if (!me.logged_in) { window.location.href = '/'; return; }
-            mySiteId = me.site_id;
-            
-            const myPremiumHtml = me.is_premium ? ' <i class="fas fa-crown premium-icon" title="Premium"></i>' : '';
-            document.getElementById('user-display-name').innerHTML = me.username + myPremiumHtml;
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            targetSiteId = urlParams.get('id');
-
-            if (targetSiteId && targetSiteId !== mySiteId) {
-                document.querySelectorAll('.owner-only').forEach(el => el.style.display = 'none');
-                document.getElementById('back-to-my-profile').style.display = 'block';
-                try {
-                    const targetRes = await fetch(`/api/user/${targetSiteId}`);
-                    if (targetRes.ok) {
-                        const targetUser = await targetRes.json();
-                        renderProfileData(targetUser);
-                        if (targetUser.steam_linked) loadRecentMatches(targetSiteId);
-                    } else window.location.href = '/profile';
-                } catch(e) { window.location.href = '/profile'; }
-            } else {
-                renderProfileData(me);
-                if (me.steam_linked) {
-                    document.getElementById('steam-link-btn').classList.add('hidden');
-                    loadRecentMatches(null);
+                
+                document.getElementById('prof-username').innerText = user.username;
+                document.getElementById('prof-site-id').innerText = user.site_id;
+                document.getElementById('display-email').innerText = user.email || 'Не привязана';
+                
+                if (user.avatar) document.getElementById('prof-avatar').src = user.avatar;
+                if (user.steam_linked) {
+                    document.getElementById('btn-link-steam').style.display = 'none';
                 }
-                if (me.needs_rename) {
-                    toggleEditName(true);
-                }
-            }
-            loadFriendsList();
-        }
-
-        async function handleAvatarUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (!file.type.startsWith('image/')) {
-                alert("Пожалуйста, выберите файл изображения!");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = async function() {
-                    const canvas = document.createElement('canvas');
-                    const size = 160;
-                    canvas.width = size;
-                    canvas.height = size;
-                    const ctx = canvas.getContext('2d');
-
-                    const minSide = Math.min(img.width, img.height);
-                    const sx = (img.width - minSide) / 2;
-                    const sy = (img.height - minSide) / 2;
-                    ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-
-                    const base64Data = canvas.toDataURL('image/jpeg', 0.85);
-
-                    try {
-                        const res = await fetch('/api/update-avatar', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ avatar_base64: base64Data })
-                        });
-
-                        if (res.ok) {
-                            document.getElementById('profile-avatar').src = base64Data;
-                        } else {
-                            alert("Ошибка при сохранении фото.");
-                        }
-                    } catch (err) {
-                        alert("Ошибка соединения с сервером.");
-                    }
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function toggleEditName(forceOpen = false) {
-            const form = document.getElementById('edit-name-form');
-            const display = document.getElementById('display-username');
-            const icon = document.getElementById('edit-name-icon');
-            const warning = document.getElementById('rename-warning');
-            
-            if (forceOpen) {
-                form.classList.remove('hidden');
-                display.classList.add('hidden');
-                icon.classList.add('hidden');
-                warning.style.display = 'block';
-                document.getElementById('new-username-input').value = "";
-            } else {
-                form.classList.toggle('hidden');
-                display.classList.toggle('hidden');
-                icon.classList.toggle('hidden');
-                warning.style.display = 'none';
-                document.getElementById('new-username-input').value = display.innerText.trim();
-            }
-        }
-
-        async function saveNewName() {
-            const newName = document.getElementById('new-username-input').value.trim();
-            const regex = /^(?!.* )(?!.* $)(?!^ )[a-zA-Z0-9_ ]{3,15}$/;
-            
-            if (!regex.test(newName)) {
-                alert("Ошибка: Никнейм должен быть от 3 до 15 символов. Разрешены только английские буквы, цифры, '_' и одиночные пробелы.");
-                return;
-            }
-
-            const res = await fetch('/api/update-username', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ site_id: mySiteId, new_username: newName })
-            });
-            
-            if (res.ok) window.location.href = '/profile';
-            else alert("Такой никнейм уже занят!");
-        }
-
-        function toggleSidebar() { document.getElementById('friends-sidebar').classList.toggle('open'); loadFriendsList(); }
-
-        function buildUserCard(u, type) {
-            let actionsHtml = '';
-            if (type === 'search') {
-                if (u.friend_status === 'friends') actionsHtml = `<span class="status-text">В друзьях</span>`;
-                else if (u.friend_status === 'sent') actionsHtml = `<span class="status-text">Заявка отправлена</span>`;
-                else if (u.friend_status === 'received') actionsHtml = `<button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('accept', '${u.site_id}')"><i class="fas fa-check"></i></button>`;
-                else actionsHtml = `<button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('request', '${u.site_id}')"><i class="fas fa-user-plus"></i></button>`;
-            } else if (type === 'pending') {
-                actionsHtml = `<button class="action-btn btn-add" onclick="event.stopPropagation(); actionFriend('accept', '${u.site_id}')"><i class="fas fa-check"></i></button><button class="action-btn btn-reject" onclick="event.stopPropagation(); actionFriend('reject', '${u.site_id}')"><i class="fas fa-times"></i></button>`;
-            } else if (type === 'friend') {
-                actionsHtml = `<button class="action-btn btn-reject" title="Удалить" onclick="event.stopPropagation(); actionFriend('reject', '${u.site_id}')"><i class="fas fa-user-minus"></i></button>`;
-            }
-            
-            const premiumHtml = u.is_premium ? ' <i class="fas fa-crown premium-icon"></i>' : '';
-            const statusClass = u.is_online ? 'status-text-online' : 'status-text-offline';
-            const statusText = u.is_online ? 'В СЕТИ' : 'НЕ В СЕТИ';
-
-            return `
-                <div class="friend-item" onclick="window.location.href='/profile?id=${u.site_id}'">
-                    <div class="friend-info">
-                        <img src="${u.avatar || 'https://via.placeholder.com/44'}" class="friend-avatar">
-                        <div class="friend-name-box">
-                            <span class="friend-name">${u.username}${premiumHtml}</span>
-                            <span class="friend-rank-text">MMR: ${u.mmr_estimate || "Скрыт"}</span>
-                            <span class="${statusClass}" style="font-size: 0.75rem;">${statusText}</span>
-                        </div>
-                    </div>
-                    <div class="friend-actions">${actionsHtml}</div>
-                </div>`;
-        }
-
-        async function loadFriendsList() {
-            const res = await fetch('/api/friends/list');
-            const data = await res.json();
-            const pendingDiv = document.getElementById('pending-list');
-            if (data.pending && data.pending.length > 0) {
-                pendingDiv.style.display = 'block';
-                pendingDiv.innerHTML = `<div class="friend-section-title">Входящие заявки</div>` + data.pending.map(u => buildUserCard(u, 'pending')).join('');
-            } else pendingDiv.style.display = 'none';
-
-            const friendsDiv = document.getElementById('friends-list');
-            if (data.friends && data.friends.length > 0) friendsDiv.innerHTML = `<div class="friend-section-title">Ваши друзья</div>` + data.friends.map(u => buildUserCard(u, 'friend')).join('');
-            else friendsDiv.innerHTML = `<div class="friend-section-title">Ваши друзья</div><div style="color:var(--text-muted); font-size:0.85rem; padding:10px;">Список пуст. Найдите друзей через поиск!</div>`;
-        }
-
-        function handleSearch() {
-            clearTimeout(searchTimeout);
-            const q = document.getElementById('friend-search-input').value.trim();
-            const resDiv = document.getElementById('search-results');
-            const defDiv = document.getElementById('default-lists');
-            if (q.length < 2) { resDiv.style.display = 'none'; defDiv.style.display = 'block'; return; }
-            searchTimeout = setTimeout(async () => {
-                const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
-                const users = await res.json();
-                resDiv.style.display = 'block'; defDiv.style.display = 'none';
-                if (users.length === 0) resDiv.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding: 20px;">Ничего не найдено</div>`;
-                else resDiv.innerHTML = `<div class="friend-section-title">Результаты поиска</div>` + users.map(u => buildUserCard(u, 'search')).join('');
-            }, 300);
-        }
-
-        async function actionFriend(action, id) {
-            await fetch(`/api/friends/${action}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target_id: id }) });
-            const q = document.getElementById('friend-search-input').value.trim();
-            if (q.length >= 2) handleSearch(); else loadFriendsList();
-        }
-
-        window.onload = initPage;
-
-        document.addEventListener('click', (event) => {
-            const sidebar = document.getElementById('friends-sidebar');
-            const btnFriends = document.querySelector('.btn-friends');
-            if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(event.target) && !btnFriends.contains(event.target)) {
-                sidebar.classList.remove('open');
-            }
+            } catch(e) {}
         });
 
-        setInterval(() => {
-            fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
-        }, 60000);
-    </script>
-<div id="security-modal" class="modal-overlay hidden owner-only">
-    <div class="modal-card">
-        <h3 id="sec-modal-title">Изменение данных</h3>
-        <div id="sec-step-1">
-            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Мы отправим код подтверждения на вашу текущую почту, чтобы убедиться, что это вы.</p>
-            <button class="btn-primary" style="width: 100%;" onclick="requestSecurityCode()">Получить код</button>
-        </div>
-        <div id="sec-step-2" class="hidden">
-            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Введите код из письма и новые данные.</p>
-            <input type="text" id="sec-code" placeholder="000000" maxlength="6" style="background: var(--bg-input); color: white; padding: 10px; border-radius: 8px; width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 10px; border: 1px solid #333;">
-            
-            <input type="email" id="sec-new-email" placeholder="Новый E-mail" style="background: var(--bg-input); color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; border: 1px solid #333;" class="hidden">
-            <input type="password" id="sec-new-password" placeholder="Новый пароль" style="background: var(--bg-input); color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; border: 1px solid #333;" class="hidden">
-            
-            <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="submitSecurityChange()">Сохранить</button>
-        </div>
-        <div id="sec-error" style="color: #ff4444; margin-top: 10px; display: none; font-size: 0.9rem; text-align: center;"></div>
-        <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="closeSecurityModal()">Отмена</button>
-    </div>
-</div>
-
-<script>
-    let currentSecurityMode = '';
-
-    function openSecurityModal(mode) {
-        currentSecurityMode = mode;
-        document.getElementById('sec-modal-title').innerText = mode === 'email' ? 'Смена почты' : 'Смена пароля';
-        document.getElementById('sec-step-1').classList.remove('hidden');
-        document.getElementById('sec-step-2').classList.add('hidden');
-        document.getElementById('sec-error').style.display = 'none';
-        document.getElementById('sec-code').value = '';
-        document.getElementById('security-modal').classList.remove('hidden');
-    }
-
-    function closeSecurityModal() {
-        document.getElementById('security-modal').classList.add('hidden');
-    }
-
-    async function requestSecurityCode() {
-        try {
-            const res = await fetch('/api/security/request-code', {method: 'POST'});
-            if(res.ok) {
-                document.getElementById('sec-step-1').classList.add('hidden');
-                document.getElementById('sec-step-2').classList.remove('hidden');
-                
-                document.getElementById('sec-new-email').classList.toggle('hidden', currentSecurityMode !== 'email');
-                document.getElementById('sec-new-password').classList.toggle('hidden', currentSecurityMode !== 'password');
-            } else {
-                document.getElementById('sec-error').innerText = "Ошибка отправки кода";
-                document.getElementById('sec-error').style.display = 'block';
-            }
-        } catch(e) {}
-    }
-
-    async function submitSecurityChange() {
-        const code = document.getElementById('sec-code').value.trim();
-        const newValue = currentSecurityMode === 'email' ? document.getElementById('sec-new-email').value.trim() : document.getElementById('sec-new-password').value;
-        
-        if(code.length !== 6 || !newValue) {
-            document.getElementById('sec-error').innerText = "Заполните все поля";
-            document.getElementById('sec-error').style.display = 'block';
-            return;
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/auth';
         }
 
-        try {
-            const res = await fetch(`/api/security/change-${currentSecurityMode}`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({code: code, new_value: newValue})
-            });
-            if(res.ok) {
-                window.location.reload();
-            } else {
-                const err = await res.json();
-                document.getElementById('sec-error').innerText = err.detail || "Неверный код";
+        function openSecurityModal(mode) {
+            currentSecurityMode = mode;
+            document.getElementById('sec-modal-title').innerText = mode === 'email' ? 'Смена почты' : 'Смена пароля';
+            document.getElementById('sec-step-1').classList.remove('hidden');
+            document.getElementById('sec-step-2').classList.add('hidden');
+            document.getElementById('sec-error').style.display = 'none';
+            document.getElementById('sec-code').value = '';
+            document.getElementById('security-modal').classList.remove('hidden');
+        }
+
+        function closeSecurityModal() {
+            document.getElementById('security-modal').classList.add('hidden');
+        }
+
+        async function requestSecurityCode() {
+            try {
+                const res = await fetch('/api/security/request-code', {method: 'POST'});
+                if(res.ok) {
+                    document.getElementById('sec-step-1').classList.add('hidden');
+                    document.getElementById('sec-step-2').classList.remove('hidden');
+                    document.getElementById('sec-new-email').classList.toggle('hidden', currentSecurityMode !== 'email');
+                    document.getElementById('sec-new-password').classList.toggle('hidden', currentSecurityMode !== 'password');
+                } else {
+                    const err = await res.json();
+                    document.getElementById('sec-error').innerText = err.detail || "Ошибка";
+                    document.getElementById('sec-error').style.display = 'block';
+                }
+            } catch(e) {}
+        }
+
+        async function submitSecurityChange() {
+            const code = document.getElementById('sec-code').value.trim();
+            const newValue = currentSecurityMode === 'email' ? document.getElementById('sec-new-email').value.trim() : document.getElementById('sec-new-password').value;
+            
+            if(code.length !== 6 || !newValue) {
+                document.getElementById('sec-error').innerText = "Заполните все поля";
                 document.getElementById('sec-error').style.display = 'block';
+                return;
             }
-        } catch(e) {}
-    }
-</script>
-    
+
+            try {
+                const res = await fetch(`/api/security/change-${currentSecurityMode}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({code: code, new_value: newValue})
+                });
+                if(res.ok) window.location.reload();
+                else {
+                    const err = await res.json();
+                    document.getElementById('sec-error').innerText = err.detail || "Ошибка";
+                    document.getElementById('sec-error').style.display = 'block';
+                }
+            } catch(e) {}
+        }
+    </script>
 </body>
 </html>
