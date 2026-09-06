@@ -283,15 +283,19 @@
             window.location.href = '/auth';
         }
 
-        // --- РАСЧЕТ И ОТОБРАЖЕНИЕ РАНГА ---
+// --- РАСЧЕТ И ОТОБРАЖЕНИЕ РАНГА ---
         function renderRankData(tier) {
             const baseImg = document.getElementById('rank-base-img');
             const starImg = document.getElementById('rank-star-img');
             const nameText = document.getElementById('rank-name-text');
             const mmrText = document.getElementById('rank-mmr-text');
 
+            // Прячем слой со звездой, так как у тебя цельные картинки
+            starImg.style.display = "none";
+
             if (!tier || tier === 0) {
-                baseImg.src = "/static/ranks/rank_0.png";
+                // Если нет ранга, показываем дефолтную картинку
+                baseImg.src = "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/icons/ranks/rank_0.png";
                 baseImg.style.display = "block";
                 return;
             }
@@ -300,14 +304,11 @@
             const star = tier % 10;
             const names = ['', 'Рекрут', 'Страж', 'Рыцарь', 'Герой', 'Легенда', 'Властелин', 'Божество', 'Титан'];
             
-            baseImg.src = `/static/ranks/rank_${badge}.png`;
+            // Берем картинку из твоей папки прямо по номеру (например: /static/ranks/53.png)
+            baseImg.src = `/static/ranks/${tier}.png`;
             baseImg.style.display = "block";
-            
-            if (badge < 8 && star > 0) {
-                starImg.src = `/static/ranks/rank_star_${star}.png`;
-                starImg.style.display = "block";
-            }
 
+            // Расчет текста и примерного MMR
             nameText.innerText = names[badge] + (badge < 8 && star > 0 ? ' ' + star : '');
             let approxMmr = (badge - 1) * 770 + star * 154;
             if (badge === 8) approxMmr = '5600+'; 
