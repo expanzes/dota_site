@@ -13,7 +13,8 @@ function switchAuthMode(mode) {
 async function submitAuth() {
   const username = document.getElementById('auth-username').value.trim();
   const password = document.getElementById('auth-password').value;
-  const email = document.getElementById('auth-email') ? document.getElementById('auth-email').value.trim() : '';
+  const emailInput = document.getElementById('auth-email');
+  const email = emailInput ? emailInput.value.trim() : '';
   const errorBox = document.getElementById('auth-error');
 
   if (!username || !password || ((authMode === 'register' || authMode === 'steam_register') && !email)) {
@@ -25,7 +26,6 @@ async function submitAuth() {
   const payload = { username, password };
   if (authMode === 'register' || authMode === 'steam_register') payload.email = email;
 
-  // Если это регистрация через стим, обращаемся к новому роуту
   const apiRoute = authMode === 'steam_register' ? '/api/register/steam' : `/api/${authMode}`;
 
   try {
@@ -97,13 +97,28 @@ async function logout() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-    // Проверка на Steam-регистрацию
     const params = new URLSearchParams(window.location.search);
     if (params.get('mode') === 'steam') {
         authMode = 'steam_register';
-        document.querySelector('.auth-tabs').innerHTML = '<h3 style="color: var(--accent-yellow); margin-bottom: 20px; width: 100%;">Завершение привязки Steam</h3>';
-        document.getElementById('email-group').style.display = 'block';
-        return; // Останавливаем обычную проверку сессии
+        
+        // Перестраиваем карточку под Steam-регистрацию
+        const tabsContainer = document.querySelector('.auth-tabs');
+        if (tabsContainer) {
+            tabsContainer.innerHTML = '<h3 style="color: var(--accent-yellow); margin-bottom: 10px; width: 100%; font-size: 1.1rem;">Завершение привязки Steam</h3>';
+        }
+        
+        // Гарантированно показываем поле для ввода email, если его не было
+        let emailGroup = document.getElementById('email-group');
+        if (!emailGroup) {
+            const card = document.getElementById('main-auth-box');
+            emailGroup = document.createElement('div');
+            emailGroup.id = 'email-group';
+            emailGroup.innerHTML = `<input type="email" id="auth-email" class="auth-input" placeholder="E-mail">`;
+            card.insertBefore(emailGroup, document.getElementById('auth-password'));
+        } else {
+            emailGroup.style.display = 'block';
+        }
+        return; 
     }
 
     try {
