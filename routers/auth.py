@@ -1,12 +1,16 @@
-import os, random, bcrypt, psycopg2, httpx, re
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import RedirectResponse, HTMLResponse
+import os, random, bcrypt, psycopg2, httpx, re, smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional
 
 router = APIRouter()
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 STEAM_API_KEY = os.getenv("STEAM_API_KEY")
+SMTP_EMAIL = os.getenv("SMTP_EMAIL")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
 MY_DOMAIN = "dotahelper.ru"
 
@@ -15,6 +19,40 @@ def get_db_connection():
 
 def generate_site_id():
     return ''.join([str(random.randint(0, 9)) for _ in range(10)])
+
+def generate_verification_code():
+    return str(random.randint(100000, 999999))
+
+def send_email_sync(to_email: str, code: str):
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        print("Ошибка: Почта не настроена в переменных окружения!")
+        return
+
+    msg = MIMEMultipart()
+    msg['From'] = SMTP_EMAIL
+    msg['To'] = to_email
+    msg['Subject'] = "Код подтверждения — Dota Helper"
+
+    body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333;">
+        <h2>Добро пожаловать в Dota Helper!</h2>
+        <p>Ваш код для подтверждения почты:</p>
+        <h1 style="color: #FFD700; background: #222; padding: 10px; width: fit-content; border-radius: 5px;">{code}</h1>
+        <p>Никому не сообщайте этот код. Если это были не вы, просто проигнорируйте письмо.</p>
+      </body>
+    </html>
+    """
+    msg.attach(MIMEText(body, 'html'))
+
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        print(f"Письмо успешно отправлено на {to_email}")
+    except Exception as e:
+        print(f"Ошибка отправки письма: {e}")
 
 def hash_password(pw: str): 
     return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
@@ -33,7 +71,6 @@ def ensure_tables_exist():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS users (
                         site_id VARCHAR(10) PRIMARY KEY,
@@ -179,7 +216,6 @@ async def get_me(request: Request):
     if not sess: return {"logged_in": False}
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            # Обновляем активность владельца
             cur.execute("UPDATE users SET last_seen = NOW() WHERE site_id = %s", (sess["site_id"],))
             conn.commit()
             
