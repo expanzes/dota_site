@@ -2,12 +2,16 @@
 <html lang="ru">
 <head>
     <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
-<link rel="manifest" href="/static/favicons/site.webmanifest">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
+    <link rel="manifest" href="/static/favicons/site.webmanifest">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DH Тренажер Инвокера</title>
+    
+    <!-- Добавлен FontAwesome для отображения золотой коронки -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <link rel="stylesheet" href="/static/css/global.css">
     <link rel="stylesheet" href="/static/css/header.css">
     <link rel="stylesheet" href="/static/css/invoker.css">
@@ -23,7 +27,7 @@
             </nav>
         </div>
         <div class="user-panel">
-            <span id="user-display-name" class="user-badge" onclick="window.location.href='/profile'">Загрузка...</span>
+            <span id="user-display-name" class="user-badge" onclick="window.location.href='/profile'" style="cursor: pointer;">Загрузка...</span>
             <button class="btn-logout" onclick="logout()">Выйти</button>
         </div>
     </header>
@@ -64,41 +68,48 @@
             </div>
         </div>
 
-        <div style="margin-top: 30px; color: var(--text-muted); font-size: 0.8rem;">
+        <div style="margin-top: 30px; color: var(--text-muted); font-size: 0.8rem; text-align: center;">
             Используй клавиши <b>Q W E</b> для сфер и <b>R</b> для каста (Invoke)
         </div>
     </main>
 
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/invoker.js"></script>
+    
     <script>
-    window.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const res = await fetch('/api/me');
-            const user = await res.json();
-            
-            if (user.logged_in) {
-                // Скрипт ищет твой ID с 26-й строки
+        // Скрипт выполняется мгновенно и безотказно
+        (async function loadUserData() {
+            try {
+                const res = await fetch('/api/me');
+                if (!res.ok) throw new Error("Server error");
+                
+                const user = await res.json();
+                
+                if (user.logged_in) {
+                    const headerUsername = document.getElementById('user-display-name');
+                    if (headerUsername) {
+                        let nameHtml = user.username;
+                        if (user.is_premium) {
+                            nameHtml += ' <i class="fas fa-crown" style="color: #FFD700; margin-left: 5px;" title="Premium"></i>';
+                        }
+                        headerUsername.innerHTML = nameHtml;
+                    }
+                } else {
+                    window.location.href = '/auth';
+                }
+            } catch (e) {
+                console.error("Ошибка загрузки профиля:", e);
                 const headerUsername = document.getElementById('user-display-name');
                 if (headerUsername) {
-                    let nameHtml = user.username;
-                    if (user.is_premium) {
-                        nameHtml += ' <i class="fas fa-crown" style="color: #FFD700; margin-left: 5px;" title="Premium"></i>';
-                    }
-                    headerUsername.innerHTML = nameHtml;
+                    headerUsername.innerText = "Ошибка";
                 }
-            } else {
-                window.location.href = '/auth';
             }
-        } catch (e) {
-            console.error("Ошибка загрузки профиля:", e);
-        }
-    });
+        })();
 
-    async function logout() {
-        try { await fetch('/api/logout', { method: 'POST' }); } catch (e) {}
-        window.location.href = '/auth';
-    }
-</script>
+        async function logout() {
+            try { await fetch('/api/logout', { method: 'POST' }); } catch (e) {}
+            window.location.href = '/auth';
+        }
+    </script>
 </body>
 </html>
