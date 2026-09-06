@@ -129,6 +129,10 @@ class VerifyModel(BaseModel):
     username: str
     code: str
 
+class SecurityChangeModel(BaseModel):
+    code: str
+    new_value: str
+
 class FavoriteModel(BaseModel):
     user_id: str
     favorite_ids: List[int]
@@ -258,8 +262,8 @@ async def get_me(request: Request):
             cur.execute("UPDATE users SET last_seen = NOW() WHERE site_id = %s", (sess["site_id"],))
             conn.commit()
             
-cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, is_premium, steam_id, email FROM users WHERE site_id = %s", (sess["site_id"],))
-u = cur.fetchone()
+            cur.execute("SELECT site_id, username, avatar_url, rank_tier, invoker_high_score, is_premium, steam_id, email FROM users WHERE site_id = %s", (sess["site_id"],))
+            u = cur.fetchone()
             if not u: return {"logged_in": False}
             
             rank = u[3]
@@ -280,12 +284,12 @@ u = cur.fetchone()
             needs_rename = not is_valid_username(username) or username.startswith("Player_")
 
             return {
-    "logged_in": True, "site_id": u[0], "username": username, 
-    "avatar": u[2], "rank": rank, "invoker_score": u[4], 
-    "is_premium": u[5], "steam_linked": bool(u[6]),
-    "needs_rename": needs_rename, "is_online": True,
-    "email": u[7] # Добавили вывод почты
-}
+                "logged_in": True, "site_id": u[0], "username": username, 
+                "avatar": u[2], "rank": rank, "invoker_score": u[4], 
+                "is_premium": u[5], "steam_linked": bool(u[6]),
+                "needs_rename": needs_rename, "is_online": True,
+                "email": u[7]
+            }
 
 @router.post("/register")
 async def register(data: RegisterModel, background_tasks: BackgroundTasks):
@@ -354,6 +358,53 @@ async def login(data: LoginModel, background_tasks: BackgroundTasks, request: Re
             
             request.session["user"] = {"site_id": row[0], "username": row[1]}
             return {"site_id": row[0], "username": row[1]}
+
+@router.post("/security/request-code")
+async def request_sec_code(request: Request, background_tasks: BackgroundTasks):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT email FROM users WHERE site_id = %s", (sess["site_id"],))
+            row = cur.fetchone()
+            if not row or not row[0]: raise HTTPException(400, "Почта не привязана")
+            
+            code = generate_verification_code()
+            cur.execute("UPDATE users SET verification_code = %s WHERE site_id = %s", (code, sess["site_id"]))
+            conn.commit()
+            background_tasks.add_task(send_email_sync, row[0], code)
+    return {"status": "ok"}
+
+@router.post("/security/change-email")
+async def change_email(data: SecurityChangeModel, request: Request):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT verification_code FROM users WHERE site_id = %s", (sess["site_id"],))
+            row = cur.fetchone()
+            if not row or row[0] != data.code: raise HTTPException(400, "Неверный код")
+            
+            cur.execute("SELECT 1 FROM users WHERE email = %s", (data.new_value,))
+            if cur.fetchone(): raise HTTPException(400, "Эта почта уже занята")
+            
+            cur.execute("UPDATE users SET email = %s, verification_code = NULL WHERE site_id = %s", (data.new_value, sess["site_id"]))
+            conn.commit()
+    return {"status": "ok"}
+
+@router.post("/security/change-password")
+async def change_password(data: SecurityChangeModel, request: Request):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT verification_code FROM users WHERE site_id = %s", (sess["site_id"],))
+            row = cur.fetchone()
+            if not row or row[0] != data.code: raise HTTPException(400, "Неверный код")
+            
+            cur.execute("UPDATE users SET password_hash = %s, verification_code = NULL WHERE site_id = %s", (hash_password(data.new_value), sess["site_id"]))
+            conn.commit()
+    return {"status": "ok"}
 
 @router.post("/update-username")
 async def update_username(data: UpdateUsernameModel):
@@ -567,54 +618,3 @@ async def get_recent_matches(request: Request, site_id: Optional[str] = None):
             return matches
         except:
             return []
-            
-class SecurityChangeModel(BaseModel):
-    code: str
-    new_value: str
-
-@router.post("/security/request-code")
-async def request_sec_code(request: Request, background_tasks: BackgroundTasks):
-    sess = request.session.get("user")
-    if not sess: raise HTTPException(401)
-    with get_db_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT email FROM users WHERE site_id = %s", (sess["site_id"],))
-            row = cur.fetchone()
-            if not row or not row[0]: raise HTTPException(400, "Почта не привязана")
-            
-            code = generate_verification_code()
-            cur.execute("UPDATE users SET verification_code = %s WHERE site_id = %s", (code, sess["site_id"]))
-            conn.commit()
-            background_tasks.add_task(send_email_sync, row[0], code)
-    return {"status": "ok"}
-
-@router.post("/security/change-email")
-async def change_email(data: SecurityChangeModel, request: Request):
-    sess = request.session.get("user")
-    if not sess: raise HTTPException(401)
-    with get_db_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT verification_code FROM users WHERE site_id = %s", (sess["site_id"],))
-            row = cur.fetchone()
-            if not row or row[0] != data.code: raise HTTPException(400, "Неверный код")
-            
-            cur.execute("SELECT 1 FROM users WHERE email = %s", (data.new_value,))
-            if cur.fetchone(): raise HTTPException(400, "Эта почта уже занята")
-            
-            cur.execute("UPDATE users SET email = %s, verification_code = NULL WHERE site_id = %s", (data.new_value, sess["site_id"]))
-            conn.commit()
-    return {"status": "ok"}
-
-@router.post("/security/change-password")
-async def change_password(data: SecurityChangeModel, request: Request):
-    sess = request.session.get("user")
-    if not sess: raise HTTPException(401)
-    with get_db_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT verification_code FROM users WHERE site_id = %s", (sess["site_id"],))
-            row = cur.fetchone()
-            if not row or row[0] != data.code: raise HTTPException(400, "Неверный код")
-            
-            cur.execute("UPDATE users SET password_hash = %s, verification_code = NULL WHERE site_id = %s", (hash_password(data.new_value), sess["site_id"]))
-            conn.commit()
-    return {"status": "ok"}
