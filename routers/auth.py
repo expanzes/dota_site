@@ -567,3 +567,54 @@ async def get_recent_matches(request: Request, site_id: Optional[str] = None):
             return matches
         except:
             return []
+            
+class SecurityChangeModel(BaseModel):
+    code: str
+    new_value: str
+
+@router.post("/security/request-code")
+async def request_sec_code(request: Request, background_tasks: BackgroundTasks):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT email FROM users WHERE site_id = %s", (sess["site_id"],))
+            row = cur.fetchone()
+            if not row or not row[0]: raise HTTPException(400, "Почта не привязана")
+            
+            code = generate_verification_code()
+            cur.execute("UPDATE users SET verification_code = %s WHERE site_id = %s", (code, sess["site_id"]))
+            conn.commit()
+            background_tasks.add_task(send_email_sync, row[0], code)
+    return {"status": "ok"}
+
+@router.post("/security/change-email")
+async def change_email(data: SecurityChangeModel, request: Request):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT verification_code FROM users WHERE site_id = %s", (sess["site_id"],))
+            row = cur.fetchone()
+            if not row or row[0] != data.code: raise HTTPException(400, "Неверный код")
+            
+            cur.execute("SELECT 1 FROM users WHERE email = %s", (data.new_value,))
+            if cur.fetchone(): raise HTTPException(400, "Эта почта уже занята")
+            
+            cur.execute("UPDATE users SET email = %s, verification_code = NULL WHERE site_id = %s", (data.new_value, sess["site_id"]))
+            conn.commit()
+    return {"status": "ok"}
+
+@router.post("/security/change-password")
+async def change_password(data: SecurityChangeModel, request: Request):
+    sess = request.session.get("user")
+    if not sess: raise HTTPException(401)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT verification_code FROM users WHERE site_id = %s", (sess["site_id"],))
+            row = cur.fetchone()
+            if not row or row[0] != data.code: raise HTTPException(400, "Неверный код")
+            
+            cur.execute("UPDATE users SET password_hash = %s, verification_code = NULL WHERE site_id = %s", (hash_password(data.new_value), sess["site_id"]))
+            conn.commit()
+    return {"status": "ok"}
