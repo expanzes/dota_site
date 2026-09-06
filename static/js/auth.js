@@ -26,6 +26,7 @@ async function submitAuth() {
   const payload = { username, password };
   if (authMode === 'register' || authMode === 'steam_register') payload.email = email;
 
+  // Если это режим привязки Steam, отправляем данные на специальный роут
   const apiRoute = authMode === 'steam_register' ? '/api/register/steam' : `/api/${authMode}`;
 
   try {
@@ -97,17 +98,18 @@ async function logout() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+    // 1. Проверяем URL на наличие ?mode=steam
     const params = new URLSearchParams(window.location.search);
     if (params.get('mode') === 'steam') {
         authMode = 'steam_register';
         
-        // Перестраиваем карточку под Steam-регистрацию
+        // Убираем вкладки Вход/Регистрация и ставим заголовок
         const tabsContainer = document.querySelector('.auth-tabs');
         if (tabsContainer) {
             tabsContainer.innerHTML = '<h3 style="color: var(--accent-yellow); margin-bottom: 10px; width: 100%; font-size: 1.1rem;">Завершение привязки Steam</h3>';
         }
         
-        // Гарантированно показываем поле для ввода email, если его не было
+        // Убеждаемся, что поле email существует и отображается
         let emailGroup = document.getElementById('email-group');
         if (!emailGroup) {
             const card = document.getElementById('main-auth-box');
@@ -118,15 +120,19 @@ window.addEventListener('DOMContentLoaded', async () => {
         } else {
             emailGroup.style.display = 'block';
         }
-        return; 
+        return; // Останавливаем выполнение, чтобы не сработал редирект профиля ниже
     }
 
+    // 2. Обычная загрузка и проверка сессии, если мы не в режиме Steam
     try {
         const res = await fetch('/api/me');
         const serverUser = await res.json();
+        
+        // Если уже авторизован, уводим с /auth на /profile
         if (serverUser.logged_in) {
             if (window.location.pathname === '/auth') window.location.href = '/profile';
         } else {
+            // Если не авторизован и находится не на главной и не на /auth — выкидываем на /auth
             if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
                 window.location.href = '/auth';
             }
