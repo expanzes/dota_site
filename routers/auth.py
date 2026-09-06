@@ -194,8 +194,20 @@ async def steam_callback(request: Request):
         
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT site_id, username FROM users WHERE steam_id = %s", (steam_id,))
+                cur.execute("SELECT site_id, username, password_hash FROM users WHERE steam_id = %s", (steam_id,))
                 existing = cur.fetchone()
+
+                # === ТОТ САМЫЙ КОД-УБИЙЦА БАГОВ ===
+                # Если в базе найден аккаунт со Steam, но у него нет пароля (старый зависший тест),
+                # скрипт сносит его из всех таблиц, чтобы пустить тебя как абсолютно нового!
+                if existing and not existing[2]:
+                    sid = existing[0]
+                    cur.execute("DELETE FROM friendships WHERE user_id1 = %s OR user_id2 = %s", (sid, sid))
+                    cur.execute("DELETE FROM favorites WHERE user_id = %s", (sid,))
+                    cur.execute("DELETE FROM users WHERE site_id = %s", (sid,))
+                    conn.commit()
+                    existing = None
+                # ==================================
 
                 target_url = "/"
                 if current_session:
@@ -219,7 +231,6 @@ async def steam_callback(request: Request):
                     }
                     target_url = "/auth/steam/finish"
 
-                # Фикс для браузеров (Safari/iOS), которые сбрасывают куки при прямом редиректе
                 return HTMLResponse(content=f"""
                 <html>
                   <body style="background:#1a1a1a; display:flex; justify-content:center; align-items:center; height:100vh;">
@@ -631,12 +642,3 @@ async def get_recent_matches(request: Request, site_id: Optional[str] = None):
             return matches
         except:
             return []
-
-# Специальный роут для сброса привязки Steam, чтобы можно было протестировать окно
-@router.get("/debug/reset-steam")
-async def reset_steam():
-    with get_db_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("UPDATE users SET steam_id = NULL")
-            conn.commit()
-    return {"status": "ok", "message": "Steam accounts unlinked. Try logging in via Steam now."}
