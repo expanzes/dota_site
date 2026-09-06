@@ -85,6 +85,26 @@
                 ID: <span id="display-site-id">0000000000</span>
             </div>
 
+<div class="security-settings owner-only" style="margin-top: 20px; background: var(--bg-input); padding: 15px; border-radius: 12px; width: 100%; text-align: left;">
+    <h3 style="margin-bottom: 15px; font-size: 1rem; color: var(--text-muted); text-transform: uppercase;">Настройки безопасности</h3>
+
+    <div style="margin-bottom: 15px;">
+        <span style="color: #888; font-size: 0.85rem;">Привязанный E-mail</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 8px; margin-top: 5px;">
+            <span id="display-email" style="font-weight: bold; word-break: break-all;">...</span>
+            <button class="btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;" onclick="openSecurityModal('email')">Изменить</button>
+        </div>
+    </div>
+
+    <div>
+        <span style="color: #888; font-size: 0.85rem;">Пароль</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 10px; border-radius: 8px; margin-top: 5px;">
+            <span style="font-weight: bold; letter-spacing: 2px;">********</span>
+            <button class="btn-secondary" style="padding: 5px 15px; font-size: 0.8rem;" onclick="openSecurityModal('password')">Изменить</button>
+        </div>
+    </div>
+</div>
+            
             <div class="profile-info-grid">
                 <div class="info-item">
                     <span class="info-label">РАНГ</span>
@@ -205,6 +225,12 @@
             document.getElementById('profile-avatar').src = user.avatar || "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/pudge.png";
             
             const statusEl = document.getElementById('display-online-status');
+
+            // Добавь эту строчку внутрь renderProfileData:
+if (document.getElementById('display-email')) {
+    document.getElementById('display-email').innerText = user.email || 'Не привязана';
+}
+            
             if (user.is_online) {
                 statusEl.innerText = "В СЕТИ";
                 statusEl.className = "status-text-online";
@@ -439,5 +465,85 @@
             fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
         }, 60000);
     </script>
+<div id="security-modal" class="modal-overlay hidden owner-only">
+    <div class="modal-card">
+        <h3 id="sec-modal-title">Изменение данных</h3>
+        <div id="sec-step-1">
+            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Мы отправим код подтверждения на вашу текущую почту, чтобы убедиться, что это вы.</p>
+            <button class="btn-primary" style="width: 100%;" onclick="requestSecurityCode()">Получить код</button>
+        </div>
+        <div id="sec-step-2" class="hidden">
+            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Введите код из письма и новые данные.</p>
+            <input type="text" id="sec-code" placeholder="000000" maxlength="6" style="background: var(--bg-input); color: white; padding: 10px; border-radius: 8px; width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 5px; margin-bottom: 10px; border: 1px solid #333;">
+            
+            <input type="email" id="sec-new-email" placeholder="Новый E-mail" style="background: var(--bg-input); color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; border: 1px solid #333;" class="hidden">
+            <input type="password" id="sec-new-password" placeholder="Новый пароль" style="background: var(--bg-input); color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; border: 1px solid #333;" class="hidden">
+            
+            <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="submitSecurityChange()">Сохранить</button>
+        </div>
+        <div id="sec-error" style="color: #ff4444; margin-top: 10px; display: none; font-size: 0.9rem; text-align: center;"></div>
+        <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="closeSecurityModal()">Отмена</button>
+    </div>
+</div>
+
+<script>
+    let currentSecurityMode = '';
+
+    function openSecurityModal(mode) {
+        currentSecurityMode = mode;
+        document.getElementById('sec-modal-title').innerText = mode === 'email' ? 'Смена почты' : 'Смена пароля';
+        document.getElementById('sec-step-1').classList.remove('hidden');
+        document.getElementById('sec-step-2').classList.add('hidden');
+        document.getElementById('sec-error').style.display = 'none';
+        document.getElementById('sec-code').value = '';
+        document.getElementById('security-modal').classList.remove('hidden');
+    }
+
+    function closeSecurityModal() {
+        document.getElementById('security-modal').classList.add('hidden');
+    }
+
+    async function requestSecurityCode() {
+        try {
+            const res = await fetch('/api/security/request-code', {method: 'POST'});
+            if(res.ok) {
+                document.getElementById('sec-step-1').classList.add('hidden');
+                document.getElementById('sec-step-2').classList.remove('hidden');
+                
+                document.getElementById('sec-new-email').classList.toggle('hidden', currentSecurityMode !== 'email');
+                document.getElementById('sec-new-password').classList.toggle('hidden', currentSecurityMode !== 'password');
+            } else {
+                document.getElementById('sec-error').innerText = "Ошибка отправки кода";
+                document.getElementById('sec-error').style.display = 'block';
+            }
+        } catch(e) {}
+    }
+
+    async function submitSecurityChange() {
+        const code = document.getElementById('sec-code').value.trim();
+        const newValue = currentSecurityMode === 'email' ? document.getElementById('sec-new-email').value.trim() : document.getElementById('sec-new-password').value;
+        
+        if(code.length !== 6 || !newValue) {
+            document.getElementById('sec-error').innerText = "Заполните все поля";
+            document.getElementById('sec-error').style.display = 'block';
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/security/change-${currentSecurityMode}`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({code: code, new_value: newValue})
+            });
+            if(res.ok) {
+                window.location.reload();
+            } else {
+                const err = await res.json();
+                document.getElementById('sec-error').innerText = err.detail || "Неверный код";
+                document.getElementById('sec-error').style.display = 'block';
+            }
+        } catch(e) {}
+    }
+</script>
+    
 </body>
 </html>
