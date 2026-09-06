@@ -2,6 +2,7 @@ import os, random, bcrypt, psycopg2, httpx, re, smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
+from fastapi.responses import RedirectResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -115,9 +116,18 @@ async def get_favorites_db(user_id: str):
                 return {"favorite_ids": row[0] if row and row[0] else []}
     except: return {"favorite_ids": []}
 
-class AuthModel(BaseModel):
+class RegisterModel(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class LoginModel(BaseModel):
     username: str
     password: str
+
+class VerifyModel(BaseModel):
+    username: str
+    code: str
 
 class FavoriteModel(BaseModel):
     user_id: str
@@ -201,7 +211,7 @@ async def steam_callback(request: Request):
                     cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
                     if cur.fetchone(): username = f"Player_{sid[:7]}"
                     
-                    cur.execute("INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier, last_seen) VALUES (%s, %s, %s, %s, %s, NOW())", 
+                    cur.execute("INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier, is_verified, last_seen) VALUES (%s, %s, %s, %s, %s, TRUE, NOW())", 
                                (sid, username, steam_id, s_data["avatarfull"], rank))
                 conn.commit()
 
@@ -248,33 +258,70 @@ async def get_me(request: Request):
             }
 
 @router.post("/register")
-async def register(data: AuthModel, request: Request):
+async def register(data: RegisterModel, background_tasks: BackgroundTasks):
+    if not is_valid_username(data.username):
+        raise HTTPException(status_code=400, detail="Формат: 3-15 символов, только англ. буквы, цифры, '_' и одиночные пробелы")
+        
     try:
-        if not is_valid_username(data.username):
-            raise HTTPException(status_code=400, detail="Формат: 3-15 символов, только англ. буквы, цифры, '_' и одиночные пробелы")
-            
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT 1 FROM users WHERE username = %s", (data.username,))
-                if cur.fetchone(): raise HTTPException(status_code=400, detail="Никнейм занят")
+                cur.execute("SELECT 1 FROM users WHERE username = %s OR email = %s", (data.username, data.email))
+                if cur.fetchone(): 
+                    raise HTTPException(status_code=400, detail="Никнейм или почта уже заняты")
+                
                 sid = generate_site_id()
-                cur.execute("INSERT INTO users (site_id, username, password_hash, last_seen) VALUES (%s, %s, %s, NOW())", 
-                           (sid, data.username, hash_password(data.password)))
+                code = generate_verification_code()
+                
+                cur.execute("""
+                    INSERT INTO users (site_id, username, email, password_hash, is_verified, verification_code, last_seen) 
+                    VALUES (%s, %s, %s, %s, FALSE, %s, NOW())
+                """, (sid, data.username, data.email, hash_password(data.password), code))
                 conn.commit()
-                request.session["user"] = {"site_id": sid, "username": data.username}
-                return {"site_id": sid, "username": data.username}
-    except Exception as e: raise HTTPException(500, str(e))
+                
+                background_tasks.add_task(send_email_sync, data.email, code)
+                
+                return {"status": "pending_verification", "username": data.username}
+    except HTTPException:
+        raise
+    except Exception as e: 
+        raise HTTPException(500, str(e))
 
-@router.post("/login")
-async def login(data: AuthModel, request: Request):
+@router.post("/verify")
+async def verify_account(data: VerifyModel, request: Request):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT site_id, username, password_hash FROM users WHERE username = %s", (data.username,))
+            cur.execute("SELECT site_id, verification_code FROM users WHERE username = %s", (data.username,))
             row = cur.fetchone()
+            
+            if not row or row[1] != data.code:
+                raise HTTPException(400, "Неверный код подтверждения")
+            
+            cur.execute("UPDATE users SET is_verified = TRUE, verification_code = NULL, last_seen = NOW() WHERE site_id = %s", (row[0],))
+            conn.commit()
+            
+            request.session["user"] = {"site_id": row[0], "username": data.username}
+            return {"status": "ok", "site_id": row[0]}
+
+@router.post("/login")
+async def login(data: LoginModel, background_tasks: BackgroundTasks, request: Request):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT site_id, username, password_hash, is_verified, email FROM users WHERE username = %s", (data.username,))
+            row = cur.fetchone()
+            
             if not row or not row[2] or not verify_password(data.password, row[2]):
-                raise HTTPException(400, "Неверные данные")
+                raise HTTPException(400, "Неверный логин или пароль")
+                
+            if not row[3]:
+                new_code = generate_verification_code()
+                cur.execute("UPDATE users SET verification_code = %s WHERE site_id = %s", (new_code, row[0]))
+                conn.commit()
+                background_tasks.add_task(send_email_sync, row[4], new_code)
+                raise HTTPException(403, "Почта не подтверждена. Новый код отправлен на email.")
+                
             cur.execute("UPDATE users SET last_seen = NOW() WHERE site_id = %s", (row[0],))
             conn.commit()
+            
             request.session["user"] = {"site_id": row[0], "username": row[1]}
             return {"site_id": row[0], "username": row[1]}
 
