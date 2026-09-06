@@ -11,7 +11,12 @@
         .auth-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border-color, #333); background: var(--bg-input, #222); color: white; box-sizing: border-box; }
         .auth-tabs { display: flex; margin-bottom: 20px; }
         .auth-tab { flex: 1; padding: 10px; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; color: var(--text-muted, #888); transition: 0.2s; }
-        .auth-tab.active { border-bottom: 2px solid var(--accent-yellow, #FFD700); color: var(--accent-yellow, #FFD700); }
+        .auth-tab.active { 
+    background: #f6465d; /* Красный фон как на кнопке */
+    color: white !important; 
+    text-shadow: none !important; 
+    border-radius: 8px;
+}
     </style>
 </head>
 <body id="body-dark">
