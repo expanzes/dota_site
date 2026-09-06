@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from routers import auth, draft
 
@@ -42,7 +42,15 @@ def serve_page(file_name: str, module_name: str = None):
     return HTMLResponse(content=html)
 
 @app.get("/")
-async def get_home(): return serve_page("index.html")
+async def get_home(request: Request): 
+    # Если пользователь не авторизован, сразу кидаем его на страницу входа
+    if not request.session.get("user"):
+        return RedirectResponse(url="/auth")
+    return serve_page("index.html")
+
+@app.get("/auth")
+async def get_auth_page(): 
+    return serve_page("auth.html")
 
 @app.get("/drafts")
 async def get_drafts(): return serve_page("drafts.html", "drafts")
