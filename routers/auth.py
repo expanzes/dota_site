@@ -217,7 +217,7 @@ async def steam_callback(request: Request):
                         "avatar_url": s_data["avatarfull"],
                         "rank_tier": rank
                     }
-                    target_url = "/auth?mode=steam"
+                    target_url = "/auth/steam/finish"
 
                 # Фикс для браузеров (Safari/iOS), которые сбрасывают куки при прямом редиректе
                 return HTMLResponse(content=f"""
