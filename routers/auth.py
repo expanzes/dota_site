@@ -33,9 +33,6 @@ def ensure_tables_exist():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                # ВНИМАНИЕ: Эта строка удалит все старые данные!
-                # После первого успешного запуска сервера эту строку нужно будет УДАЛИТЬ!
-                cur.execute("DROP TABLE IF EXISTS friendships, favorites, users CASCADE;")
 
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS users (
