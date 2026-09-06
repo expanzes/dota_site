@@ -197,28 +197,57 @@ async def steam_callback(request: Request):
                     sid = current_session["site_id"]
                     cur.execute("UPDATE users SET steam_id = %s, avatar_url = %s, rank_tier = %s, last_seen = NOW() WHERE site_id = %s", 
                                (steam_id, s_data["avatarfull"], rank, sid))
-                    username = current_session["username"]
+                    conn.commit()
+                    return RedirectResponse("/profile")
                 elif existing:
                     sid, username = existing[0], existing[1]
                     cur.execute("UPDATE users SET avatar_url = %s, rank_tier = %s, last_seen = NOW() WHERE site_id = %s", 
                                (s_data["avatarfull"], rank, sid))
+                    conn.commit()
+                    request.session["user"] = {"site_id": sid, "username": username}
+                    return RedirectResponse("/profile")
                 else:
-                    sid = generate_site_id()
-                    username = s_data["personaname"]
-                    if not is_valid_username(username):
-                        username = f"Player_{sid[:5]}"
-                        
-                    cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
-                    if cur.fetchone(): username = f"Player_{sid[:7]}"
-                    
-                    cur.execute("INSERT INTO users (site_id, username, steam_id, avatar_url, rank_tier, is_verified, last_seen) VALUES (%s, %s, %s, %s, %s, TRUE, NOW())", 
-                               (sid, username, steam_id, s_data["avatarfull"], rank))
-                conn.commit()
-
-        request.session["user"] = {"site_id": sid, "username": username}
-        return RedirectResponse("/profile")
+                    request.session["pending_steam"] = {
+                        "steam_id": steam_id,
+                        "avatar_url": s_data["avatarfull"],
+                        "rank_tier": rank
+                    }
+                    return RedirectResponse("/auth?mode=steam")
     except Exception as e: 
         return HTMLResponse(content=f"<h1>Ошибка авторизации</h1><p>{str(e)}</p>")
+
+@router.post("/register/steam")
+async def register_steam(data: RegisterModel, background_tasks: BackgroundTasks, request: Request):
+    pending = request.session.get("pending_steam")
+    if not pending:
+        raise HTTPException(400, "Сессия Steam истекла. Авторизуйтесь заново.")
+        
+    if not is_valid_username(data.username):
+        raise HTTPException(400, "Формат: 3-15 символов, только англ. буквы, цифры, '_' и одиночные пробелы")
+        
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM users WHERE username = %s OR email = %s", (data.username, data.email))
+                if cur.fetchone(): 
+                    raise HTTPException(400, "Никнейм или почта уже заняты")
+                
+                sid = generate_site_id()
+                code = generate_verification_code()
+                
+                cur.execute("""
+                    INSERT INTO users (site_id, username, email, password_hash, steam_id, avatar_url, rank_tier, is_verified, verification_code, last_seen) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, FALSE, %s, NOW())
+                """, (sid, data.username, data.email, hash_password(data.password), 
+                      pending["steam_id"], pending["avatar_url"], pending["rank_tier"], code))
+                conn.commit()
+                
+                background_tasks.add_task(send_email_sync, data.email, code)
+                del request.session["pending_steam"]
+                
+                return {"status": "pending_verification", "username": data.username}
+    except HTTPException: raise
+    except Exception as e: raise HTTPException(500, str(e))
 
 @router.get("/me")
 async def get_me(request: Request):
