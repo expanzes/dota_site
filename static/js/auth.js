@@ -6,7 +6,7 @@ function switchAuthMode(mode) {
   authMode = mode;
   document.getElementById('tab-login').classList.toggle('active', mode === 'login');
   document.getElementById('tab-register').classList.toggle('active', mode === 'register');
-  document.getElementById('email-group').style.display = (mode === 'register') ? 'block' : 'none';
+  document.getElementById('email-group').style.display = (mode === 'register' || mode === 'steam_register') ? 'block' : 'none';
   document.getElementById('auth-error').style.display = 'none';
 }
 
@@ -16,17 +16,20 @@ async function submitAuth() {
   const email = document.getElementById('auth-email') ? document.getElementById('auth-email').value.trim() : '';
   const errorBox = document.getElementById('auth-error');
 
-  if (!username || !password || (authMode === 'register' && !email)) {
+  if (!username || !password || ((authMode === 'register' || authMode === 'steam_register') && !email)) {
       errorBox.innerText = "Заполните все поля!";
       errorBox.style.display = 'block';
       return;
   }
 
   const payload = { username, password };
-  if (authMode === 'register') payload.email = email;
+  if (authMode === 'register' || authMode === 'steam_register') payload.email = email;
+
+  // Если это регистрация через стим, обращаемся к новому роуту
+  const apiRoute = authMode === 'steam_register' ? '/api/register/steam' : `/api/${authMode}`;
 
   try {
-    const res = await fetch(`/api/${authMode}`, {
+    const res = await fetch(apiRoute, {
       method: 'POST', 
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
@@ -94,19 +97,24 @@ async function logout() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  const nameDisplay = document.getElementById('user-display-name');
-  try {
-      const res = await fetch('/api/me');
-      const serverUser = await res.json();
+    // Проверка на Steam-регистрацию
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'steam') {
+        authMode = 'steam_register';
+        document.querySelector('.auth-tabs').innerHTML = '<h3 style="color: var(--accent-yellow); margin-bottom: 20px; width: 100%;">Завершение привязки Steam</h3>';
+        document.getElementById('email-group').style.display = 'block';
+        return; // Останавливаем обычную проверку сессии
+    }
 
-      if (serverUser.logged_in) {
-          currentUser = serverUser;
-          if (nameDisplay) nameDisplay.innerHTML = serverUser.username + (serverUser.is_premium ? ' <i class="fas fa-crown premium-icon"></i>' : '');
-          if (window.location.pathname === '/auth') window.location.href = '/profile';
-      } else {
-          if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
-              window.location.href = '/auth';
-          }
-      }
-  } catch (e) {}
+    try {
+        const res = await fetch('/api/me');
+        const serverUser = await res.json();
+        if (serverUser.logged_in) {
+            if (window.location.pathname === '/auth') window.location.href = '/profile';
+        } else {
+            if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
+                window.location.href = '/auth';
+            }
+        }
+    } catch (e) {}
 });
