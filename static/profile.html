@@ -6,21 +6,39 @@
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .profile-container { max-width: 800px; margin: 40px auto; padding: 20px; background: var(--bg-secondary); border-radius: 15px; text-align: center; }
-        .avatar-lg { width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--accent-yellow); object-fit: cover; margin-bottom: 15px; }
-        .site-id-badge { background: var(--bg-input); padding: 5px 15px; border-radius: 20px; color: var(--text-muted); font-size: 0.9rem; display: inline-block; margin-top: 10px; }
+        .profile-container { max-width: 900px; margin: 40px auto; padding: 20px; background: var(--bg-secondary, #1a1a1a); border-radius: 15px; text-align: center; }
+        .avatar-wrapper { position: relative; display: inline-block; cursor: pointer; margin-bottom: 15px; }
+        .avatar-lg { width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--accent-yellow, #FFD700); object-fit: cover; transition: 0.3s; }
+        .avatar-wrapper:hover .avatar-lg { filter: brightness(0.7); }
+        .avatar-edit-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 1.5rem; display: none; }
+        .avatar-wrapper:hover .avatar-edit-icon { display: block; }
+        .site-id-badge { background: var(--bg-input, #222); padding: 5px 15px; border-radius: 20px; color: #888; font-size: 0.9rem; display: inline-block; margin-top: 10px; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px; }
+        .stat-card { background: #111; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-value { font-size: 1.8rem; font-weight: bold; color: var(--accent-yellow, #FFD700); margin-top: 10px; }
+        
+        .matches-container { margin-top: 30px; text-align: left; background: #111; padding: 20px; border-radius: 12px; }
+        .match-row { display: grid; grid-template-columns: 50px 1fr 1fr 1fr; gap: 10px; align-items: center; padding: 10px; border-bottom: 1px solid #333; }
+        .match-row img { width: 50px; border-radius: 5px; }
+        .win { color: #4CAF50; font-weight: bold; }
+        .loss { color: #f44336; font-weight: bold; }
+
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-card { background: var(--bg-secondary); padding: 30px; border-radius: 12px; width: 350px; text-align: center; }
+        .modal-card { background: var(--bg-secondary, #1a1a1a); padding: 30px; border-radius: 12px; width: 350px; text-align: center; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body id="body-dark">
 
+    <!-- Восстановленная полная шапка -->
     <header>
         <div class="header-left">
             <div class="logo" onclick="window.location.href='/'">DOTA HELPER</div>
             <nav class="main-nav">
                 <button class="nav-link" onclick="window.location.href='/drafts'">АНАЛИЗ ДРАФТОВ</button>
+                <button class="nav-link" onclick="window.location.href='/fantasy'">ФЕНТАЗИ ПОМОЩНИК</button>
+                <button class="nav-link" onclick="window.location.href='/invoker'">ТРЕНАЖЁР ИНВОКЕР</button>
             </nav>
         </div>
         <div class="user-panel">
@@ -29,17 +47,40 @@
     </header>
 
     <div class="profile-container">
-        <img id="prof-avatar" src="/static/images/default_avatar.png" class="avatar-lg">
-        <h1 id="prof-username">Загрузка...</h1>
+        
+        <!-- Восстановленный аватар с загрузкой -->
+        <div class="avatar-wrapper" onclick="document.getElementById('avatar-upload').click()">
+            <img id="prof-avatar" src="/static/images/default_avatar.png" class="avatar-lg">
+            <i class="fas fa-camera avatar-edit-icon"></i>
+            <input type="file" id="avatar-upload" class="hidden" accept="image/*" onchange="uploadAvatar(this)">
+        </div>
+        
+        <!-- Восстановленное редактирование никнейма -->
+        <h1 style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+            <span id="prof-username">Загрузка...</span>
+            <i class="fas fa-edit" style="font-size: 1rem; color: #888; cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'" onclick="editUsername()"></i>
+        </h1>
         <div class="site-id-badge">ID: <span id="prof-site-id">---</span></div>
         
         <div style="margin-top: 20px;">
             <button class="btn-secondary" onclick="window.location.href='/api/login/steam'" id="btn-link-steam">Привязать Steam</button>
         </div>
 
+        <!-- Восстановленная статистика -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div style="color: #888; font-size: 0.9rem; text-transform: uppercase;">Твой Ранг</div>
+                <div class="stat-value" id="prof-rank">Неизвестно</div>
+            </div>
+            <div class="stat-card">
+                <div style="color: #888; font-size: 0.9rem; text-transform: uppercase;">Рекорд Invoker</div>
+                <div class="stat-value" id="prof-invoker">0</div>
+            </div>
+        </div>
+
         <!-- Настройки безопасности -->
-        <div class="security-settings" style="margin-top: 30px; background: var(--bg-input); padding: 20px; border-radius: 12px; text-align: left;">
-            <h3 style="margin-bottom: 15px; font-size: 1rem; color: var(--text-muted); text-transform: uppercase;">Настройки безопасности</h3>
+        <div class="security-settings" style="margin-top: 30px; background: var(--bg-input, #222); padding: 20px; border-radius: 12px; text-align: left;">
+            <h3 style="margin-bottom: 15px; font-size: 1rem; color: #888; text-transform: uppercase;">Настройки безопасности</h3>
 
             <div style="margin-bottom: 15px;">
                 <span style="color: #888; font-size: 0.85rem;">Привязанный E-mail</span>
@@ -57,9 +98,17 @@
                 </div>
             </div>
         </div>
+
+        <!-- Восстановленная история матчей -->
+        <div class="matches-container">
+            <h3 style="margin-bottom: 15px; font-size: 1rem; color: #888; text-transform: uppercase;">Последние матчи (Steam)</h3>
+            <div id="recent-matches-list">
+                <div style="text-align: center; color: #555; padding: 20px;">Привяжите Steam или сыграйте матч, чтобы увидеть историю.</div>
+            </div>
+        </div>
     </div>
 
-    <!-- Модальное окно для смены данных -->
+    <!-- Модальное окно безопасности -->
     <div id="security-modal" class="modal-overlay hidden">
         <div class="modal-card">
             <h3 id="sec-modal-title">Изменение данных</h3>
@@ -83,6 +132,7 @@
 
     <script>
         let currentSecurityMode = '';
+        let currentUserSiteId = '';
 
         window.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -93,13 +143,20 @@
                     return;
                 }
                 
+                currentUserSiteId = user.site_id;
                 document.getElementById('prof-username').innerText = user.username;
                 document.getElementById('prof-site-id').innerText = user.site_id;
                 document.getElementById('display-email').innerText = user.email || 'Не привязана';
+                document.getElementById('prof-invoker').innerText = user.invoker_score || 0;
                 
+                if (user.rank) {
+                    document.getElementById('prof-rank').innerText = 'Тир: ' + user.rank;
+                }
+
                 if (user.avatar) document.getElementById('prof-avatar').src = user.avatar;
                 if (user.steam_linked) {
                     document.getElementById('btn-link-steam').style.display = 'none';
+                    loadRecentMatches();
                 }
             } catch(e) {}
         });
@@ -109,6 +166,62 @@
             window.location.href = '/auth';
         }
 
+        // --- ВОССТАНОВЛЕННЫЕ ФУНКЦИИ ПРОФИЛЯ ---
+        async function editUsername() {
+            const newName = prompt("Введите новый никнейм (3-15 символов, без спецсимволов):");
+            if (!newName) return;
+            try {
+                const res = await fetch('/api/update-username', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ site_id: currentUserSiteId, new_username: newName })
+                });
+                if (res.ok) window.location.reload();
+                else alert("Ошибка: неверный формат или никнейм занят.");
+            } catch(e) { alert("Ошибка соединения"); }
+        }
+
+        function uploadAvatar(input) {
+            if (!input.files || !input.files[0]) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result;
+                try {
+                    const res = await fetch('/api/update-avatar', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ avatar_base64: base64 })
+                    });
+                    if (res.ok) document.getElementById('prof-avatar').src = base64;
+                    else alert("Ошибка загрузки. Файл слишком большой?");
+                } catch(err) { alert("Ошибка соединения"); }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        async function loadRecentMatches() {
+            try {
+                const res = await fetch('/api/recent-matches');
+                const matches = await res.json();
+                const container = document.getElementById('recent-matches-list');
+                
+                if (!matches || matches.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #555; padding: 20px;">Нет данных о матчах. Убедитесь, что профиль Steam открыт.</div>';
+                    return;
+                }
+
+                container.innerHTML = matches.map(m => `
+                    <div class="match-row">
+                        <img src="${m.hero_img || '/static/images/default_hero.png'}" title="Герой">
+                        <span class="${m.is_win ? 'win' : 'loss'}">${m.is_win ? 'Победа' : 'Поражение'}</span>
+                        <span style="color: #aaa;">KDA: ${m.kills}/${m.deaths}/${m.assists}</span>
+                        <span style="color: #888; text-align: right;">${Math.floor(m.duration / 60)} мин</span>
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('recent-matches-list').innerHTML = '<div style="color: #ff4444;">Ошибка загрузки матчей.</div>';
+            }
+        }
+
+        // --- ФУНКЦИИ БЕЗОПАСНОСТИ ---
         function openSecurityModal(mode) {
             currentSecurityMode = mode;
             document.getElementById('sec-modal-title').innerText = mode === 'email' ? 'Смена почты' : 'Смена пароля';
@@ -133,7 +246,7 @@
                     document.getElementById('sec-new-password').classList.toggle('hidden', currentSecurityMode !== 'password');
                 } else {
                     const err = await res.json();
-                    document.getElementById('sec-error').innerText = err.detail || "Ошибка";
+                    document.getElementById('sec-error').innerText = err.detail || "Ошибка. Привязана ли почта?";
                     document.getElementById('sec-error').style.display = 'block';
                 }
             } catch(e) {}
