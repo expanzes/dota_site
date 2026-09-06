@@ -33,12 +33,19 @@ def ensure_tables_exist():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # ВНИМАНИЕ: Эта строка удалит все старые данные!
+                # После первого успешного запуска сервера эту строку нужно будет УДАЛИТЬ!
+                cur.execute("DROP TABLE IF EXISTS friendships, favorites, users CASCADE;")
+
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS users (
                         site_id VARCHAR(10) PRIMARY KEY,
                         username VARCHAR(100) UNIQUE NOT NULL,
+                        email VARCHAR(255) UNIQUE,
                         password_hash VARCHAR(255),
                         steam_id VARCHAR(50) UNIQUE,
+                        is_verified BOOLEAN DEFAULT FALSE,
+                        verification_code VARCHAR(6),
                         avatar_url TEXT,
                         rank_tier INTEGER DEFAULT 0,
                         invoker_high_score INTEGER DEFAULT 0,
@@ -46,8 +53,6 @@ def ensure_tables_exist():
                         last_seen TIMESTAMP DEFAULT NOW()
                     );
                 """)
-                # Автоматическое добавление колонки, если таблица уже существовала
-                cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT NOW();")
                 
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS favorites (
