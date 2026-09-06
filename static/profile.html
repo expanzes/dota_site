@@ -220,10 +220,10 @@
         </div>
     </div>
 
-    <!-- Модальное окно: Выбор героев -->
+    <!-- Модальное окно: Выбор героев (ОБНОВЛЕНО) -->
     <div id="heroes-modal" class="modal-overlay hidden">
         <div class="modal-card" style="width: 500px; max-width: 90vw; height: 70vh; display: flex; flex-direction: column;">
-            <h3 style="margin-bottom: 15px; color: var(--accent-gold);">Выберите любимых героев (до 3)</h3>
+            <h3 style="margin-bottom: 15px; color: var(--accent-gold);">Выберите любимых героев</h3>
             <input type="text" id="hero-search" class="modal-input" placeholder="Поиск героя..." oninput="filterHeroes()">
             
             <div id="heroes-grid" class="heroes-grid" style="display: flex; flex-wrap: wrap; gap: 10px; overflow-y: auto; flex: 1; justify-content: center; padding-right: 5px;">
@@ -266,10 +266,8 @@
                 
                 if (user.avatar) document.getElementById('prof-avatar').src = user.avatar;
                 
-                // Рендер Ранга (Твои локальные картинки)
                 renderRankData(user.rank);
 
-                // Загружаем список героев для работы функционала "Любимые герои"
                 await fetchHeroesList();
                 await loadFavorites();
 
@@ -285,7 +283,7 @@
             window.location.href = '/auth';
         }
 
-        // --- РАСЧЕТ И ОТОБРАЖЕНИЕ РАНГА (ИЗ ПАПКИ /static/ranks/) ---
+        // --- РАСЧЕТ И ОТОБРАЖЕНИЕ РАНГА ---
         function renderRankData(tier) {
             const baseImg = document.getElementById('rank-base-img');
             const starImg = document.getElementById('rank-star-img');
@@ -302,7 +300,6 @@
             const star = tier % 10;
             const names = ['', 'Рекрут', 'Страж', 'Рыцарь', 'Герой', 'Легенда', 'Властелин', 'Божество', 'Титан'];
             
-            // Берем картинки из твоей папки
             baseImg.src = `/static/ranks/rank_${badge}.png`;
             baseImg.style.display = "block";
             
@@ -311,14 +308,13 @@
                 starImg.style.display = "block";
             }
 
-            // Формула для примерного MMR
             nameText.innerText = names[badge] + (badge < 8 && star > 0 ? ' ' + star : '');
             let approxMmr = (badge - 1) * 770 + star * 154;
-            if (badge === 8) approxMmr = '5600+'; // Титаны
+            if (badge === 8) approxMmr = '5600+'; 
             mmrText.innerText = '~ ' + approxMmr + ' MMR';
         }
 
-        // --- ЛЮБИМЫЕ ГЕРОИ ---
+        // --- ЛЮБИМЫЕ ГЕРОИ (ОБНОВЛЕНО) ---
         async function fetchHeroesList() {
             try {
                 const res = await fetch('https://api.opendota.com/api/heroes');
@@ -340,8 +336,15 @@
             const container = document.getElementById('fav-heroes-container');
             container.innerHTML = '';
             
+            // Выбираем 3 случайных героя из всего массива выбранных
+            let displayHeroes = [];
+            if (selectedHeroes.length > 0) {
+                let shuffled = [...selectedHeroes].sort(() => 0.5 - Math.random());
+                displayHeroes = shuffled.slice(0, 3);
+            }
+            
             for (let i = 0; i < 3; i++) {
-                const heroId = selectedHeroes[i];
+                const heroId = displayHeroes[i];
                 let slotHtml = `<div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>`;
                 
                 if (heroId) {
@@ -387,13 +390,10 @@
         }
 
         function toggleHero(id) {
+            // Лимит убран! Можно выбирать сколько угодно героев.
             if (selectedHeroes.includes(id)) {
                 selectedHeroes = selectedHeroes.filter(hId => hId !== id);
             } else {
-                if (selectedHeroes.length >= 3) {
-                    alert("Можно выбрать максимум 3 героев!");
-                    return;
-                }
                 selectedHeroes.push(id);
             }
             renderHeroesGrid();
@@ -407,7 +407,7 @@
                     body: JSON.stringify({ user_id: currentUserSiteId, favorite_ids: selectedHeroes })
                 });
                 if (res.ok) {
-                    renderFavSlots();
+                    renderFavSlots(); // При сохранении сгенерирует 3 новые случайные иконки
                     closeHeroesModal();
                 } else {
                     alert("Ошибка сохранения");
@@ -450,7 +450,7 @@
             }
         }
 
-        // --- СМЕНА НИКА (МОДАЛЬНОЕ ОКНО) ---
+        // --- СМЕНА НИКА ---
         function openNameModal() {
             document.getElementById('new-username-input').value = '';
             document.getElementById('name-error').style.display = 'none';
@@ -504,7 +504,7 @@
             reader.readAsDataURL(input.files[0]);
         }
 
-        // --- БЕЗОПАСНОСТЬ (ПОЧТА И ПАРОЛЬ) ---
+        // --- БЕЗОПАСНОСТЬ ---
         function openSecurityModal(mode) {
             currentSecurityMode = mode;
             document.getElementById('sec-modal-title').innerText = mode === 'email' ? 'Смена почты' : 'Смена пароля';
