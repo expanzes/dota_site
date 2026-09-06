@@ -52,7 +52,7 @@
 
         /* Любимые герои */
         .fav-heroes-container { display: flex; gap: 10px; justify-content: center; }
-        .fav-hero-slot { width: 50px; height: 50px; background: #000; border: 1px dashed var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; transition: 0.2s; overflow: hidden; }
+        .fav-hero-slot { width: 55px; height: 55px; background: #000; border: 1px dashed var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; transition: 0.2s; overflow: hidden; }
         .fav-hero-slot:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
         .fav-hero-slot img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -79,6 +79,12 @@
         .modal-input { background: #000; color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; border: 1px solid var(--border-color); box-sizing: border-box; font-size: 1rem; transition: 0.2s; }
         .modal-input:focus { outline: none; border-color: var(--accent-gold); }
         .hidden { display: none !important; }
+
+        /* Скроллбар для сетки героев */
+        .heroes-grid::-webkit-scrollbar { width: 8px; }
+        .heroes-grid::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
+        .heroes-grid::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .heroes-grid::-webkit-scrollbar-thumb:hover { background: var(--accent-gold); }
     </style>
 </head>
 <body>
@@ -142,17 +148,17 @@
             <!-- Любимые герои -->
             <div class="widget-card">
                 <div class="widget-title">Любимые герои</div>
-                <div class="fav-heroes-container">
-                    <div class="fav-hero-slot" onclick="alert('Функция выбора героев в разработке!')"><i class="fas fa-plus"></i></div>
-                    <div class="fav-hero-slot" onclick="alert('Функция выбора героев в разработке!')"><i class="fas fa-plus"></i></div>
-                    <div class="fav-hero-slot" onclick="alert('Функция выбора героев в разработке!')"><i class="fas fa-plus"></i></div>
+                <div class="fav-heroes-container" id="fav-heroes-container">
+                    <div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>
+                    <div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>
+                    <div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>
                 </div>
             </div>
         </div>
 
         <!-- Безопасность -->
         <div class="security-section">
-            <h3 class="widget-title" style="margin-bottom: 5px;">Настройки безопасности</h3>
+            <h3 class="widget-title" style="margin-bottom: 5px; text-align: left;">Настройки безопасности</h3>
             
             <div>
                 <span class="sec-label">Привязанный E-mail</span>
@@ -173,7 +179,7 @@
 
         <!-- История матчей -->
         <div class="matches-section">
-            <h3 class="widget-title" style="margin-bottom: 20px;">Последние матчи (Steam)</h3>
+            <h3 class="widget-title" style="margin-bottom: 20px; text-align: left;">Последние матчи (Steam)</h3>
             <div id="recent-matches-list">
                 <div style="text-align: center; color: #555; padding: 30px;">Привяжите Steam или сыграйте матч, чтобы увидеть историю.</div>
             </div>
@@ -214,9 +220,28 @@
         </div>
     </div>
 
+    <!-- Модальное окно: Выбор героев -->
+    <div id="heroes-modal" class="modal-overlay hidden">
+        <div class="modal-card" style="width: 500px; max-width: 90vw; height: 70vh; display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 15px; color: var(--accent-gold);">Выберите любимых героев (до 3)</h3>
+            <input type="text" id="hero-search" class="modal-input" placeholder="Поиск героя..." oninput="filterHeroes()">
+            
+            <div id="heroes-grid" class="heroes-grid" style="display: flex; flex-wrap: wrap; gap: 10px; overflow-y: auto; flex: 1; justify-content: center; padding-right: 5px;">
+                <!-- Герои будут загружены сюда -->
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-primary" style="flex: 1;" onclick="saveHeroes()">Сохранить</button>
+                <button class="btn-secondary" style="flex: 1;" onclick="closeHeroesModal()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        let currentSecurityMode = '';
         let currentUserSiteId = '';
+        let allHeroes = [];
+        let selectedHeroes = [];
+        let currentSecurityMode = '';
 
         window.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -229,7 +254,6 @@
                 
                 currentUserSiteId = user.site_id;
                 
-                // Рендер ника и премиум-статуса
                 let nameHtml = user.username;
                 if (user.is_premium) {
                     nameHtml += ' <i class="fas fa-crown premium-icon" title="Premium"></i>';
@@ -242,8 +266,12 @@
                 
                 if (user.avatar) document.getElementById('prof-avatar').src = user.avatar;
                 
-                // Рендер Ранга
+                // Рендер Ранга (Твои локальные картинки)
                 renderRankData(user.rank);
+
+                // Загружаем список героев для работы функционала "Любимые герои"
+                await fetchHeroesList();
+                await loadFavorites();
 
                 if (user.steam_linked) {
                     document.getElementById('btn-link-steam').style.display = 'none';
@@ -257,7 +285,7 @@
             window.location.href = '/auth';
         }
 
-        // --- РАСЧЕТ РАНГА ---
+        // --- РАСЧЕТ И ОТОБРАЖЕНИЕ РАНГА (ИЗ ПАПКИ /static/ranks/) ---
         function renderRankData(tier) {
             const baseImg = document.getElementById('rank-base-img');
             const starImg = document.getElementById('rank-star-img');
@@ -265,7 +293,7 @@
             const mmrText = document.getElementById('rank-mmr-text');
 
             if (!tier || tier === 0) {
-                baseImg.src = "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/icons/ranks/rank_0.png";
+                baseImg.src = "/static/ranks/rank_0.png";
                 baseImg.style.display = "block";
                 return;
             }
@@ -274,20 +302,117 @@
             const star = tier % 10;
             const names = ['', 'Рекрут', 'Страж', 'Рыцарь', 'Герой', 'Легенда', 'Властелин', 'Божество', 'Титан'];
             
-            // Установка картинок из Steam CDN
-            baseImg.src = `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/icons/ranks/rank_${badge}.png`;
+            // Берем картинки из твоей папки
+            baseImg.src = `/static/ranks/rank_${badge}.png`;
             baseImg.style.display = "block";
             
             if (badge < 8 && star > 0) {
-                starImg.src = `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/icons/ranks/rank_star_${star}.png`;
+                starImg.src = `/static/ranks/rank_star_${star}.png`;
                 starImg.style.display = "block";
             }
 
-            // Расчет текста и примерного MMR (Формула: ~154 MMR за звезду)
+            // Формула для примерного MMR
             nameText.innerText = names[badge] + (badge < 8 && star > 0 ? ' ' + star : '');
             let approxMmr = (badge - 1) * 770 + star * 154;
-            if (badge === 8) approxMmr = '5600+'; // Для Титанов
+            if (badge === 8) approxMmr = '5600+'; // Титаны
             mmrText.innerText = '~ ' + approxMmr + ' MMR';
+        }
+
+        // --- ЛЮБИМЫЕ ГЕРОИ ---
+        async function fetchHeroesList() {
+            try {
+                const res = await fetch('https://api.opendota.com/api/heroes');
+                allHeroes = await res.json();
+                allHeroes.sort((a, b) => a.localized_name.localeCompare(b.localized_name));
+            } catch (e) { console.error("Ошибка загрузки героев", e); }
+        }
+
+        async function loadFavorites() {
+            try {
+                const res = await fetch(`/api/favorites?user_id=${currentUserSiteId}`);
+                const data = await res.json();
+                selectedHeroes = data.favorite_ids || [];
+                renderFavSlots();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderFavSlots() {
+            const container = document.getElementById('fav-heroes-container');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 3; i++) {
+                const heroId = selectedHeroes[i];
+                let slotHtml = `<div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>`;
+                
+                if (heroId) {
+                    const hero = allHeroes.find(h => h.id === heroId);
+                    if (hero) {
+                        const imgName = hero.name.replace('npc_dota_hero_', '');
+                        slotHtml = `
+                            <div class="fav-hero-slot" onclick="openHeroesModal()">
+                                <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${imgName}.png" title="${hero.localized_name}">
+                            </div>`;
+                    }
+                }
+                container.innerHTML += slotHtml;
+            }
+        }
+
+        function openHeroesModal() {
+            renderHeroesGrid();
+            document.getElementById('hero-search').value = '';
+            document.getElementById('heroes-modal').classList.remove('hidden');
+        }
+
+        function closeHeroesModal() {
+            document.getElementById('heroes-modal').classList.add('hidden');
+        }
+
+        function filterHeroes() { renderHeroesGrid(); }
+
+        function renderHeroesGrid() {
+            const grid = document.getElementById('heroes-grid');
+            const searchTerm = document.getElementById('hero-search').value.toLowerCase();
+            
+            grid.innerHTML = allHeroes.filter(h => h.localized_name.toLowerCase().includes(searchTerm)).map(h => {
+                const isSelected = selectedHeroes.includes(h.id);
+                const imgName = h.name.replace('npc_dota_hero_', '');
+                return `
+                    <div onclick="toggleHero(${h.id})" style="width: 70px; cursor: pointer; text-align: center; transition: 0.2s; transform: ${isSelected ? 'scale(1.05)' : 'scale(1)'};">
+                        <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${imgName}.png" style="width: 100%; border-radius: 8px; border: 2px solid ${isSelected ? 'var(--accent-gold)' : 'transparent'}; box-shadow: ${isSelected ? '0 0 10px rgba(255, 215, 0, 0.5)' : 'none'};">
+                        <div style="font-size: 0.7rem; color: #aaa; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${h.localized_name}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleHero(id) {
+            if (selectedHeroes.includes(id)) {
+                selectedHeroes = selectedHeroes.filter(hId => hId !== id);
+            } else {
+                if (selectedHeroes.length >= 3) {
+                    alert("Можно выбрать максимум 3 героев!");
+                    return;
+                }
+                selectedHeroes.push(id);
+            }
+            renderHeroesGrid();
+        }
+
+        async function saveHeroes() {
+            try {
+                const res = await fetch('/api/favorites', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ user_id: currentUserSiteId, favorite_ids: selectedHeroes })
+                });
+                if (res.ok) {
+                    renderFavSlots();
+                    closeHeroesModal();
+                } else {
+                    alert("Ошибка сохранения");
+                }
+            } catch(e) { alert("Ошибка соединения"); }
         }
 
         // --- ИСТОРИЯ МАТЧЕЙ ---
@@ -316,7 +441,7 @@
                             <span style="color:var(--loss-color);">${m.deaths}</span> / 
                             <span style="color:#aaa;">${m.assists}</span>
                         </div>
-                        <span class="m-networth" title="Net Worth (Общая ценность)"><i class="fas fa-coins" style="margin-right:5px; color:#gold;"></i>${nw}</span>
+                        <span class="m-networth" title="Net Worth (Общая ценность)"><i class="fas fa-coins" style="margin-right:5px; color:var(--accent-gold);"></i>${nw}</span>
                         <span class="m-duration"><i class="far fa-clock" style="margin-right:5px;"></i>${mins}:${secs}</span>
                     </div>
                 `}).join('');
