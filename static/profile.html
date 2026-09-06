@@ -29,7 +29,7 @@
         .avatar-edit-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 1.8rem; display: none; }
         .avatar-wrapper:hover .avatar-edit-icon { display: block; }
         
-        .username-block { display: flex; align-items: center; gap: 10px; font-size: 2rem; font-weight: 800; margin-bottom: 5px; }
+        .username-block { display: flex; align-items: center; gap: 10px; font-size: 2rem; font-weight: 800; margin-bottom: 5px; min-height: 38px; }
         .edit-name-btn { font-size: 1.1rem; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
         .edit-name-btn:hover { color: var(--text-main); }
         .premium-icon { color: var(--accent-gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); font-size: 1.4rem; }
@@ -44,8 +44,8 @@
         .rank-display { position: relative; display: flex; flex-direction: column; align-items: center; }
         .rank-img-container { position: relative; width: 80px; height: 80px; margin-bottom: 10px; }
         .rank-base { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
-        .rank-name { font-size: 1.2rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 5px; }
-        .rank-mmr { font-size: 0.95rem; color: var(--text-muted); background: #000; padding: 4px 12px; border-radius: 10px; }
+        .rank-name { font-size: 1.2rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 5px; min-height: 23px; }
+        .rank-mmr { font-size: 0.95rem; color: var(--text-muted); background: #000; padding: 4px 12px; border-radius: 10px; min-height: 18px; }
 
         /* Счет Invoker */
         .invoker-score { font-size: 3rem; font-weight: 900; color: #a356ff; text-shadow: 0 0 15px rgba(163, 86, 255, 0.4); }
@@ -56,7 +56,7 @@
         .fav-hero-slot:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
         .fav-hero-slot img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Блоки контента (настройки, друзья, матчи) */
+        /* Блоки контента */
         .content-section { background: var(--bg-card); padding: 25px; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 25px; }
         
         /* Безопасность */
@@ -82,6 +82,17 @@
         .m-kda { font-weight: 600; color: #ddd; text-align: center; }
         .m-networth { color: var(--accent-gold); font-weight: 600; font-size: 0.9rem; text-align: center; }
         .m-duration { color: var(--text-muted); font-size: 0.9rem; text-align: right; }
+
+        /* СКЕЛЕТНАЯ АНИМАЦИЯ ЗАГРУЗКИ */
+        @keyframes pulse {
+            0% { opacity: 1; background-color: #222; }
+            50% { opacity: 0.6; background-color: #333; }
+            100% { opacity: 1; background-color: #222; }
+        }
+        .skeleton { animation: pulse 1.5s infinite ease-in-out; border-radius: 8px; color: transparent !important; user-select: none; }
+        .skeleton * { visibility: hidden; }
+        .skeleton-img { width: 100%; height: 35px; border-radius: 6px; }
+        .skeleton-text { height: 15px; border-radius: 4px; width: 100%; }
 
         /* Модальные окна */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
@@ -124,13 +135,15 @@
             </div>
             
             <div class="username-block">
-                <span id="prof-username">Загрузка...</span>
+                <!-- Скелет для никнейма, который исчезнет при загрузке -->
+                <span id="prof-username" class="skeleton skeleton-text" style="width: 150px; height: 30px;"></span>
                 <i class="fas fa-edit edit-name-btn" onclick="openNameModal()" title="Изменить никнейм"></i>
             </div>
             
             <div class="site-id-badge">ID: <span id="prof-site-id">---</span></div>
             
-            <button class="btn-secondary" style="margin-top: 15px;" onclick="window.location.href='/api/login/steam'" id="btn-link-steam">Привязать Steam</button>
+            <!-- Кнопка привязки Steam скрыта по умолчанию -->
+            <button class="btn-secondary" style="margin-top: 15px; display: none;" onclick="window.location.href='/api/login/steam'" id="btn-link-steam">Привязать Steam</button>
         </div>
 
         <!-- Сетка статистики -->
@@ -142,8 +155,8 @@
                     <div class="rank-img-container">
                         <img id="rank-base-img" class="rank-base" src="" style="display:none;">
                     </div>
-                    <div class="rank-name" id="rank-name-text">Не откалиброван</div>
-                    <div class="rank-mmr" id="rank-mmr-text">TBD</div>
+                    <div class="rank-name" id="rank-name-text"></div>
+                    <div class="rank-mmr" id="rank-mmr-text"></div>
                 </div>
             </div>
 
@@ -154,13 +167,14 @@
                 <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">очков за раз</div>
             </div>
 
-            <!-- Любимые героев -->
+            <!-- Любимые герои -->
             <div class="widget-card">
                 <div class="widget-title">Любимые герои</div>
                 <div class="fav-heroes-container" id="fav-heroes-container">
-                    <div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>
-                    <div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>
-                    <div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>
+                    <!-- Скелеты героев -->
+                    <div class="fav-hero-slot skeleton"></div>
+                    <div class="fav-hero-slot skeleton"></div>
+                    <div class="fav-hero-slot skeleton"></div>
                 </div>
             </div>
         </div>
@@ -172,7 +186,7 @@
             <div>
                 <span class="sec-label">Привязанный E-mail</span>
                 <div class="sec-row">
-                    <span id="display-email" style="font-weight: 600;">Загрузка...</span>
+                    <span id="display-email" style="font-weight: 600;">...</span>
                     <button class="btn-secondary" style="padding: 6px 20px; font-size: 0.85rem;" onclick="openSecurityModal('email')">Изменить</button>
                 </div>
             </div>
@@ -206,9 +220,7 @@
             <!-- Мои друзья -->
             <div>
                 <h4 style="color: var(--text-muted); margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase;">Мои друзья</h4>
-                <div id="friends-list">
-                    <div style="text-align: center; color: #555; padding: 20px;">Список друзей пуст. Найдите кого-нибудь!</div>
-                </div>
+                <div id="friends-list"></div>
             </div>
         </div>
 
@@ -216,7 +228,28 @@
         <div class="content-section" style="margin-bottom: 50px;">
             <h3 class="widget-title" style="margin-bottom: 20px; text-align: left;">Последние матчи (Steam)</h3>
             <div id="recent-matches-list">
-                <div style="text-align: center; color: #555; padding: 30px;">Привяжите Steam или сыграйте матч, чтобы увидеть историю.</div>
+                <!-- СКЕЛЕТЫ МАТЧЕЙ ПО УМОЛЧАНИЮ -->
+                <div class="match-row skeleton">
+                    <div class="skeleton-img"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text"></div>
+                </div>
+                <div class="match-row skeleton">
+                    <div class="skeleton-img"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text"></div>
+                </div>
+                <div class="match-row skeleton">
+                    <div class="skeleton-img"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text"></div>
+                    <div class="skeleton-text"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -225,7 +258,7 @@
     <div id="name-modal" class="modal-overlay hidden">
         <div class="modal-card">
             <h3 style="margin-bottom: 20px; color: var(--accent-gold);">Смена никнейма</h3>
-            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">От 3 до 15 символов, без спецсимволов.</p>
+            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">От 3 до 15 символов.</p>
             <input type="text" id="new-username-input" class="modal-input" placeholder="Новый никнейм">
             <div id="name-error" style="color: var(--loss-color); font-size: 0.9rem; margin-bottom: 10px; display: none;"></div>
             <button class="btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="submitNameChange()">Сохранить</button>
@@ -238,7 +271,7 @@
         <div class="modal-card">
             <h3 id="sec-modal-title" style="margin-bottom: 20px; color: var(--accent-gold);">Изменение данных</h3>
             <div id="sec-step-1">
-                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Мы отправим 6-значный код на вашу текущую почту для подтверждения.</p>
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Мы отправим код на вашу текущую почту для подтверждения.</p>
                 <button class="btn-primary" style="width: 100%;" onclick="requestSecurityCode()">Получить код</button>
             </div>
             <div id="sec-step-2" class="hidden">
@@ -272,54 +305,90 @@
         </div>
     </div>
 
+    <!-- Полностью развернутые скрипты -->
     <script>
         let currentUserSiteId = '';
         let allHeroes = [];
         let selectedHeroes = [];
         let currentSecurityMode = '';
 
-        window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('DOMContentLoaded', () => {
+            // Мгновенная отрисовка из кэша браузера (избегаем дерганий интерфейса)
+            const cachedUser = sessionStorage.getItem('dh_user');
+            if (cachedUser) {
+                renderUserUI(JSON.parse(cachedUser));
+            }
+            
+            const cachedMatches = sessionStorage.getItem('dh_matches');
+            if (cachedMatches) {
+                renderMatches(JSON.parse(cachedMatches));
+            }
+
+            // Запускаем фоновые запросы для подтягивания свежих данных
+            fetchData();
+        });
+
+        async function fetchData() {
             try {
+                // 1. Грузим юзера
                 const res = await fetch('/api/me');
                 const user = await res.json();
+                
                 if (!user.logged_in) {
                     window.location.href = '/auth';
                     return;
                 }
                 
                 currentUserSiteId = user.site_id;
-                
-                let nameHtml = user.username;
-                if (user.is_premium) {
-                    nameHtml += ' <i class="fas fa-crown premium-icon" title="Premium"></i>';
-                }
-                document.getElementById('prof-username').innerHTML = nameHtml;
-                
-                document.getElementById('prof-site-id').innerText = user.site_id;
-                document.getElementById('display-email').innerText = user.email || 'Не привязана';
-                document.getElementById('prof-invoker').innerText = user.invoker_score || 0;
-                
-                if (user.avatar) document.getElementById('prof-avatar').src = user.avatar;
-                
-                renderRankData(user.rank);
+                // Сохраняем в кэш для следующего открытия
+                sessionStorage.setItem('dh_user', JSON.stringify(user));
+                renderUserUI(user);
 
+                // 2. Списки героев и друзей
                 await fetchHeroesList();
                 await loadFavorites();
                 await loadFriends();
 
+                // 3. Матчи
                 if (user.steam_linked) {
-                    document.getElementById('btn-link-steam').style.display = 'none';
                     loadRecentMatches();
+                } else {
+                    document.getElementById('recent-matches-list').innerHTML = '<div style="text-align: center; color: #555; padding: 30px;">Привяжите Steam, чтобы увидеть историю.</div>';
                 }
-            } catch(e) {}
-        });
-
-        async function logout() {
-            await fetch('/api/logout', { method: 'POST' });
-            window.location.href = '/auth';
+            } catch(e) {
+                console.error("Data error", e);
+            }
         }
 
-        // --- РАСЧЕТ И ОТОБРАЖЕНИЕ РАНГА (ТВОИ КАРТИНКИ) ---
+        // --- РЕНДЕР ПРОФИЛЯ ---
+        function renderUserUI(user) {
+            let nameHtml = user.username;
+            if (user.is_premium) {
+                nameHtml += ' <i class="fas fa-crown premium-icon" title="Premium"></i>';
+            }
+            
+            const usernameEl = document.getElementById('prof-username');
+            usernameEl.innerHTML = nameHtml;
+            // Убираем скелетную загрузку текста
+            usernameEl.classList.remove('skeleton', 'skeleton-text');
+            
+            document.getElementById('prof-site-id').innerText = user.site_id;
+            document.getElementById('display-email').innerText = user.email || 'Не привязана';
+            document.getElementById('prof-invoker').innerText = user.invoker_score || 0;
+            
+            if (user.avatar) {
+                document.getElementById('prof-avatar').src = user.avatar;
+            }
+            
+            if (!user.steam_linked) {
+                document.getElementById('btn-link-steam').style.display = 'block';
+            } else {
+                document.getElementById('btn-link-steam').style.display = 'none';
+            }
+            
+            renderRankData(user.rank);
+        }
+
         function renderRankData(tier) {
             const baseImg = document.getElementById('rank-base-img');
             const nameText = document.getElementById('rank-name-text');
@@ -328,6 +397,8 @@
             if (!tier || tier === 0) {
                 baseImg.src = "/static/ranks/0.png";
                 baseImg.style.display = "block";
+                nameText.innerText = "Не откалиброван";
+                mmrText.innerText = "TBD";
                 return;
             }
 
@@ -335,122 +406,78 @@
             const star = tier % 10;
             const names = ['', 'Рекрут', 'Страж', 'Рыцарь', 'Герой', 'Легенда', 'Властелин', 'Божество', 'Титан'];
             
-            // Берем готовую картинку из твоей папки по полному номеру, например: 53.png
             baseImg.src = `/static/ranks/${tier}.png`;
             baseImg.style.display = "block";
-
+            
             nameText.innerText = names[badge] + (badge < 8 && star > 0 ? ' ' + star : '');
+            
             let approxMmr = (badge - 1) * 770 + star * 154;
             if (badge === 8) approxMmr = '5600+'; 
             mmrText.innerText = '~ ' + approxMmr + ' MMR';
         }
 
-        // --- ДРУЗЬЯ (ВОССТАНОВЛЕНО И УЛУЧШЕНО) ---
-        async function loadFriends() {
+        // --- МАТЧИ ---
+        async function loadRecentMatches() {
             try {
-                const res = await fetch('/api/friends/list');
-                const data = await res.json();
+                const res = await fetch('/api/recent-matches');
+                const matches = await res.json();
                 
-                const fList = document.getElementById('friends-list');
-                const pList = document.getElementById('pending-requests-list');
-                const pCont = document.getElementById('pending-requests-container');
-                
-                if (data.pending && data.pending.length > 0) {
-                    pCont.style.display = 'block';
-                    pList.innerHTML = data.pending.map(u => createUserRowHTML(u, 'pending')).join('');
-                } else {
-                    pCont.style.display = 'none';
-                    pList.innerHTML = '';
-                }
-                
-                if (data.friends && data.friends.length > 0) {
-                    fList.innerHTML = data.friends.map(u => createUserRowHTML(u, 'friend')).join('');
-                } else {
-                    fList.innerHTML = '<div style="text-align: center; color: #555; padding: 20px;">У вас пока нет друзей в списке.</div>';
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        function createUserRowHTML(u, type) {
-            const statusClass = u.is_online ? 'status-online' : 'status-offline';
-            const nameHtml = u.username + (u.is_premium ? ' <i class="fas fa-crown" style="color:var(--accent-gold); font-size:0.9rem; margin-left:5px;"></i>' : '');
-            const avatar = u.avatar || '/static/images/default_avatar.png';
-            
-            let buttons = '';
-            if (type === 'friend') {
-                buttons = `<button class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="rejectFriend('${u.site_id}')"><i class="fas fa-user-minus"></i> Убрать</button>`;
-            } else if (type === 'pending') {
-                buttons = `
-                    <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptFriend('${u.site_id}')"><i class="fas fa-check"></i></button>
-                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="rejectFriend('${u.site_id}')"><i class="fas fa-times"></i></button>
-                `;
-            } else if (type === 'search') {
-                if (u.friend_status === 'friends') {
-                    buttons = `<span style="color:#aaa; font-size:0.85rem;"><i class="fas fa-user-check"></i> В друзьях</span>`;
-                } else if (u.friend_status === 'sent') {
-                    buttons = `<span style="color:#aaa; font-size:0.85rem;"><i class="fas fa-clock"></i> Отправлено</span>`;
-                } else if (u.friend_status === 'received') {
-                    buttons = `<button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptFriend('${u.site_id}')">Принять</button>`;
-                } else {
-                    buttons = `<button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="sendFriendRequest('${u.site_id}')"><i class="fas fa-user-plus"></i></button>`;
-                }
+                // Сохраняем матчи в кэш
+                sessionStorage.setItem('dh_matches', JSON.stringify(matches));
+                renderMatches(matches);
+            } catch(e) {
+                console.error(e);
             }
-
-            return `
-                <div class="user-row">
-                    <div class="user-info">
-                        <img src="${avatar}">
-                        <div>
-                            <div style="font-weight: bold; font-size:1.05rem;">${nameHtml}</div>
-                            <div style="font-size: 0.8rem; color: #888; display:flex; align-items:center; margin-top:3px;">
-                                <span class="user-status ${statusClass}"></span> ${u.is_online ? 'В сети' : 'Не в сети'}
-                            </div>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        ${buttons}
-                    </div>
-                </div>
-            `;
         }
 
-        async function searchUsers() {
-            const q = document.getElementById('friend-search-input').value.trim();
-            const container = document.getElementById('search-results');
-            if (!q) { container.innerHTML = ''; return; }
+        function renderMatches(matches) {
+            const container = document.getElementById('recent-matches-list');
             
-            try {
-                const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
-                const data = await res.json();
-                if (data.length > 0) {
-                    container.innerHTML = '<h4 style="color: #aaa; margin-bottom: 10px; font-size: 0.85rem; text-transform:uppercase;">Результаты:</h4>' + data.map(u => createUserRowHTML(u, 'search')).join('');
-                } else {
-                    container.innerHTML = '<div style="color: var(--loss-color); margin-bottom: 15px;">Пользователь не найден.</div>';
-                }
-            } catch(e) {}
+            if (!matches || matches.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #555; padding: 20px;">Нет данных о матчах.</div>';
+                return;
+            }
+            
+            container.innerHTML = matches.map(m => {
+                const mins = Math.floor(m.duration / 60);
+                const secs = (m.duration % 60).toString().padStart(2, '0');
+                const nw = m.net_worth ? (m.net_worth / 1000).toFixed(1) + 'k' : '—';
+                
+                return `
+                <div class="match-row">
+                    <img src="${m.hero_img || '/static/images/default_hero.png'}" title="Герой">
+                    <span class="m-result ${m.is_win ? 'm-win' : 'm-loss'}">${m.is_win ? 'Победа' : 'Пораж.'}</span>
+                    <div class="m-kda">
+                        <span style="color:#fff;">${m.kills}</span> / 
+                        <span style="color:var(--loss-color);">${m.deaths}</span> / 
+                        <span style="color:#aaa;">${m.assists}</span>
+                    </div>
+                    <span class="m-networth" title="Net Worth">
+                        <i class="fas fa-coins" style="margin-right:5px; color:var(--accent-gold);"></i>${nw}
+                    </span>
+                    <span class="m-duration">
+                        <i class="far fa-clock" style="margin-right:5px;"></i>${mins}:${secs}
+                    </span>
+                </div>
+                `;
+            }).join('');
         }
 
-        async function sendFriendRequest(id) {
-            await fetch('/api/friends/request', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({target_id: id}) });
-            searchUsers(); loadFriends();
-        }
-        async function acceptFriend(id) {
-            await fetch('/api/friends/accept', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({target_id: id}) });
-            searchUsers(); loadFriends();
-        }
-        async function rejectFriend(id) {
-            await fetch('/api/friends/reject', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({target_id: id}) });
-            searchUsers(); loadFriends();
-        }
-
-
-        // --- ЛЮБИМЫЕ ГЕРОИ ---
+        // --- ЛЮБИМЫЕ ГЕРОИ С КЭШЕМ ---
         async function fetchHeroesList() {
+            const cachedHeroes = localStorage.getItem('dh_all_heroes');
+            if (cachedHeroes) {
+                allHeroes = JSON.parse(cachedHeroes);
+                return;
+            }
             try {
                 const res = await fetch('https://api.opendota.com/api/heroes');
                 allHeroes = await res.json();
                 allHeroes.sort((a, b) => a.localized_name.localeCompare(b.localized_name));
-            } catch (e) { console.error("Ошибка загрузки героев", e); }
+                localStorage.setItem('dh_all_heroes', JSON.stringify(allHeroes));
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         async function loadFavorites() {
@@ -459,14 +486,15 @@
                 const data = await res.json();
                 selectedHeroes = data.favorite_ids || [];
                 renderFavSlots();
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         function renderFavSlots() {
             const container = document.getElementById('fav-heroes-container');
             container.innerHTML = '';
             
-            // Выбираем 3 случайных героя из всех выбранных
             let displayHeroes = [];
             if (selectedHeroes.length > 0) {
                 let shuffled = [...selectedHeroes].sort(() => 0.5 - Math.random());
@@ -474,17 +502,13 @@
             }
             
             for (let i = 0; i < 3; i++) {
-                const heroId = displayHeroes[i];
                 let slotHtml = `<div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>`;
                 
-                if (heroId) {
-                    const hero = allHeroes.find(h => h.id === heroId);
+                if (displayHeroes[i]) {
+                    const hero = allHeroes.find(h => h.id === displayHeroes[i]);
                     if (hero) {
                         const imgName = hero.name.replace('npc_dota_hero_', '');
-                        slotHtml = `
-                            <div class="fav-hero-slot" onclick="openHeroesModal()">
-                                <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${imgName}.png" title="${hero.localized_name}">
-                            </div>`;
+                        slotHtml = `<div class="fav-hero-slot" onclick="openHeroesModal()"><img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${imgName}.png" title="${hero.localized_name}"></div>`;
                     }
                 }
                 container.innerHTML += slotHtml;
@@ -501,18 +525,18 @@
             document.getElementById('heroes-modal').classList.add('hidden');
         }
 
-        function filterHeroes() { renderHeroesGrid(); }
+        function filterHeroes() {
+            renderHeroesGrid();
+        }
 
         function renderHeroesGrid() {
-            const grid = document.getElementById('heroes-grid');
-            const searchTerm = document.getElementById('hero-search').value.toLowerCase();
-            
-            grid.innerHTML = allHeroes.filter(h => h.localized_name.toLowerCase().includes(searchTerm)).map(h => {
+            const q = document.getElementById('hero-search').value.toLowerCase();
+            document.getElementById('heroes-grid').innerHTML = allHeroes.filter(h => h.localized_name.toLowerCase().includes(q)).map(h => {
                 const isSelected = selectedHeroes.includes(h.id);
                 const imgName = h.name.replace('npc_dota_hero_', '');
                 return `
-                    <div onclick="toggleHero(${h.id})" style="width: 70px; cursor: pointer; text-align: center; transition: 0.2s; transform: ${isSelected ? 'scale(1.05)' : 'scale(1)'};">
-                        <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${imgName}.png" style="width: 100%; border-radius: 8px; border: 2px solid ${isSelected ? 'var(--accent-gold)' : 'transparent'}; box-shadow: ${isSelected ? '0 0 10px rgba(255, 215, 0, 0.5)' : 'none'};">
+                    <div onclick="toggleHero(${h.id})" style="width: 70px; cursor: pointer; text-align: center; transform: ${isSelected ? 'scale(1.05)' : 'scale(1)'};">
+                        <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${imgName}.png" style="width: 100%; border-radius: 8px; border: 2px solid ${isSelected ? 'var(--accent-gold)' : 'transparent'};">
                         <div style="font-size: 0.7rem; color: #aaa; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${h.localized_name}</div>
                     </div>
                 `;
@@ -530,88 +554,157 @@
 
         async function saveHeroes() {
             try {
-                const res = await fetch('/api/favorites', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ user_id: currentUserSiteId, favorite_ids: selectedHeroes })
+                const res = await fetch('/api/favorites', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ user_id: currentUserSiteId, favorite_ids: selectedHeroes }) 
                 });
+                
                 if (res.ok) {
-                    renderFavSlots(); 
+                    renderFavSlots();
                     closeHeroesModal();
-                } else {
-                    alert("Ошибка сохранения");
                 }
-            } catch(e) { alert("Ошибка соединения"); }
+            } catch(e) {
+                console.error(e);
+            }
         }
 
-        // --- ИСТОРИЯ МАТЧЕЙ ---
-        async function loadRecentMatches() {
+        // --- ДРУЗЬЯ ---
+        async function loadFriends() {
             try {
-                const res = await fetch('/api/recent-matches');
-                const matches = await res.json();
-                const container = document.getElementById('recent-matches-list');
+                const res = await fetch('/api/friends/list');
+                const data = await res.json();
                 
-                if (!matches || matches.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: #555; padding: 20px;">Нет данных о матчах. Убедитесь, что профиль Steam открыт.</div>';
-                    return;
+                const fList = document.getElementById('friends-list');
+                const pList = document.getElementById('pending-requests-list');
+                const pCont = document.getElementById('pending-requests-container');
+                
+                if (data.pending && data.pending.length > 0) {
+                    pCont.style.display = 'block';
+                    pList.innerHTML = data.pending.map(u => createUserRowHTML(u, 'pending')).join('');
+                } else {
+                    pCont.style.display = 'none';
                 }
-
-                container.innerHTML = matches.map(m => {
-                    const mins = Math.floor(m.duration / 60);
-                    const secs = (m.duration % 60).toString().padStart(2, '0');
-                    const nw = m.net_worth ? (m.net_worth / 1000).toFixed(1) + 'k' : '—';
-                    
-                    return `
-                    <div class="match-row">
-                        <img src="${m.hero_img || '/static/images/default_hero.png'}" title="Герой">
-                        <span class="m-result ${m.is_win ? 'm-win' : 'm-loss'}">${m.is_win ? 'Победа' : 'Пораж.'}</span>
-                        <div class="m-kda">
-                            <span style="color:#fff;">${m.kills}</span> / 
-                            <span style="color:var(--loss-color);">${m.deaths}</span> / 
-                            <span style="color:#aaa;">${m.assists}</span>
-                        </div>
-                        <span class="m-networth" title="Net Worth (Общая ценность)"><i class="fas fa-coins" style="margin-right:5px; color:var(--accent-gold);"></i>${nw}</span>
-                        <span class="m-duration"><i class="far fa-clock" style="margin-right:5px;"></i>${mins}:${secs}</span>
-                    </div>
-                `}).join('');
+                
+                if (data.friends && data.friends.length > 0) {
+                    fList.innerHTML = data.friends.map(u => createUserRowHTML(u, 'friend')).join('');
+                } else {
+                    fList.innerHTML = '<div style="text-align: center; color: #555; padding: 20px;">У вас пока нет друзей.</div>';
+                }
             } catch(e) {
-                document.getElementById('recent-matches-list').innerHTML = '<div style="color: var(--loss-color); text-align:center;">Ошибка загрузки матчей.</div>';
+                console.error(e);
             }
+        }
+
+        function createUserRowHTML(u, type) {
+            const statusClass = u.is_online ? 'status-online' : 'status-offline';
+            const nameHtml = u.username + (u.is_premium ? ' <i class="fas fa-crown" style="color:var(--accent-gold); font-size:0.9rem; margin-left:5px;"></i>' : '');
+            const avatar = u.avatar || '/static/images/default_avatar.png';
+            
+            let buttons = '';
+            
+            if (type === 'friend') {
+                buttons = `<button class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="rejectFriend('${u.site_id}')">Убрать</button>`;
+            } else if (type === 'pending') {
+                buttons = `
+                    <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptFriend('${u.site_id}')"><i class="fas fa-check"></i></button>
+                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="rejectFriend('${u.site_id}')"><i class="fas fa-times"></i></button>
+                `;
+            } else if (type === 'search') {
+                if (u.friend_status === 'friends') {
+                    buttons = `<span style="color:#aaa; font-size:0.85rem;">В друзьях</span>`;
+                } else if (u.friend_status === 'sent') {
+                    buttons = `<span style="color:#aaa; font-size:0.85rem;">Отправлено</span>`;
+                } else if (u.friend_status === 'received') {
+                    buttons = `<button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptFriend('${u.site_id}')">Принять</button>`;
+                } else {
+                    buttons = `<button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="sendFriendRequest('${u.site_id}')"><i class="fas fa-user-plus"></i></button>`;
+                }
+            }
+            
+            return `
+                <div class="user-row">
+                    <div class="user-info">
+                        <img src="${avatar}">
+                        <div>
+                            <div style="font-weight: bold;">${nameHtml}</div>
+                            <div style="font-size: 0.8rem; color: #888;">
+                                <span class="user-status ${statusClass}"></span> ${u.is_online ? 'В сети' : 'Не в сети'}
+                            </div>
+                        </div>
+                    </div>
+                    <div>${buttons}</div>
+                </div>
+            `;
+        }
+
+        async function searchUsers() {
+            const q = document.getElementById('friend-search-input').value.trim();
+            const container = document.getElementById('search-results');
+            if (!q) {
+                container.innerHTML = '';
+                return;
+            }
+            try {
+                const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                
+                if (data.length > 0) {
+                    container.innerHTML = data.map(u => createUserRowHTML(u, 'search')).join('');
+                } else {
+                    container.innerHTML = '<div style="color: var(--loss-color);">Не найден.</div>';
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function sendFriendRequest(id) { 
+            await fetch('/api/friends/request', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({target_id: id}) }); 
+            searchUsers(); 
+            loadFriends(); 
+        }
+        
+        async function acceptFriend(id) { 
+            await fetch('/api/friends/accept', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({target_id: id}) }); 
+            searchUsers(); 
+            loadFriends(); 
+        }
+        
+        async function rejectFriend(id) { 
+            await fetch('/api/friends/reject', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({target_id: id}) }); 
+            searchUsers(); 
+            loadFriends(); 
         }
 
         // --- СМЕНА НИКА ---
         function openNameModal() {
-            document.getElementById('new-username-input').value = '';
-            document.getElementById('name-error').style.display = 'none';
+            document.getElementById('new-username-input').value = ''; 
+            document.getElementById('name-error').style.display = 'none'; 
             document.getElementById('name-modal').classList.remove('hidden');
         }
 
-        function closeNameModal() { document.getElementById('name-modal').classList.add('hidden'); }
+        function closeNameModal() {
+            document.getElementById('name-modal').classList.add('hidden');
+        }
 
         async function submitNameChange() {
             const newName = document.getElementById('new-username-input').value.trim();
-            const errBox = document.getElementById('name-error');
             
             if (newName.length < 3 || newName.length > 15) {
-                errBox.innerText = "Ник должен быть от 3 до 15 символов.";
-                errBox.style.display = 'block';
+                document.getElementById('name-error').style.display = 'block';
                 return;
             }
-
-            try {
-                const res = await fetch('/api/update-username', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ site_id: currentUserSiteId, new_username: newName })
-                });
-                if (res.ok) window.location.reload();
-                else {
-                    const data = await res.json();
-                    errBox.innerText = data.detail || "Ошибка. Возможно, ник занят.";
-                    errBox.style.display = 'block';
-                }
-            } catch(e) {
-                errBox.innerText = "Ошибка соединения с сервером.";
-                errBox.style.display = 'block';
+            
+            const res = await fetch('/api/update-username', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ site_id: currentUserSiteId, new_username: newName }) 
+            });
+            
+            if (res.ok) {
+                sessionStorage.removeItem('dh_user'); 
+                window.location.reload(); 
             }
         }
 
@@ -619,71 +712,68 @@
         function uploadAvatar(input) {
             if (!input.files || !input.files[0]) return;
             const reader = new FileReader();
+            
             reader.onload = async (e) => {
                 const base64 = e.target.result;
-                try {
-                    const res = await fetch('/api/update-avatar', {
-                        method: 'POST', headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ avatar_base64: base64 })
-                    });
-                    if (res.ok) document.getElementById('prof-avatar').src = base64;
-                    else alert("Ошибка загрузки. Файл слишком большой?");
-                } catch(err) { alert("Ошибка соединения"); }
+                const res = await fetch('/api/update-avatar', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ avatar_base64: base64 }) 
+                });
+                
+                if (res.ok) {
+                    document.getElementById('prof-avatar').src = base64; 
+                    sessionStorage.removeItem('dh_user'); 
+                }
             };
+            
             reader.readAsDataURL(input.files[0]);
         }
 
         // --- БЕЗОПАСНОСТЬ ---
         function openSecurityModal(mode) {
-            currentSecurityMode = mode;
-            document.getElementById('sec-modal-title').innerText = mode === 'email' ? 'Смена почты' : 'Смена пароля';
-            document.getElementById('sec-step-1').classList.remove('hidden');
-            document.getElementById('sec-step-2').classList.add('hidden');
-            document.getElementById('sec-error').style.display = 'none';
-            document.getElementById('sec-code').value = '';
+            currentSecurityMode = mode; 
+            document.getElementById('sec-step-1').classList.remove('hidden'); 
+            document.getElementById('sec-step-2').classList.add('hidden'); 
             document.getElementById('security-modal').classList.remove('hidden');
         }
 
-        function closeSecurityModal() { document.getElementById('security-modal').classList.add('hidden'); }
+        function closeSecurityModal() {
+            document.getElementById('security-modal').classList.add('hidden');
+        }
 
         async function requestSecurityCode() {
-            try {
-                const res = await fetch('/api/security/request-code', {method: 'POST'});
-                if(res.ok) {
-                    document.getElementById('sec-step-1').classList.add('hidden');
-                    document.getElementById('sec-step-2').classList.remove('hidden');
-                    document.getElementById('sec-new-email').classList.toggle('hidden', currentSecurityMode !== 'email');
-                    document.getElementById('sec-new-password').classList.toggle('hidden', currentSecurityMode !== 'password');
-                } else {
-                    const err = await res.json();
-                    document.getElementById('sec-error').innerText = err.detail || "Ошибка. Привязана ли почта?";
-                    document.getElementById('sec-error').style.display = 'block';
-                }
-            } catch(e) {}
+            const res = await fetch('/api/security/request-code', {method: 'POST'});
+            if(res.ok) {
+                document.getElementById('sec-step-1').classList.add('hidden'); 
+                document.getElementById('sec-step-2').classList.remove('hidden'); 
+                document.getElementById('sec-new-email').classList.toggle('hidden', currentSecurityMode !== 'email'); 
+                document.getElementById('sec-new-password').classList.toggle('hidden', currentSecurityMode !== 'password');
+            }
         }
 
         async function submitSecurityChange() {
             const code = document.getElementById('sec-code').value.trim();
             const newValue = currentSecurityMode === 'email' ? document.getElementById('sec-new-email').value.trim() : document.getElementById('sec-new-password').value;
             
-            if(code.length !== 6 || !newValue) {
-                document.getElementById('sec-error').innerText = "Заполните все поля";
-                document.getElementById('sec-error').style.display = 'block';
-                return;
+            if(code.length !== 6 || !newValue) return;
+            
+            const res = await fetch(`/api/security/change-${currentSecurityMode}`, { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({code, new_value: newValue}) 
+            });
+            
+            if(res.ok) {
+                sessionStorage.removeItem('dh_user'); 
+                window.location.reload(); 
             }
+        }
 
-            try {
-                const res = await fetch(`/api/security/change-${currentSecurityMode}`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({code: code, new_value: newValue})
-                });
-                if(res.ok) window.location.reload();
-                else {
-                    const err = await res.json();
-                    document.getElementById('sec-error').innerText = err.detail || "Ошибка";
-                    document.getElementById('sec-error').style.display = 'block';
-                }
-            } catch(e) {}
+        async function logout() {
+            sessionStorage.clear();
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/auth';
         }
     </script>
 </body>
