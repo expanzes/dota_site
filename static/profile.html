@@ -73,22 +73,22 @@
             <button class="btn-friends" style="margin: 15px auto 0;" onclick="openHeroesModal()">Выбрать героев</button>
         </div>
 
-        <!-- Настройки безопасности -->
+        <!-- Настройки безопасности (ОБНОВЛЕНО) -->
         <div style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 25px; margin-top: 10px;">
             <div class="info-label" style="margin-bottom: 15px;">БЕЗОПАСНОСТЬ</div>
             
             <div class="sec-row">
-                <div>
-                    <span class="sec-label">E-mail</span>
-                    <span id="display-email" style="color: white; font-weight: 600;">...</span>
+                <div class="sec-info">
+                    <span class="sec-label" style="margin: 0;">E-mail</span>
+                    <span id="display-email" style="color: white; font-weight: 700; font-size: 1.1rem;">...</span>
                 </div>
                 <button class="btn-friends" onclick="openSecurityModal('email')">Изменить</button>
             </div>
             
             <div class="sec-row">
-                <div>
-                    <span class="sec-label">Пароль</span>
-                    <span style="color: white; font-weight: 800; letter-spacing: 3px;">********</span>
+                <div class="sec-info">
+                    <span class="sec-label" style="margin: 0;">Пароль</span>
+                    <span style="color: white; font-weight: 900; letter-spacing: 4px; font-size: 1.2rem;">********</span>
                 </div>
                 <button class="btn-friends" onclick="openSecurityModal('password')">Изменить</button>
             </div>
