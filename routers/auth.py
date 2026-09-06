@@ -197,26 +197,39 @@ async def steam_callback(request: Request):
                 cur.execute("SELECT site_id, username FROM users WHERE steam_id = %s", (steam_id,))
                 existing = cur.fetchone()
 
+                target_url = "/"
                 if current_session:
                     sid = current_session["site_id"]
                     cur.execute("UPDATE users SET steam_id = %s, avatar_url = %s, rank_tier = %s, last_seen = NOW() WHERE site_id = %s", 
                                (steam_id, s_data["avatarfull"], rank, sid))
                     conn.commit()
-                    return RedirectResponse("/profile")
+                    target_url = "/profile"
                 elif existing:
                     sid, username = existing[0], existing[1]
                     cur.execute("UPDATE users SET avatar_url = %s, rank_tier = %s, last_seen = NOW() WHERE site_id = %s", 
                                (s_data["avatarfull"], rank, sid))
                     conn.commit()
                     request.session["user"] = {"site_id": sid, "username": username}
-                    return RedirectResponse("/profile")
+                    target_url = "/profile"
                 else:
                     request.session["pending_steam"] = {
                         "steam_id": steam_id,
                         "avatar_url": s_data["avatarfull"],
                         "rank_tier": rank
                     }
-                    return RedirectResponse("/auth?mode=steam")
+                    target_url = "/auth?mode=steam"
+
+                # Фикс для браузеров (Safari/iOS), которые сбрасывают куки при прямом редиректе
+                return HTMLResponse(content=f"""
+                <html>
+                  <body style="background:#1a1a1a; display:flex; justify-content:center; align-items:center; height:100vh;">
+                    <div style="color:var(--accent-yellow, #FFD700); font-family:sans-serif; font-size:1.2rem;">
+                      Загрузка...
+                    </div>
+                    <script>window.location.href = "{target_url}";</script>
+                  </body>
+                </html>
+                """)
     except Exception as e: 
         return HTMLResponse(content=f"<h1>Ошибка авторизации</h1><p>{str(e)}</p>")
 
@@ -618,3 +631,12 @@ async def get_recent_matches(request: Request, site_id: Optional[str] = None):
             return matches
         except:
             return []
+
+# Специальный роут для сброса привязки Steam, чтобы можно было протестировать окно
+@router.get("/debug/reset-steam")
+async def reset_steam():
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET steam_id = NULL")
+            conn.commit()
+    return {"status": "ok", "message": "Steam accounts unlinked. Try logging in via Steam now."}
