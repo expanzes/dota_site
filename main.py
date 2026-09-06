@@ -23,7 +23,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth.router, prefix="/api")
 app.include_router(draft.router, prefix="/api")
 
-STATIC_VERSION = "1.2.8"
+STATIC_VERSION = "1.2.9"
 
 def serve_page(file_name: str, module_name: str = None):
     file_path = f"static/{file_name}"
