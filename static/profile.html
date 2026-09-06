@@ -4,111 +4,10 @@
     <meta charset="UTF-8">
     <title>Профиль — Dota Helper</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/profile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-base: #0a0a0c;
-            --bg-card: #151518;
-            --bg-hover: #1e1e24;
-            --border-color: #2a2a32;
-            --accent-gold: #FFD700;
-            --text-main: #f0f0f0;
-            --text-muted: #888;
-            --win-color: #4CAF50;
-            --loss-color: #f44336;
-        }
-        body { background: var(--bg-base); color: var(--text-main); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        
-        .profile-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
-        
-        /* Шапка профиля */
-        .profile-header { display: flex; flex-direction: column; align-items: center; background: var(--bg-card); padding: 40px 20px; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 25px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
-        .avatar-wrapper { position: relative; display: inline-block; cursor: pointer; margin-bottom: 15px; }
-        .avatar-lg { width: 130px; height: 130px; border-radius: 50%; border: 3px solid var(--accent-gold); object-fit: cover; transition: 0.3s; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
-        .avatar-wrapper:hover .avatar-lg { filter: brightness(0.5); }
-        .avatar-edit-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 1.8rem; display: none; }
-        .avatar-wrapper:hover .avatar-edit-icon { display: block; }
-        
-        .username-block { display: flex; align-items: center; gap: 10px; font-size: 2rem; font-weight: 800; margin-bottom: 5px; min-height: 38px; }
-        .edit-name-btn { font-size: 1.1rem; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
-        .edit-name-btn:hover { color: var(--text-main); }
-        .premium-icon { color: var(--accent-gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); font-size: 1.4rem; }
-        .site-id-badge { background: #000; padding: 6px 16px; border-radius: 20px; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; letter-spacing: 1px; border: 1px solid var(--border-color); }
-
-        /* Сетка виджетов */
-        .widgets-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
-        .widget-card { background: var(--bg-card); padding: 25px 20px; border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .widget-title { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 15px; }
-        
-        /* Ранг */
-        .rank-display { position: relative; display: flex; flex-direction: column; align-items: center; }
-        .rank-img-container { position: relative; width: 80px; height: 80px; margin-bottom: 10px; }
-        .rank-base { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
-        .rank-name { font-size: 1.2rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 5px; min-height: 23px; }
-        .rank-mmr { font-size: 0.95rem; color: var(--text-muted); background: #000; padding: 4px 12px; border-radius: 10px; min-height: 18px; }
-
-        /* Счет Invoker */
-        .invoker-score { font-size: 3rem; font-weight: 900; color: #a356ff; text-shadow: 0 0 15px rgba(163, 86, 255, 0.4); }
-
-        /* Любимые герои */
-        .fav-heroes-container { display: flex; gap: 10px; justify-content: center; }
-        .fav-hero-slot { width: 55px; height: 55px; background: #000; border: 1px dashed var(--border-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; transition: 0.2s; overflow: hidden; }
-        .fav-hero-slot:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
-        .fav-hero-slot img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* Блоки контента */
-        .content-section { background: var(--bg-card); padding: 25px; border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 25px; }
-        
-        /* Безопасность */
-        .sec-row { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 15px 20px; border-radius: 12px; margin-top: 15px; border: 1px solid var(--border-color); }
-        .sec-label { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700; margin-bottom: 5px; display: block; }
-        
-        /* Друзья */
-        .user-row { display: flex; align-items: center; justify-content: space-between; background: #000; padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border-color); transition: 0.2s; }
-        .user-row:hover { border-color: #444; }
-        .user-info { display: flex; align-items: center; gap: 15px; }
-        .user-info img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #333; }
-        .user-status { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .status-online { background: #4CAF50; box-shadow: 0 0 5px #4CAF50; }
-        .status-offline { background: #555; }
-
-        /* История матчей */
-        .match-row { display: grid; grid-template-columns: 60px 100px 1fr 100px 80px; gap: 15px; align-items: center; background: #000; padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border-color); transition: 0.2s; }
-        .match-row:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-color: #444; }
-        .match-row img { width: 100%; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        .m-result { font-weight: 800; font-size: 0.95rem; text-transform: uppercase; }
-        .m-win { color: var(--win-color); }
-        .m-loss { color: var(--loss-color); }
-        .m-kda { font-weight: 600; color: #ddd; text-align: center; }
-        .m-networth { color: var(--accent-gold); font-weight: 600; font-size: 0.9rem; text-align: center; }
-        .m-duration { color: var(--text-muted); font-size: 0.9rem; text-align: right; }
-
-        /* СКЕЛЕТНАЯ АНИМАЦИЯ ЗАГРУЗКИ */
-        @keyframes pulse {
-            0% { opacity: 1; background-color: #222; }
-            50% { opacity: 0.6; background-color: #333; }
-            100% { opacity: 1; background-color: #222; }
-        }
-        .skeleton { animation: pulse 1.5s infinite ease-in-out; border-radius: 8px; color: transparent !important; user-select: none; }
-        .skeleton * { visibility: hidden; }
-        .skeleton-img { width: 100%; height: 35px; border-radius: 6px; }
-        .skeleton-text { height: 15px; border-radius: 4px; width: 100%; }
-
-        /* Модальные окна */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
-        .modal-card { background: var(--bg-card); padding: 30px; border-radius: 16px; width: 380px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        .modal-input { background: #000; color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; border: 1px solid var(--border-color); box-sizing: border-box; font-size: 1rem; transition: 0.2s; }
-        .modal-input:focus { outline: none; border-color: var(--accent-gold); }
-        .hidden { display: none !important; }
-
-        /* Скроллбар для сетки героев */
-        .heroes-grid::-webkit-scrollbar { width: 8px; }
-        .heroes-grid::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
-        .heroes-grid::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        .heroes-grid::-webkit-scrollbar-thumb:hover { background: var(--accent-gold); }
-    </style>
 </head>
-<body>
+<body id="body-dark">
 
     <header>
         <div class="header-left">
@@ -120,661 +19,146 @@
             </nav>
         </div>
         <div class="user-panel">
+            <button class="btn-friends" onclick="toggleFriendsSidebar()">
+                <i class="fas fa-user-friends"></i> Друзья
+            </button>
             <button class="btn-logout" onclick="logout()">Выйти</button>
         </div>
     </header>
 
     <div class="profile-container">
         
-        <!-- Шапка Профиля -->
-        <div class="profile-header">
-            <div class="avatar-wrapper" onclick="document.getElementById('avatar-upload').click()">
-                <img id="prof-avatar" src="/static/images/default_avatar.png" class="avatar-lg">
-                <i class="fas fa-camera avatar-edit-icon"></i>
-                <input type="file" id="avatar-upload" class="hidden" accept="image/*" onchange="uploadAvatar(this)">
-            </div>
-            
-            <div class="username-block">
-                <!-- Скелет для никнейма, который исчезнет при загрузке -->
-                <span id="prof-username" class="skeleton skeleton-text" style="width: 150px; height: 30px;"></span>
-                <i class="fas fa-edit edit-name-btn" onclick="openNameModal()" title="Изменить никнейм"></i>
-            </div>
-            
-            <div class="site-id-badge">ID: <span id="prof-site-id">---</span></div>
-            
-            <!-- Кнопка привязки Steam скрыта по умолчанию -->
-            <button class="btn-secondary" style="margin-top: 15px; display: none;" onclick="window.location.href='/api/login/steam'" id="btn-link-steam">Привязать Steam</button>
+        <h1 class="profile-main-title">ПРОФИЛЬ ИГРОКА</h1>
+
+        <div class="avatar-wrapper" onclick="document.getElementById('avatar-upload').click()">
+            <img id="profile-avatar" src="/static/images/default_avatar.png" alt="Avatar">
+            <div class="avatar-edit-overlay"><i class="fas fa-camera"></i></div>
+            <input type="file" id="avatar-upload" class="hidden" accept="image/*" onchange="uploadAvatar(this)">
         </div>
 
-        <!-- Сетка статистики -->
-        <div class="widgets-grid">
-            <!-- Ранг -->
-            <div class="widget-card">
-                <div class="widget-title">Текущий Ранг</div>
-                <div class="rank-display" id="prof-rank-container">
-                    <div class="rank-img-container">
-                        <img id="rank-base-img" class="rank-base" src="" style="display:none;">
-                    </div>
-                    <div class="rank-name" id="rank-name-text"></div>
-                    <div class="rank-mmr" id="rank-mmr-text"></div>
-                </div>
-            </div>
+        <div class="profile-name-row">
+            <div id="display-username" class="skeleton skeleton-text" style="width: 200px; height: 40px;"></div>
+            <i class="fas fa-pen edit-icon" onclick="openNameEditor()" id="btn-edit-name" style="display:none;"></i>
+        </div>
 
-            <!-- Инвокер -->
-            <div class="widget-card">
-                <div class="widget-title">Рекорд Invoker</div>
-                <div class="invoker-score" id="prof-invoker">0</div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">очков за раз</div>
-            </div>
+        <form id="edit-name-form" class="hidden" onsubmit="submitNameChange(event)">
+            <input type="text" id="new-username-input" placeholder="Новый ник..." minlength="3" maxlength="15" autocomplete="off">
+            <button type="submit" class="btn-ok">OK</button>
+        </form>
+        <div id="name-error" style="color: var(--accent-red); display: none; font-size: 0.9rem; margin-top: -5px;"></div>
 
-            <!-- Любимые герои -->
-            <div class="widget-card">
-                <div class="widget-title">Любимые герои</div>
-                <div class="fav-heroes-container" id="fav-heroes-container">
-                    <!-- Скелеты героев -->
-                    <div class="fav-hero-slot skeleton"></div>
-                    <div class="fav-hero-slot skeleton"></div>
-                    <div class="fav-hero-slot skeleton"></div>
-                </div>
+        <div class="site-id-badge">ID: <span id="display-site-id">---</span></div>
+        <button class="btn-yellow" id="btn-link-steam" style="display: none; max-width: 300px;" onclick="window.location.href='/api/login/steam'">Привязать Steam</button>
+
+        <div class="profile-info-grid">
+            <div class="info-item">
+                <div class="info-label">МЕДАЛЬ (STEAM)</div>
+                <img id="rank-medal" src="" style="display: none;">
+                <div class="info-value" id="display-rank"></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">РЕКОРД INVOKER</div>
+                <div class="info-value" id="display-score">0</div>
             </div>
         </div>
 
-        <!-- Безопасность -->
-        <div class="content-section">
-            <h3 class="widget-title" style="margin-bottom: 5px; text-align: left;">Настройки безопасности</h3>
-            
-            <div>
-                <span class="sec-label">Привязанный E-mail</span>
-                <div class="sec-row">
-                    <span id="display-email" style="font-weight: 600;">...</span>
-                    <button class="btn-secondary" style="padding: 6px 20px; font-size: 0.85rem;" onclick="openSecurityModal('email')">Изменить</button>
-                </div>
+        <!-- Любимые герои -->
+        <div style="width: 100%; text-align: center; margin-top: 10px;">
+            <div class="info-label" style="margin-bottom: 15px;">ЛЮБИМЫЕ ГЕРОИ (3)</div>
+            <div class="fav-heroes-container" id="fav-heroes-container">
+                <div class="fav-hero-slot skeleton"></div>
+                <div class="fav-hero-slot skeleton"></div>
+                <div class="fav-hero-slot skeleton"></div>
             </div>
-
-            <div style="margin-top: 20px;">
-                <span class="sec-label">Пароль</span>
-                <div class="sec-row">
-                    <span style="font-weight: 800; letter-spacing: 3px;">********</span>
-                    <button class="btn-secondary" style="padding: 6px 20px; font-size: 0.85rem;" onclick="openSecurityModal('password')">Изменить</button>
-                </div>
-            </div>
+            <button class="btn-friends" style="margin: 15px auto 0;" onclick="openHeroesModal()">Выбрать героев</button>
         </div>
 
-        <!-- Социальная сеть (ДРУЗЬЯ) -->
-        <div class="content-section">
-            <h3 class="widget-title" style="margin-bottom: 20px; text-align: left;">Друзья</h3>
+        <!-- Настройки безопасности -->
+        <div style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 25px; margin-top: 10px;">
+            <div class="info-label" style="margin-bottom: 15px;">БЕЗОПАСНОСТЬ</div>
             
-            <!-- Поиск -->
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <input type="text" id="friend-search-input" class="modal-input" placeholder="Поиск по никнейму..." style="margin-bottom: 0;">
-                <button class="btn-primary" onclick="searchUsers()" style="padding: 0 20px;">Найти</button>
+            <div class="sec-row">
+                <div>
+                    <span class="sec-label">E-mail</span>
+                    <span id="display-email" style="color: white; font-weight: 600;">...</span>
+                </div>
+                <button class="btn-friends" onclick="openSecurityModal('email')">Изменить</button>
             </div>
-            <div id="search-results" style="margin-bottom: 20px;"></div>
-
-            <!-- Входящие заявки -->
-            <div id="pending-requests-container" style="display: none; margin-bottom: 20px;">
-                <h4 style="color: var(--accent-gold); margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase;">Заявки в друзья</h4>
-                <div id="pending-requests-list"></div>
-            </div>
-
-            <!-- Мои друзья -->
-            <div>
-                <h4 style="color: var(--text-muted); margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase;">Мои друзья</h4>
-                <div id="friends-list"></div>
+            
+            <div class="sec-row">
+                <div>
+                    <span class="sec-label">Пароль</span>
+                    <span style="color: white; font-weight: 800; letter-spacing: 3px;">********</span>
+                </div>
+                <button class="btn-friends" onclick="openSecurityModal('password')">Изменить</button>
             </div>
         </div>
 
         <!-- История матчей -->
-        <div class="content-section" style="margin-bottom: 50px;">
-            <h3 class="widget-title" style="margin-bottom: 20px; text-align: left;">Последние матчи (Steam)</h3>
-            <div id="recent-matches-list">
-                <!-- СКЕЛЕТЫ МАТЧЕЙ ПО УМОЛЧАНИЮ -->
-                <div class="match-row skeleton">
-                    <div class="skeleton-img"></div>
-                    <div class="skeleton-text"></div>
-                    <div class="skeleton-text"></div>
-                    <div class="skeleton-text"></div>
-                    <div class="skeleton-text"></div>
-                </div>
-                <div class="match-row skeleton">
-                    <div class="skeleton-img"></div>
-                    <div class="skeleton-text"></div>
-                    <div class="skeleton-text"></div>
-                    <div class="skeleton-text"></div>
-                    <div class="skeleton-text"></div>
-                </div>
-                <div class="match-row skeleton">
-                    <div class="skeleton-img"></div>
-                    <div class="skeleton-text"></div>
-                    <div class="skeleton-text"></div>
-                    <div class="skeleton-text"></div>
-                    <div class="skeleton-text"></div>
-                </div>
+        <div style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 25px; margin-top: 10px;">
+            <div class="info-label" style="margin-bottom: 20px;">ПОСЛЕДНИЕ МАТЧИ</div>
+            <div id="matches-list">
+                <div class="match-row skeleton" style="height: 65px;"></div>
+                <div class="match-row skeleton" style="height: 65px;"></div>
+                <div class="match-row skeleton" style="height: 65px;"></div>
             </div>
         </div>
+
     </div>
 
-    <!-- Модальное окно: Смена ника -->
-    <div id="name-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h3 style="margin-bottom: 20px; color: var(--accent-gold);">Смена никнейма</h3>
-            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">От 3 до 15 символов.</p>
-            <input type="text" id="new-username-input" class="modal-input" placeholder="Новый никнейм">
-            <div id="name-error" style="color: var(--loss-color); font-size: 0.9rem; margin-bottom: 10px; display: none;"></div>
-            <button class="btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="submitNameChange()">Сохранить</button>
-            <button class="btn-secondary" style="width: 100%;" onclick="closeNameModal()">Отмена</button>
+    <!-- Боковое меню Друзей -->
+    <div id="friends-sidebar" class="friends-sidebar">
+        <div class="sidebar-header">
+            <h3>Социальная сеть</h3>
+            <button class="close-sidebar" onclick="toggleFriendsSidebar()"><i class="fas fa-times"></i></button>
         </div>
+        <button id="back-to-my-profile" onclick="backToMyProfile()">Вернуться в мой профиль</button>
+        <input type="text" id="friend-search-input" class="search-input" placeholder="Поиск по никнейму..." oninput="searchUsers()">
+        <div id="search-results-list"></div>
+        <div id="pending-requests-section" style="display: none;">
+            <div class="friend-section-title" style="color: var(--accent-yellow);">Заявки</div>
+            <div id="pending-requests-list"></div>
+        </div>
+        <div class="friend-section-title">Мои друзья</div>
+        <div id="friends-list"></div>
     </div>
 
     <!-- Модальное окно: Безопасность -->
     <div id="security-modal" class="modal-overlay hidden">
         <div class="modal-card">
-            <h3 id="sec-modal-title" style="margin-bottom: 20px; color: var(--accent-gold);">Изменение данных</h3>
+            <h3 id="sec-modal-title" style="margin-bottom: 20px; color: var(--accent-yellow); font-weight: 900; text-transform: uppercase;">Изменение данных</h3>
             <div id="sec-step-1">
-                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Мы отправим код на вашу текущую почту для подтверждения.</p>
-                <button class="btn-primary" style="width: 100%;" onclick="requestSecurityCode()">Получить код</button>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">На вашу текущую почту будет отправлен 6-значный код.</p>
+                <button class="btn-yellow" onclick="requestSecurityCode()">Получить код</button>
             </div>
             <div id="sec-step-2" class="hidden">
-                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;">Введите код из письма и новые данные.</p>
                 <input type="text" id="sec-code" class="modal-input" placeholder="000000" maxlength="6" style="text-align: center; font-size: 1.5rem; letter-spacing: 5px;">
-                
                 <input type="email" id="sec-new-email" class="modal-input hidden" placeholder="Новый E-mail">
                 <input type="password" id="sec-new-password" class="modal-input hidden" placeholder="Новый пароль">
-                
-                <button class="btn-primary" style="width: 100%; margin-top: 5px;" onclick="submitSecurityChange()">Сохранить</button>
+                <button class="btn-yellow" style="margin-top: 10px;" onclick="submitSecurityChange()">Сохранить</button>
             </div>
-            <div id="sec-error" style="color: var(--loss-color); margin-top: 15px; display: none; font-size: 0.9rem;"></div>
-            <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="closeSecurityModal()">Отмена</button>
+            <div id="sec-error" style="color: var(--accent-red); margin-top: 15px; display: none; font-size: 0.9rem; font-weight: bold;"></div>
+            <button class="btn-friends" style="width: 100%; justify-content: center; margin-top: 15px;" onclick="closeSecurityModal()">Отмена</button>
         </div>
     </div>
 
     <!-- Модальное окно: Выбор героев -->
     <div id="heroes-modal" class="modal-overlay hidden">
-        <div class="modal-card" style="width: 500px; max-width: 90vw; height: 70vh; display: flex; flex-direction: column;">
-            <h3 style="margin-bottom: 15px; color: var(--accent-gold);">Выберите любимых героев</h3>
+        <div class="modal-card" style="width: 600px; max-width: 90vw; max-height: 85vh; display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 15px; color: var(--accent-yellow); font-weight: 900;">ВЫБЕРИТЕ ЛЮБИМЫХ ГЕРОЕВ</h3>
             <input type="text" id="hero-search" class="modal-input" placeholder="Поиск героя..." oninput="filterHeroes()">
-            
-            <div id="heroes-grid" class="heroes-grid" style="display: flex; flex-wrap: wrap; gap: 10px; overflow-y: auto; flex: 1; justify-content: center; padding-right: 5px;">
-                <!-- Герои будут загружены сюда -->
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="btn-primary" style="flex: 1;" onclick="saveHeroes()">Сохранить</button>
-                <button class="btn-secondary" style="flex: 1;" onclick="closeHeroesModal()">Отмена</button>
+            <div id="heroes-grid" class="fav-heroes-grid"></div>
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button class="btn-yellow" style="flex: 1;" onclick="saveHeroes()">Сохранить</button>
+                <button class="btn-friends" style="flex: 1; justify-content: center;" onclick="closeHeroesModal()">Отмена</button>
             </div>
         </div>
     </div>
 
-    <!-- Полностью развернутые скрипты -->
-    <script>
-        let currentUserSiteId = '';
-        let allHeroes = [];
-        let selectedHeroes = [];
-        let currentSecurityMode = '';
-
-        window.addEventListener('DOMContentLoaded', () => {
-            // Мгновенная отрисовка из кэша браузера (избегаем дерганий интерфейса)
-            const cachedUser = sessionStorage.getItem('dh_user');
-            if (cachedUser) {
-                renderUserUI(JSON.parse(cachedUser));
-            }
-            
-            const cachedMatches = sessionStorage.getItem('dh_matches');
-            if (cachedMatches) {
-                renderMatches(JSON.parse(cachedMatches));
-            }
-
-            // Запускаем фоновые запросы для подтягивания свежих данных
-            fetchData();
-        });
-
-        async function fetchData() {
-            try {
-                // 1. Грузим юзера
-                const res = await fetch('/api/me');
-                const user = await res.json();
-                
-                if (!user.logged_in) {
-                    window.location.href = '/auth';
-                    return;
-                }
-                
-                currentUserSiteId = user.site_id;
-                // Сохраняем в кэш для следующего открытия
-                sessionStorage.setItem('dh_user', JSON.stringify(user));
-                renderUserUI(user);
-
-                // 2. Списки героев и друзей
-                await fetchHeroesList();
-                await loadFavorites();
-                await loadFriends();
-
-                // 3. Матчи
-                if (user.steam_linked) {
-                    loadRecentMatches();
-                } else {
-                    document.getElementById('recent-matches-list').innerHTML = '<div style="text-align: center; color: #555; padding: 30px;">Привяжите Steam, чтобы увидеть историю.</div>';
-                }
-            } catch(e) {
-                console.error("Data error", e);
-            }
-        }
-
-        // --- РЕНДЕР ПРОФИЛЯ ---
-        function renderUserUI(user) {
-            let nameHtml = user.username;
-            if (user.is_premium) {
-                nameHtml += ' <i class="fas fa-crown premium-icon" title="Premium"></i>';
-            }
-            
-            const usernameEl = document.getElementById('prof-username');
-            usernameEl.innerHTML = nameHtml;
-            // Убираем скелетную загрузку текста
-            usernameEl.classList.remove('skeleton', 'skeleton-text');
-            
-            document.getElementById('prof-site-id').innerText = user.site_id;
-            document.getElementById('display-email').innerText = user.email || 'Не привязана';
-            document.getElementById('prof-invoker').innerText = user.invoker_score || 0;
-            
-            if (user.avatar) {
-                document.getElementById('prof-avatar').src = user.avatar;
-            }
-            
-            if (!user.steam_linked) {
-                document.getElementById('btn-link-steam').style.display = 'block';
-            } else {
-                document.getElementById('btn-link-steam').style.display = 'none';
-            }
-            
-            renderRankData(user.rank);
-        }
-
-        function renderRankData(tier) {
-            const baseImg = document.getElementById('rank-base-img');
-            const nameText = document.getElementById('rank-name-text');
-            const mmrText = document.getElementById('rank-mmr-text');
-
-            if (!tier || tier === 0) {
-                baseImg.src = "/static/ranks/0.png";
-                baseImg.style.display = "block";
-                nameText.innerText = "Не откалиброван";
-                mmrText.innerText = "TBD";
-                return;
-            }
-
-            const badge = Math.floor(tier / 10);
-            const star = tier % 10;
-            const names = ['', 'Рекрут', 'Страж', 'Рыцарь', 'Герой', 'Легенда', 'Властелин', 'Божество', 'Титан'];
-            
-            baseImg.src = `/static/ranks/${tier}.png`;
-            baseImg.style.display = "block";
-            
-            nameText.innerText = names[badge] + (badge < 8 && star > 0 ? ' ' + star : '');
-            
-            let approxMmr = (badge - 1) * 770 + star * 154;
-            if (badge === 8) approxMmr = '5600+'; 
-            mmrText.innerText = '~ ' + approxMmr + ' MMR';
-        }
-
-        // --- МАТЧИ ---
-        async function loadRecentMatches() {
-            try {
-                const res = await fetch('/api/recent-matches');
-                const matches = await res.json();
-                
-                // Сохраняем матчи в кэш
-                sessionStorage.setItem('dh_matches', JSON.stringify(matches));
-                renderMatches(matches);
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-        function renderMatches(matches) {
-            const container = document.getElementById('recent-matches-list');
-            
-            if (!matches || matches.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #555; padding: 20px;">Нет данных о матчах.</div>';
-                return;
-            }
-            
-            container.innerHTML = matches.map(m => {
-                const mins = Math.floor(m.duration / 60);
-                const secs = (m.duration % 60).toString().padStart(2, '0');
-                const nw = m.net_worth ? (m.net_worth / 1000).toFixed(1) + 'k' : '—';
-                
-                return `
-                <div class="match-row">
-                    <img src="${m.hero_img || '/static/images/default_hero.png'}" title="Герой">
-                    <span class="m-result ${m.is_win ? 'm-win' : 'm-loss'}">${m.is_win ? 'Победа' : 'Пораж.'}</span>
-                    <div class="m-kda">
-                        <span style="color:#fff;">${m.kills}</span> / 
-                        <span style="color:var(--loss-color);">${m.deaths}</span> / 
-                        <span style="color:#aaa;">${m.assists}</span>
-                    </div>
-                    <span class="m-networth" title="Net Worth">
-                        <i class="fas fa-coins" style="margin-right:5px; color:var(--accent-gold);"></i>${nw}
-                    </span>
-                    <span class="m-duration">
-                        <i class="far fa-clock" style="margin-right:5px;"></i>${mins}:${secs}
-                    </span>
-                </div>
-                `;
-            }).join('');
-        }
-
-        // --- ЛЮБИМЫЕ ГЕРОИ С КЭШЕМ ---
-        async function fetchHeroesList() {
-            const cachedHeroes = localStorage.getItem('dh_all_heroes');
-            if (cachedHeroes) {
-                allHeroes = JSON.parse(cachedHeroes);
-                return;
-            }
-            try {
-                const res = await fetch('https://api.opendota.com/api/heroes');
-                allHeroes = await res.json();
-                allHeroes.sort((a, b) => a.localized_name.localeCompare(b.localized_name));
-                localStorage.setItem('dh_all_heroes', JSON.stringify(allHeroes));
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        async function loadFavorites() {
-            try {
-                const res = await fetch(`/api/favorites?user_id=${currentUserSiteId}`);
-                const data = await res.json();
-                selectedHeroes = data.favorite_ids || [];
-                renderFavSlots();
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        function renderFavSlots() {
-            const container = document.getElementById('fav-heroes-container');
-            container.innerHTML = '';
-            
-            let displayHeroes = [];
-            if (selectedHeroes.length > 0) {
-                let shuffled = [...selectedHeroes].sort(() => 0.5 - Math.random());
-                displayHeroes = shuffled.slice(0, 3);
-            }
-            
-            for (let i = 0; i < 3; i++) {
-                let slotHtml = `<div class="fav-hero-slot" onclick="openHeroesModal()"><i class="fas fa-plus"></i></div>`;
-                
-                if (displayHeroes[i]) {
-                    const hero = allHeroes.find(h => h.id === displayHeroes[i]);
-                    if (hero) {
-                        const imgName = hero.name.replace('npc_dota_hero_', '');
-                        slotHtml = `<div class="fav-hero-slot" onclick="openHeroesModal()"><img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${imgName}.png" title="${hero.localized_name}"></div>`;
-                    }
-                }
-                container.innerHTML += slotHtml;
-            }
-        }
-
-        function openHeroesModal() {
-            renderHeroesGrid();
-            document.getElementById('hero-search').value = '';
-            document.getElementById('heroes-modal').classList.remove('hidden');
-        }
-
-        function closeHeroesModal() {
-            document.getElementById('heroes-modal').classList.add('hidden');
-        }
-
-        function filterHeroes() {
-            renderHeroesGrid();
-        }
-
-        function renderHeroesGrid() {
-            const q = document.getElementById('hero-search').value.toLowerCase();
-            document.getElementById('heroes-grid').innerHTML = allHeroes.filter(h => h.localized_name.toLowerCase().includes(q)).map(h => {
-                const isSelected = selectedHeroes.includes(h.id);
-                const imgName = h.name.replace('npc_dota_hero_', '');
-                return `
-                    <div onclick="toggleHero(${h.id})" style="width: 70px; cursor: pointer; text-align: center; transform: ${isSelected ? 'scale(1.05)' : 'scale(1)'};">
-                        <img src="https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${imgName}.png" style="width: 100%; border-radius: 8px; border: 2px solid ${isSelected ? 'var(--accent-gold)' : 'transparent'};">
-                        <div style="font-size: 0.7rem; color: #aaa; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${h.localized_name}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function toggleHero(id) {
-            if (selectedHeroes.includes(id)) {
-                selectedHeroes = selectedHeroes.filter(hId => hId !== id);
-            } else {
-                selectedHeroes.push(id);
-            }
-            renderHeroesGrid();
-        }
-
-        async function saveHeroes() {
-            try {
-                const res = await fetch('/api/favorites', { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({ user_id: currentUserSiteId, favorite_ids: selectedHeroes }) 
-                });
-                
-                if (res.ok) {
-                    renderFavSlots();
-                    closeHeroesModal();
-                }
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-        // --- ДРУЗЬЯ ---
-        async function loadFriends() {
-            try {
-                const res = await fetch('/api/friends/list');
-                const data = await res.json();
-                
-                const fList = document.getElementById('friends-list');
-                const pList = document.getElementById('pending-requests-list');
-                const pCont = document.getElementById('pending-requests-container');
-                
-                if (data.pending && data.pending.length > 0) {
-                    pCont.style.display = 'block';
-                    pList.innerHTML = data.pending.map(u => createUserRowHTML(u, 'pending')).join('');
-                } else {
-                    pCont.style.display = 'none';
-                }
-                
-                if (data.friends && data.friends.length > 0) {
-                    fList.innerHTML = data.friends.map(u => createUserRowHTML(u, 'friend')).join('');
-                } else {
-                    fList.innerHTML = '<div style="text-align: center; color: #555; padding: 20px;">У вас пока нет друзей.</div>';
-                }
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-        function createUserRowHTML(u, type) {
-            const statusClass = u.is_online ? 'status-online' : 'status-offline';
-            const nameHtml = u.username + (u.is_premium ? ' <i class="fas fa-crown" style="color:var(--accent-gold); font-size:0.9rem; margin-left:5px;"></i>' : '');
-            const avatar = u.avatar || '/static/images/default_avatar.png';
-            
-            let buttons = '';
-            
-            if (type === 'friend') {
-                buttons = `<button class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="rejectFriend('${u.site_id}')">Убрать</button>`;
-            } else if (type === 'pending') {
-                buttons = `
-                    <button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptFriend('${u.site_id}')"><i class="fas fa-check"></i></button>
-                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="rejectFriend('${u.site_id}')"><i class="fas fa-times"></i></button>
-                `;
-            } else if (type === 'search') {
-                if (u.friend_status === 'friends') {
-                    buttons = `<span style="color:#aaa; font-size:0.85rem;">В друзьях</span>`;
-                } else if (u.friend_status === 'sent') {
-                    buttons = `<span style="color:#aaa; font-size:0.85rem;">Отправлено</span>`;
-                } else if (u.friend_status === 'received') {
-                    buttons = `<button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="acceptFriend('${u.site_id}')">Принять</button>`;
-                } else {
-                    buttons = `<button class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="sendFriendRequest('${u.site_id}')"><i class="fas fa-user-plus"></i></button>`;
-                }
-            }
-            
-            return `
-                <div class="user-row">
-                    <div class="user-info">
-                        <img src="${avatar}">
-                        <div>
-                            <div style="font-weight: bold;">${nameHtml}</div>
-                            <div style="font-size: 0.8rem; color: #888;">
-                                <span class="user-status ${statusClass}"></span> ${u.is_online ? 'В сети' : 'Не в сети'}
-                            </div>
-                        </div>
-                    </div>
-                    <div>${buttons}</div>
-                </div>
-            `;
-        }
-
-        async function searchUsers() {
-            const q = document.getElementById('friend-search-input').value.trim();
-            const container = document.getElementById('search-results');
-            if (!q) {
-                container.innerHTML = '';
-                return;
-            }
-            try {
-                const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
-                const data = await res.json();
-                
-                if (data.length > 0) {
-                    container.innerHTML = data.map(u => createUserRowHTML(u, 'search')).join('');
-                } else {
-                    container.innerHTML = '<div style="color: var(--loss-color);">Не найден.</div>';
-                }
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-        async function sendFriendRequest(id) { 
-            await fetch('/api/friends/request', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({target_id: id}) }); 
-            searchUsers(); 
-            loadFriends(); 
-        }
-        
-        async function acceptFriend(id) { 
-            await fetch('/api/friends/accept', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({target_id: id}) }); 
-            searchUsers(); 
-            loadFriends(); 
-        }
-        
-        async function rejectFriend(id) { 
-            await fetch('/api/friends/reject', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({target_id: id}) }); 
-            searchUsers(); 
-            loadFriends(); 
-        }
-
-        // --- СМЕНА НИКА ---
-        function openNameModal() {
-            document.getElementById('new-username-input').value = ''; 
-            document.getElementById('name-error').style.display = 'none'; 
-            document.getElementById('name-modal').classList.remove('hidden');
-        }
-
-        function closeNameModal() {
-            document.getElementById('name-modal').classList.add('hidden');
-        }
-
-        async function submitNameChange() {
-            const newName = document.getElementById('new-username-input').value.trim();
-            
-            if (newName.length < 3 || newName.length > 15) {
-                document.getElementById('name-error').style.display = 'block';
-                return;
-            }
-            
-            const res = await fetch('/api/update-username', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ site_id: currentUserSiteId, new_username: newName }) 
-            });
-            
-            if (res.ok) {
-                sessionStorage.removeItem('dh_user'); 
-                window.location.reload(); 
-            }
-        }
-
-        // --- АВАТАР ---
-        function uploadAvatar(input) {
-            if (!input.files || !input.files[0]) return;
-            const reader = new FileReader();
-            
-            reader.onload = async (e) => {
-                const base64 = e.target.result;
-                const res = await fetch('/api/update-avatar', { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({ avatar_base64: base64 }) 
-                });
-                
-                if (res.ok) {
-                    document.getElementById('prof-avatar').src = base64; 
-                    sessionStorage.removeItem('dh_user'); 
-                }
-            };
-            
-            reader.readAsDataURL(input.files[0]);
-        }
-
-        // --- БЕЗОПАСНОСТЬ ---
-        function openSecurityModal(mode) {
-            currentSecurityMode = mode; 
-            document.getElementById('sec-step-1').classList.remove('hidden'); 
-            document.getElementById('sec-step-2').classList.add('hidden'); 
-            document.getElementById('security-modal').classList.remove('hidden');
-        }
-
-        function closeSecurityModal() {
-            document.getElementById('security-modal').classList.add('hidden');
-        }
-
-        async function requestSecurityCode() {
-            const res = await fetch('/api/security/request-code', {method: 'POST'});
-            if(res.ok) {
-                document.getElementById('sec-step-1').classList.add('hidden'); 
-                document.getElementById('sec-step-2').classList.remove('hidden'); 
-                document.getElementById('sec-new-email').classList.toggle('hidden', currentSecurityMode !== 'email'); 
-                document.getElementById('sec-new-password').classList.toggle('hidden', currentSecurityMode !== 'password');
-            }
-        }
-
-        async function submitSecurityChange() {
-            const code = document.getElementById('sec-code').value.trim();
-            const newValue = currentSecurityMode === 'email' ? document.getElementById('sec-new-email').value.trim() : document.getElementById('sec-new-password').value;
-            
-            if(code.length !== 6 || !newValue) return;
-            
-            const res = await fetch(`/api/security/change-${currentSecurityMode}`, { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({code, new_value: newValue}) 
-            });
-            
-            if(res.ok) {
-                sessionStorage.removeItem('dh_user'); 
-                window.location.reload(); 
-            }
-        }
-
-        async function logout() {
-            sessionStorage.clear();
-            await fetch('/api/logout', { method: 'POST' });
-            window.location.href = '/auth';
-        }
-    </script>
+    <!-- Подключение скриптов -->
+    <script src="/static/js/profile_matches.js"></script>
+    <script src="/static/js/profile_heroes.js"></script>
+    <script src="/static/js/profile_friends.js"></script>
+    <script src="/static/js/profile_main.js"></script>
 </body>
 </html>
