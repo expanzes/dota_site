@@ -2,27 +2,34 @@
 <html lang="ru">
 <head>
     <link rel="apple-touch-icon" sizes="180x180" href="/static/favicons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
-<link rel="manifest" href="/static/favicons/site.webmanifest">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png">
+    <link rel="manifest" href="/static/favicons/site.webmanifest">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DotaHelper</title>
+    <title>Dota Helper — Главная</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .welcome-overlay { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+        .welcome-card { background: var(--bg-secondary, #1a1a1a); padding: 40px; border-radius: 15px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 400px; }
+        .welcome-title { color: #ff4444; font-size: 2.5rem; margin-bottom: 10px; font-weight: 900; }
+        .welcome-subtitle { color: #aaa; margin-bottom: 30px; font-size: 0.95rem; }
+    </style>
 </head>
-<body id="body-index">
-    <div id="welcome-screen">
+<body id="body-dark">
+
+    <!-- Экран приветствия -->
+    <div id="welcome-screen" class="welcome-overlay">
         <div class="welcome-card">
-            <h1>Dota 2 Helper</h1>
-            <p>Профессиональный анализ и инструменты</p>
-            <div class="btn-group">
-                <button class="btn-primary" onclick="openAuthModal()">Войти / Регистрация</button>
-                <button class="btn-secondary" onclick="enterAsGuest()">Войти как гость</button>
-            </div>
+            <h1 class="welcome-title">Dota 2 Helper</h1>
+            <p class="welcome-subtitle">Профессиональный анализ и инструменты</p>
+            <button class="btn-primary" onclick="window.location.href='/auth'" style="width: 100%; margin-bottom: 15px;">ВОЙТИ / РЕГИСТРАЦИЯ</button>
+            <button class="btn-secondary" onclick="enterAsGuest()" style="width: 100%;">Войти как гость</button>
         </div>
     </div>
 
+    <!-- Основной интерфейс -->
     <div id="main-app" class="hidden">
         <header>
             <div class="header-left">
@@ -34,32 +41,52 @@
                 </nav>
             </div>
             <div class="user-panel">
-                <span id="user-display-name" class="user-badge" onclick="window.location.href='/profile'">Гость</span>
+                <span id="user-display-name" class="user-badge" onclick="window.location.href='/profile'" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--accent-yellow)'" onmouseout="this.style.color=''">...</span>
                 <button class="btn-logout" onclick="logout()">Выйти</button>
             </div>
         </header>
-        <main style="text-align: center; padding-top: 100px;">
-            <h1 style="font-size: 3.5rem; color: var(--accent-red); margin-bottom: 20px; font-weight: 900;">ГЛАВНОЕ МЕНЮ</h1>
-            <p style="color: var(--text-muted); font-size: 1.2rem;">Выберите инструмент в навигации выше.</p>
+
+        <main>
+            <div style="text-align: center; padding: 50px;">
+                <h2 style="font-size: 2rem;">Добро пожаловать в Dota Helper!</h2>
+                <p style="color: #888; margin-top: 15px; font-size: 1.1rem;">Выберите нужный инструмент в верхнем меню для начала работы.</p>
+            </div>
         </main>
     </div>
 
-    <div id="auth-modal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div class="auth-tabs">
-                <button id="tab-login" class="auth-tab active" onclick="switchAuthMode('login')">Вход</button>
-                <button id="tab-register" class="auth-tab" onclick="switchAuthMode('register')">Регистрация</button>
-            </div>
-            <div id="auth-error" class="alert-error hidden"></div>
-            <input type="text" id="auth-username" placeholder="Логин">
-            <input type="password" id="auth-password" placeholder="Пароль">
-            <button class="btn-primary" onclick="submitAuth()">ПОДТВЕРДИТЬ</button>
-            <button class="btn-steam" onclick="loginWithSteam()">
-                <i class="fab fa-steam"></i> ВОЙТИ ЧЕРЕЗ STEAM
-            </button>
-            <button class="btn-secondary" onclick="closeAuthModal()" style="width: 100%; margin-top: 15px; border: none; background: transparent;">Отмена</button>
-        </div>
-    </div>
     <script src="/static/js/auth.js"></script>
+    <script>
+        function enterAsGuest() {
+            const welcome = document.getElementById('welcome-screen');
+            const mainApp = document.getElementById('main-app');
+            if (welcome) welcome.classList.add('hidden');
+            if (mainApp) mainApp.classList.remove('hidden');
+            
+            const nameDisplay = document.getElementById('user-display-name');
+            if (nameDisplay) {
+                nameDisplay.innerText = 'Гость';
+                nameDisplay.style.pointerEvents = 'none'; // Отключаем клик по профилю для гостя
+            }
+            if (typeof loadHeroes === 'function') loadHeroes();
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/api/me');
+                const user = await res.json();
+                
+                if (user.logged_in) {
+                    document.getElementById('welcome-screen').classList.add('hidden');
+                    document.getElementById('main-app').classList.remove('hidden');
+                    document.getElementById('user-display-name').innerHTML = user.username + (user.is_premium ? ' <i class="fas fa-crown premium-icon"></i>' : '');
+                } else {
+                    document.getElementById('welcome-screen').classList.remove('hidden');
+                    document.getElementById('main-app').classList.add('hidden');
+                }
+            } catch (e) {
+                console.warn("Ошибка проверки сессии", e);
+            }
+        });
+    </script>
 </body>
 </html>
